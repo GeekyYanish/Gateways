@@ -1,26 +1,281 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   FEST REALM — theme contract
+   Tailwind v4 is CSS-first: design tokens live in @theme, not tailwind.config.ts.
+   Every token declared here becomes a utility (e.g. --color-mc-grass -> bg-mc-grass).
+   ========================================================================= */
+
+@theme {
+  /* ---- Minecraft palette -------------------------------------------------
+     Each block colour has a -light (top/left bevel) and -dark (bottom/right
+     bevel) variant. The three together are what make a flat div read as a
+     3D block. Never hand-pick a bevel colour outside this scale. */
+
+  --color-mc-grass: #5fa73f;
+  --color-mc-grass-light: #7ec850;
+  --color-mc-grass-dark: #3d6b28;
+
+  --color-mc-dirt: #8b5a2b;
+  --color-mc-dirt-light: #a9713a;
+  --color-mc-dirt-dark: #5c3a1a;
+
+  --color-mc-stone: #7f7f7f;
+  --color-mc-stone-light: #9d9d9d;
+  --color-mc-stone-dark: #565656;
+
+  --color-mc-obsidian: #1a1024;
+  --color-mc-obsidian-light: #2b1b3d;
+  --color-mc-obsidian-dark: #0d0812;
+
+  --color-mc-portal: #a02ce0;
+  --color-mc-portal-light: #c964ff;
+  --color-mc-portal-dark: #5f1490;
+
+  --color-mc-emerald: #17c07b;
+  --color-mc-emerald-light: #3ee59d;
+  --color-mc-emerald-dark: #0d7d4e;
+
+  --color-mc-diamond: #3ddfe0;
+  --color-mc-diamond-light: #7ff2f3;
+  --color-mc-diamond-dark: #1f9799;
+
+  --color-mc-redstone: #d63b2f;
+  --color-mc-redstone-light: #f0574a;
+  --color-mc-redstone-dark: #92211a;
+
+  --color-mc-gold: #f2b233;
+  --color-mc-gold-light: #ffd166;
+  --color-mc-gold-dark: #ab7614;
+
+  --color-mc-planks: #9c7f4e;
+  --color-mc-planks-light: #b89a63;
+  --color-mc-planks-dark: #6d5732;
+
+  /* UI surfaces — the dark slate the mockup's panels sit on */
+  --color-mc-void: #0b0710;
+  --color-mc-panel: #1d1526;
+  --color-mc-panel-light: #2e2340;
+  --color-mc-panel-dark: #120c18;
+  --color-mc-slot: #100b16;
+  --color-mc-border: #3c2f4f;
+
+  --color-mc-text: #ece0f5;
+  --color-mc-text-dim: #a394b5;
+
+  /* Rarity tints for achievement badges */
+  --color-rarity-common: #9d9d9d;
+  --color-rarity-uncommon: #17c07b;
+  --color-rarity-rare: #3d7de0;
+  --color-rarity-epic: #a02ce0;
+  --color-rarity-legendary: #f2b233;
+
+  /* ---- Typography ------------------------------------------------------ */
+  --font-pixel: var(--font-press-start), "Courier New", monospace;
+  --font-body: var(--font-vt323), "Courier New", monospace;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --ease-block: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-portal-pulse: portal-pulse 3s ease-in-out infinite;
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-block-in: block-in 0.35s var(--ease-block) both;
+}
+
+/* ---- Bevel shadow presets --------------------------------------------------
+   Utilities rather than @theme --shadow-* because they compose two inset edges
+   plus an outer drop. --mc-bevel is the pixel width, scaled with the UI so
+   bevels stay proportional at every --mc-scale. */
+
+@utility bevel {
+  box-shadow:
+    inset var(--mc-bevel) var(--mc-bevel) 0 0 var(--bevel-light, rgb(255 255 255 / 0.28)),
+    inset calc(var(--mc-bevel) * -1) calc(var(--mc-bevel) * -1) 0 0 var(--bevel-dark, rgb(0 0 0 / 0.42)),
+    0 var(--mc-bevel) 0 0 rgb(0 0 0 / 0.5);
+}
+
+@utility bevel-pressed {
+  box-shadow:
+    inset calc(var(--mc-bevel) * -1) calc(var(--mc-bevel) * -1) 0 0 var(--bevel-light, rgb(255 255 255 / 0.22)),
+    inset var(--mc-bevel) var(--mc-bevel) 0 0 var(--bevel-dark, rgb(0 0 0 / 0.45));
+}
+
+@utility bevel-inset {
+  box-shadow:
+    inset var(--mc-bevel) var(--mc-bevel) 0 0 rgb(0 0 0 / 0.55),
+    inset calc(var(--mc-bevel) * -1) calc(var(--mc-bevel) * -1) 0 0 rgb(255 255 255 / 0.12);
+}
+
+/* Crisp pixel-art rendering. Applied by <PixelImage>; never rely on a bare
+   <img> for art — Next's optimizer resamples and blurs it. */
+@utility pixelated {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+/* ============================================================================
+   Root variables
+   ========================================================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* --mc-scale is the single knob that rescales the whole pixel UI.
+     Integer values only — a 16px texture drawn at 40px shimmers. */
+  --mc-scale: 3;
+  --mc-bevel: 3px;
+  --mc-unit: calc(4px * var(--mc-scale));
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (max-width: 767px) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --mc-scale: 2;
+    --mc-bevel: 2px;
   }
 }
 
+@media (min-width: 1920px) {
+  :root {
+    --mc-scale: 4;
+    --mc-bevel: 4px;
+  }
+}
+
+html {
+  background: var(--color-mc-void);
+  /* Pixel fonts are ruined by antialiasing. */
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-mc-void);
+  color: var(--color-mc-text);
+  font-family: var(--font-body);
+  /* VT323 runs small; 18px here reads as ~16px. Body text never uses
+     Press Start 2P — it is genuinely unreadable at paragraph sizes. */
+  font-size: 18px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-pixel);
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+/* Focus ring — must stay clearly visible, it is the keyboard user's cursor. */
+:focus-visible {
+  outline: var(--mc-bevel) solid var(--color-mc-gold);
+  outline-offset: var(--mc-bevel);
+}
+
+::selection {
+  background: var(--color-mc-portal);
+  color: #fff;
+}
+
+/* Blocky scrollbar */
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-track { background: var(--color-mc-slot); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-mc-stone);
+  border: 2px solid var(--color-mc-stone-dark);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-mc-stone-light); }
+
+/* ============================================================================
+   3D voxel world — floating building labels
+   These render inside a WebGL canvas via drei's <Html>, so they sit outside
+   the Tailwind-scanned tree and need real CSS.
+   ========================================================================= */
+
+.voxel-marker-label {
+  pointer-events: auto;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 2px solid var(--color-mc-border);
+  background: rgb(29 21 38 / 0.92);
+  color: var(--color-mc-text);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  box-shadow:
+    inset 2px 2px 0 0 rgb(255 255 255 / 0.18),
+    inset -2px -2px 0 0 rgb(0 0 0 / 0.45),
+    0 3px 0 0 rgb(0 0 0 / 0.5);
+  transition: filter 100ms ease, transform 100ms ease;
+}
+
+.voxel-marker-label:hover,
+.voxel-marker-label[data-active] {
+  border-color: var(--color-mc-gold);
+  color: var(--color-mc-gold-light);
+  filter: brightness(1.25);
+  transform: translateY(-2px);
+}
+
+.voxel-marker-label:focus-visible {
+  outline: 3px solid var(--color-mc-gold);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   Keyframes
+   ========================================================================= */
+
+@keyframes portal-pulse {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.04); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(calc(var(--mc-unit) * -0.5)); }
+}
+
+@keyframes block-in {
+  from { opacity: 0; transform: translateY(calc(var(--mc-unit) * 1.5)) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============================================================================
+   Reduced motion
+   The .gsap-hidden rule is a hard accessibility requirement, not a nicety:
+   GSAP-animated elements start hidden via CSS class so there is no hydration
+   flash. If JS never runs, or motion is reduced, that class must NOT leave
+   content permanently invisible.
+   ========================================================================= */
+
+.gsap-hidden {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .gsap-hidden {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Same escape hatch for the in-app toggle, which sets data-reduce-motion on
+   <html> for users who never changed their OS setting. */
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-reduce-motion="true"] .gsap-hidden {
+  opacity: 1 !important;
+  transform: none !important;
 }

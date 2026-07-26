@@ -1,36 +1,200 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fest Realm
 
-## Getting Started
+A voxel-styled college fest portal. Blocky pixel-art UI, an animated portal entry
+sequence with layered parallax scenes, a **walkable 3D voxel village**, and a
+working event/character system.
 
-First, run the development server:
+Minecraft-*inspired* in aesthetic only — every asset, name and texture is
+original. See [Art](#art--all-external-all-original).
+
+**Phases 0–5 are built.** Events, teams, QR check-in and the organizer/admin
+dashboards are the next run — see [Roadmap](#roadmap).
+
+## Run it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and click **ENTER THE PORTAL**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Two dev-only pages (they 404 in production):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/dev/kitchen-sink` — every design-system primitive in every variant
+- `/dev/data-test` — 40 assertions against the data layer
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
+| Concern | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router) + React 19 + TypeScript |
+| Styling | Tailwind **v4** — tokens live in `@theme` in `globals.css`, not a config file |
+| 3D | React Three Fiber + three.js (`/world` only, dynamically imported) |
+| Cinematics | GSAP (`@gsap/react`) |
+| UI motion | Framer Motion |
+| Dialogs | Radix Dialog (focus trap + scroll lock), fully reskinned |
+| Forms | react-hook-form + zod |
+| Toasts | sonner, custom render surface |
+| Data | **localStorage** behind a repository interface — Supabase later |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### The data seam
 
-## Deploy on Vercel
+Screens never touch `localStorage`. Everything goes through the `Repository`
+interface (`src/lib/data/repository.ts`), currently implemented by
+`LocalRepository`. `src/lib/data/index.ts` is the single construction point, so
+swapping in Supabase is one line plus a second implementation.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Every method is `async` even though localStorage is synchronous — otherwise
+swapping in a network backend would mean touching every call site.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Guarantees enforced in the local implementation (and verified by `/dev/data-test`):
+
+- **XP grants are idempotent** on `(userId, sourceType, sourceId, reason)`, and
+  `totalXp` is always recomputed as the ledger **sum**, never incremented — so a
+  duplicate write cannot drift the cache.
+- **No double registration** — unique `(eventId, userId)`; over-capacity
+  registrations waitlist, and cancelling a seat promotes the earliest waitlister.
+- **No double check-in** — a second check-in returns the original record without
+  re-awarding XP.
+- **Achievements unlock once** — composite key on `(userId, achievementId)`.
+
+These mirror the actual SQL constraints in
+[SUPABASE-MIGRATION.md](SUPABASE-MIGRATION.md), which has the full schema, the
+RLS policy design, and the three-layer role model.
+
+### ⚠️ localStorage is not security
+
+There is no server, so there is no security boundary. Any user can edit their own
+roles, XP or registrations in devtools. Passwords are SHA-256 + salt rather than
+plaintext, which is better than nothing but still offline-attackable.
+
+Consequences to be explicit about:
+
+- Organizer/admin views built later are **UI-only** until Supabase lands.
+- **QR check-in cannot be trusted** without a server-held signing secret.
+- Data does not sync across devices or browsers.
+
+### Art — all external, all original
+
+Two manifests, and **no component hardcodes a path**:
+
+- `src/lib/assets/manifest.ts` — sprites, skins, blocks, items, badges, UI (42 assets)
+- `src/lib/assets/scenes.ts` — layered parallax scenes (10 scenes, 43 layers)
+
+Each entry declares its intrinsic dimensions, and a generated SVG placeholder
+renders at exactly those dimensions until the real file lands in `public/art/**`.
+So the app is fully demoable today and **nothing shifts on delivery**.
+
+**Everything is original voxel-inspired work.** No Mojang textures, skins, mob
+designs, or terminology — the five character archetypes (`prospector`,
+`botanist`, `sentinel`, `voidwalker`, `artificer`) and all scene briefs are ours.
+The blocky *aesthetic* is fair game; specific assets are not.
+[ART-ASSETS.md](ART-ASSETS.md) has the full spec plus AI-generation prompts.
+
+Placeholders are deliberately non-generic: scene layers draw blocky silhouettes
+in each scene's own palette with atmospheric depth, so parallax is visible and
+tunable pre-art. The landing portal draws a CSS obsidian frame rather than a
+checkerboard, because a placeholder as the site's hero looks broken.
+
+### 3D voxel village
+
+`/world` renders a walkable Minecraft-*style* village with React Three Fiber —
+seven buildings, a controllable cube character, WASD movement with collision, and
+click-to-navigate markers wired to the same event categories as the 2D map.
+All geometry is generated in code; there are no models or textures.
+
+Full detail, including the performance work and the five bugs worth remembering,
+is in [VOXEL-3D.md](VOXEL-3D.md). The headline: rendering blocks as instanced
+cubes ran at **4fps**; emitting only the faces that touch air cut vertices from
+367k to 91k and took it to **19fps under software rasterization** (real GPUs are
+far faster). Three.js loads only on the 3D view, so no other route pays for it.
+
+`/world` offers **3D · Map · List** as equal views. 3D auto-selects on capable
+desktops; reduced-motion users get Map with an explanation, phones get List, and
+List remains the screen-reader and keyboard path. An explicit choice is never
+overridden.
+
+### Animated backgrounds and parallax
+
+```tsx
+import { AnimatedBackground, BiomeScene } from "@/components/scene";
+
+<AnimatedBackground scene="portal-approach">…</AnimatedBackground>
+<AnimatedBackground scene="realm-gate" intensity={0.5}>…</AnimatedBackground>
+<BiomeScene scene="photography-forest" className="h-[180px]" />
+```
+
+Adding a scene is one entry in `scenes.ts` — no component changes. Each scene is
+a stack of layers at different depths (sky → far → mid → fore → overlay), with
+optional drift and pulse per layer.
+
+Implementation notes that matter:
+- **One pointer listener per scene**, coalesced to one update per frame. Eight
+  layers cost one listener, not eight.
+- **`gsap.quickTo`** reuses one tween per property instead of allocating per
+  pointer move — that is what holds 60fps on a deep stack.
+- **Verified**: 8 layers move by 8 distinct amounts in proportion to depth
+  (sky 0 → ground 26.9px); under `prefers-reduced-motion` **0 of 8 move** and all
+  13 `.gsap-hidden` elements stay visible.
+
+### Animation
+
+One rule: **GSAP owns timelines, Framer Motion owns components.** The full
+ruleset — including the GSAP/StrictMode pitfalls, the mixed-unit interpolation
+bug that silently empties progress bars, and the three-layer reduced-motion
+setup — is in [ANIMATION.md](ANIMATION.md).
+
+Reduced motion is honoured three ways (`gsap.matchMedia`, `MotionConfig`, and a
+CSS block) plus an in-app toggle in Settings, because many motion-sensitive users
+have never changed their OS setting. With it enabled the portal still renders but
+stops pulsing, and the transition routes skip straight to their destination.
+
+## Routes
+
+**Public** — no account needed, so the fest can actually be shared:
+`/` `/events` `/events/[slug]` `/leaderboard` `/schedule` `/sponsors`
+
+**Auth**: `/login` `/create-character`
+**Transitions**: `/entering` `/travelling`
+**Authed**: `/world` `/dashboard` (+ `events`, `achievements`, `team`,
+`notifications`, `profile`, `settings`)
+
+Route protection is a client guard in `(realm)/layout.tsx` because localStorage
+has no server presence. It moves into `middleware.ts` with Supabase.
+
+## Verify
+
+```bash
+npm run build && npm start
+```
+
+Checked and passing: clean `tsc` and `eslint`; production build (22 routes);
+full funnel landing → portal → signup → character → travelling → world with zero
+console errors; 40/40 data-layer assertions; case-insensitive player-name
+collision blocking submit; registration awarding XP and unlocking achievements;
+`prefers-reduced-motion` leaving no content invisible (13/13 `.gsap-hidden`
+elements revealed) and cutting the portal route from ~2600ms to ~150ms; no
+unlabelled inputs, unnamed buttons, missing `alt`, or horizontal overflow;
+375px mobile layout with a working tab bar; dev pages 404 in production.
+
+**Note:** verify animations in a real browser, not an embedded preview pane —
+some panes run a paused animation clock (`document.timeline.currentTime === 0`),
+which makes every animation look frozen at its initial value.
+
+## Roadmap
+
+| Phase | Scope |
+|---|---|
+| 6 | Full events CRUD, richer registration flows |
+| 7 | Team creation/join UI (the data layer already supports it) |
+| 8 | QR check-in — HMAC rotating tokens, organizer scanner. **Needs HTTPS + Supabase** |
+| 9 | Organizer + admin dashboards, realtime announcements |
+| 10 | Certificates, gallery, public profiles |
+| 11 | Drop in real art files |
+| 12 | Hardening, load test, Lighthouse pass |
+
+Supabase should land **before or with Phase 8** — QR attendance and role gating
+are meaningless without a real server boundary.

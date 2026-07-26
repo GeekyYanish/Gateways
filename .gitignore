@@ -22,16 +22,26 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
+
+# editors / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +49,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# build tool caches
+.turbo/
+.swc/
+.cache/
+
+# claude code (machine-local: contains absolute paths & per-user permissions)
+.claude/settings.local.json
+.claude/launch.json
