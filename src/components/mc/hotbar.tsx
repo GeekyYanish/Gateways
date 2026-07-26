@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { PixelImage } from "./pixel-image";
-import { ART, type ItemName } from "@/lib/assets/manifest";
+import { ItemIcon } from "./item-icon";
+import { type ItemName } from "@/lib/assets/manifest";
 import { cn } from "@/lib/utils";
 
 /**
@@ -83,7 +83,6 @@ export function Hotbar({
     >
       {padded.map((slot, i) => {
         const isActive = i === activeIndex;
-        const asset = slot.item ? ART.items[slot.item] : undefined;
         const name = slot.label ?? (slot.item ? slot.item : `Empty slot ${i + 1}`);
 
         return (
@@ -106,14 +105,10 @@ export function Hotbar({
                 "outline outline-[calc(var(--mc-bevel)*0.8)] outline-white outline-offset-0 brightness-125 z-10",
             )}
           >
-            {asset ? (
-              <PixelImage
-                asset={asset}
-                label={slot.item as string}
-                className="w-[70%] h-[70%] object-contain"
-                alt=""
-              />
-            ) : null}
+            {/* ItemIcon, not PixelImage: the item PNGs do not exist yet, and a
+                row of magenta "art pending" checkerboards along the bottom of
+                the world screen reads as broken rather than as pending. */}
+            {slot.item ? <ItemIcon item={slot.item} size={26} /> : null}
             {/* Slot number, bottom-right like the real hotbar tooltip hint. */}
             <span
               aria-hidden

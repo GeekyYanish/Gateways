@@ -145,10 +145,31 @@ export function TravellingScreen() {
     let raf = 0;
     let running = true;
 
-    // Star field streaking outward from the centre — cheap, and reads as speed.
-    type Star = { x: number; y: number; z: number };
-    const STAR_COUNT = 220;
-    let stars: Star[] = [];
+    /**
+     * Blocks rushing outward past the camera, over a floor receding to the
+     * same vanishing point.
+     *
+     * Canvas rather than DOM or SVG: a few hundred elements moving every frame
+     * is exactly what canvas is for, and the radial light streaks come free
+     * from compositing each frame over a partly-transparent wipe of the last
+     * one — there is no way to get that from discrete elements.
+     */
+    type Block = { x: number; y: number; z: number; s: number; hot: boolean };
+    const BLOCK_COUNT = 420;
+    /** Vanishing point sits below centre, so the floor has room to read. */
+    const HORIZON = 0.54;
+    const SPEED = 0.007;
+    let blocks: Block[] = [];
+    let floorPhase = 0;
+
+    const respawn = (b: Block): Block => {
+      b.x = (Math.random() - 0.5) * 2;
+      b.y = (Math.random() - 0.5) * 2;
+      b.z = 1;
+      b.s = 0.5 + Math.random() * 1.6;
+      b.hot = Math.random() < 0.22;
+      return b;
+    };
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -157,16 +178,11 @@ export function TravellingScreen() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    const seed = () => {
-      stars = Array.from({ length: STAR_COUNT }, () => ({
-        x: (Math.random() - 0.5) * 2,
-        y: (Math.random() - 0.5) * 2,
-        z: Math.random(),
-      }));
-    };
-
     resize();
-    seed();
+    blocks = Array.from({ length: BLOCK_COUNT }, () =>
+      // Stagger the initial depths, or every block arrives in one wave.
+      Object.assign(respawn({} as Block), { z: Math.random() }),
+    );
     window.addEventListener("resize", resize);
 
     const draw = () => {
@@ -174,34 +190,87 @@ export function TravellingScreen() {
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
       const cx = w / 2;
-      const cy = h / 2;
+      const cy = h * HORIZON;
 
-      ctx.fillStyle = "rgba(11,7,16,0.35)";
+      // Partial wipe rather than a clear: what survives from previous frames
+      // IS the motion streaking.
+      ctx.fillStyle = "rgba(6,2,20,0.34)";
       ctx.fillRect(0, 0, w, h);
 
-      for (const s of stars) {
-        s.z -= 0.012;
-        if (s.z <= 0.02) {
-          s.x = (Math.random() - 0.5) * 2;
-          s.y = (Math.random() - 0.5) * 2;
-          s.z = 1;
-        }
+      // Ambient violet haze across the whole frame. Without it the corners sit
+      // at pure black and the tunnel reads as a starfield in space rather than
+      // as a lit corridor.
+      const haze = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.95);
+      haze.addColorStop(0, "rgba(41,14,110,0.30)");
+      haze.addColorStop(0.45, "rgba(29,10,92,0.22)");
+      haze.addColorStop(1, "rgba(12,4,44,0.06)");
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 0, w, h);
 
-        const k = 0.5 / s.z;
-        const px = cx + s.x * k * w * 0.5;
-        const py = cy + s.y * k * h * 0.5;
-
-        const kPrev = 0.5 / Math.min(1, s.z + 0.05);
-        const pxPrev = cx + s.x * kPrev * w * 0.5;
-        const pyPrev = cy + s.y * kPrev * h * 0.5;
-
-        const size = Math.max(1, (1 - s.z) * 3);
-        ctx.strokeStyle = `rgba(201,100,255,${Math.min(1, 1 - s.z)})`;
-        ctx.lineWidth = size;
+      // --- floor: lines converging on the vanishing point ------------------
+      floorPhase = (floorPhase + SPEED * 1.6) % 0.1;
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 26; i++) {
+        const d = 0.04 + i * 0.1 - floorPhase;
+        if (d <= 0.03) continue;
+        const y = cy + (h * 0.055) / d;
+        if (y > h) continue;
+        // Nearer rows are brighter; distant ones dissolve into the core.
+        ctx.strokeStyle = `rgba(150,80,236,${Math.min(0.3, 0.035 / d)})`;
         ctx.beginPath();
-        ctx.moveTo(pxPrev, pyPrev);
-        ctx.lineTo(px, py);
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
         ctx.stroke();
+      }
+      for (let i = -14; i <= 14; i++) {
+        ctx.strokeStyle = "rgba(150,80,236,0.08)";
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + i * w * 0.16, h);
+        ctx.stroke();
+      }
+
+      // --- core bloom -------------------------------------------------------
+      const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(w, h) * 0.38);
+      bloom.addColorStop(0, "rgba(255,255,255,0.85)");
+      bloom.addColorStop(0.12, "rgba(233,176,242,0.5)");
+      bloom.addColorStop(0.4, "rgba(148,64,218,0.16)");
+      bloom.addColorStop(1, "rgba(58,18,121,0)");
+      ctx.fillStyle = bloom;
+      ctx.fillRect(0, 0, w, h);
+
+      // --- blocks -----------------------------------------------------------
+      for (const b of blocks) {
+        b.z -= SPEED;
+        if (b.z <= 0.02) respawn(b);
+
+        const k = 0.5 / b.z;
+        const px = cx + b.x * k * w * 0.5;
+        const py = cy + b.y * k * h * 0.5;
+
+        const near = 1 - b.z;
+        // Integer sizes keep every block a crisp square instead of a
+        // half-pixel smudge.
+        const size = Math.max(2, Math.round(near * near * 20 * b.s));
+        const alpha = Math.min(1, near * 1.3);
+
+        ctx.fillStyle = b.hot
+          ? `rgba(243,221,251,${alpha})`
+          : `rgba(168,74,220,${alpha * 0.85})`;
+        ctx.fillRect(Math.round(px - size / 2), Math.round(py - size / 2), size, size);
+
+        // A hot inner pip on the brighter blocks, so they read as lit rather
+        // than as flat swatches.
+        if (b.hot && size > 6) {
+          const inner = Math.max(2, Math.round(size * 0.34));
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.fillRect(
+            Math.round(px - inner / 2),
+            Math.round(py - inner / 2),
+            inner,
+            inner,
+          );
+        }
       }
 
       raf = requestAnimationFrame(draw);
@@ -226,10 +295,12 @@ export function TravellingScreen() {
         className="absolute inset-0 h-full w-full"
       />
 
-      <div className="relative z-10 w-full max-w-[420px] px-[calc(var(--mc-unit)*2)]">
-        <div className="bg-mc-panel/90 border-[length:var(--mc-bevel)] border-mc-border bevel p-[calc(var(--mc-unit)*1.5)] [--bevel-light:var(--color-mc-panel-light)] [--bevel-dark:var(--color-mc-panel-dark)]">
+      {/* Anchored near the bottom, as in the reference — centring it would put
+          the panel over the vanishing point, which is the whole image. */}
+      <div className="absolute bottom-[10%] z-10 w-full max-w-[420px] px-[calc(var(--mc-unit)*2)]">
+        <div className="border-[length:var(--mc-bevel)] border-mc-border bg-mc-void/80 p-[calc(var(--mc-unit)*1.5)]">
           <div className="flex items-baseline justify-between gap-[var(--mc-unit)]">
-            <p className="font-pixel text-[11px] uppercase text-mc-text">
+            <p className="font-pixel text-[10px] uppercase tracking-[0.08em] text-mc-text md:text-[11px]">
               Traveling to Fest Realm
             </p>
             <span className="font-pixel text-[11px] text-mc-portal-light tabular-nums">

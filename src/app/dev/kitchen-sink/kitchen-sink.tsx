@@ -25,7 +25,7 @@ import { BiomeScene } from "@/components/scene";
 import { WORLD_LOCATIONS } from "@/lib/world/world-locations";
 import type { Rarity } from "@/components/mc/badge-slot";
 
-const BUTTON_VARIANTS = ["primary", "emerald", "stone", "gold", "danger", "dirt", "ghost"] as const;
+const BUTTON_VARIANTS = ["primary", "portal", "emerald", "stone", "gold", "danger", "dirt", "ghost"] as const;
 const SIZES = ["sm", "md", "lg", "xl"] as const;
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 const SEVERITIES: ToastSeverity[] = ["info", "success", "warning", "critical"];
@@ -100,6 +100,7 @@ export function KitchenSink() {
           <BlockPanel variant="stone">Stone block</BlockPanel>
           <BlockPanel variant="gold">Gold highlight</BlockPanel>
           <BlockPanel variant="portal">Portal / obsidian</BlockPanel>
+          <BlockPanel variant="card">Flat card (forms)</BlockPanel>
           <BlockPanel title="Titled panel" action={<BlockButton size="sm" variant="ghost">Action</BlockButton>}>
             Body content sits below the header strip.
           </BlockPanel>

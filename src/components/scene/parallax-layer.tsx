@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "@/lib/animation/gsap-init";
 import { sceneLayerPlaceholder } from "@/lib/assets/placeholder";
+import { paintSceneLayer } from "@/lib/assets/scene-art";
 import type { SceneLayer } from "@/lib/assets/scenes";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +15,16 @@ import { cn } from "@/lib/utils";
  * listener. A per-layer listener would mean N listeners and N independent GSAP
  * tweens fighting for the same frame budget on a page with eight layers.
  *
- * Falls back to a generated silhouette placeholder when the art is missing, so
- * depth ordering is visible and tunable before any files are delivered.
+ * Art resolution has two modes, and the probe runs in opposite directions:
+ *
+ * - **Placeholder layers** (no `paint`): show `layer.src` optimistically and
+ *   fall back to a generated silhouette on error. The silhouette is a stand-in
+ *   that says "art pending", so it should appear only once the file is known
+ *   to be missing.
+ * - **Painted layers** (`paint` set): show the generated art *first* and swap
+ *   to `layer.src` only once the probe confirms a real file loaded. Painted art
+ *   is the intended render, not a fallback — probing first would flash an empty
+ *   layer on every load.
  */
 
 export interface ParallaxLayerHandle {
@@ -37,20 +46,41 @@ export function ParallaxLayer({
   className?: string;
 }) {
   const el = useRef<HTMLDivElement>(null);
-  const [failed, setFailed] = useState(false);
+  // The probed src is stored alongside the verdict rather than reset in the
+  // effect body: clearing state synchronously on mount is a cascading render,
+  // and comparing keys gets the same staleness guarantee for free.
+  const [probed, setProbed] = useState<{
+    src: string;
+    status: "delivered" | "missing";
+  } | null>(null);
 
-  // Probe the real asset; swap to the placeholder only if it is genuinely absent.
+  // Deterministic, so the server and client render byte-identical markup.
+  const painted = useMemo(
+    () =>
+      layer.paint
+        ? paintSceneLayer(layer.paint, layer.w, layer.h, `${sceneKey}-${layer.key}`)
+        : null,
+    [layer.paint, layer.w, layer.h, layer.key, sceneKey],
+  );
+
+  // Probe the real asset. `onload` matters as much as `onerror` here: it is
+  // what lets a delivered PNG take over from generated art.
   useEffect(() => {
     let cancelled = false;
     const probe = new Image();
+    probe.onload = () => {
+      if (!cancelled) setProbed({ src: layer.src, status: "delivered" });
+    };
     probe.onerror = () => {
-      if (!cancelled) setFailed(true);
+      if (!cancelled) setProbed({ src: layer.src, status: "missing" });
     };
     probe.src = layer.src;
     return () => {
       cancelled = true;
     };
   }, [layer.src]);
+
+  const status = probed?.src === layer.src ? probed.status : "pending";
 
   // Publish the imperative handle. Offsets are applied via gsap.quickTo, which
   // reuses a single tween per property instead of allocating one per pointer
@@ -72,19 +102,35 @@ export function ParallaxLayer({
     return () => handleRef(null);
   }, [handleRef, layer.depth]);
 
-  const url = failed
-    ? sceneLayerPlaceholder({
-        key: `${sceneKey}-${layer.key}`,
-        layer: layer.layer,
-        w: layer.w,
-        h: layer.h,
-        tile: layer.tile,
-        palette,
-      })
-    : layer.src;
+  let url: string;
+  if (status === "delivered") {
+    url = layer.src;
+  } else if (painted) {
+    url = painted;
+  } else if (status === "missing") {
+    url = sceneLayerPlaceholder({
+      key: `${sceneKey}-${layer.key}`,
+      layer: layer.layer,
+      w: layer.w,
+      h: layer.h,
+      tile: layer.tile,
+      palette,
+    });
+  } else {
+    url = layer.src;
+  }
 
   // Layers are oversized and centred so translating them never exposes an edge.
-  const overscan = 8 + layer.depth * 14;
+  // Travel is capped at 60px × depth horizontally and 36px × depth vertically,
+  // so a few percent already clears the largest possible shift several times
+  // over — the margin only has to hide the pan, and every extra percent is a
+  // percent of the art cropped away.
+  //
+  // Edge-anchored layers get a tighter margin still: they are positioned
+  // against a viewport edge, so overscan pushes them off-screen rather than
+  // merely zooming them.
+  const anchored = Boolean(layer.anchor && !layer.anchor.startsWith("center"));
+  const overscan = anchored ? 1.5 + layer.depth * 4 : 2.5 + layer.depth * 7;
 
   return (
     <div
@@ -98,8 +144,9 @@ export function ParallaxLayer({
         mixBlendMode: layer.blend ?? "normal",
         backgroundImage: `url("${url}")`,
         backgroundRepeat: layer.tile ? "repeat-x" : "no-repeat",
-        backgroundPosition: layer.layer === "fore" ? "center bottom" : "center",
-        backgroundSize: layer.tile ? "auto 100%" : "cover",
+        backgroundPosition:
+          layer.anchor ?? (layer.layer === "fore" ? "center bottom" : "center"),
+        backgroundSize: layer.fit ?? (layer.tile ? "auto 100%" : "cover"),
         // Pixel art must not be smoothed when scaled to cover the viewport.
         imageRendering: "pixelated",
         willChange: "transform",

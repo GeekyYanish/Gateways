@@ -52,6 +52,32 @@
   --color-mc-planks-light: #b89a63;
   --color-mc-planks-dark: #6d5732;
 
+  /* Daylight valley — sampled from the landing mockup. The portal approach is
+     a bright blue afternoon, not the dusk the scene used to be, so the sky,
+     moss and path stone need first-class tokens like every other block. */
+  --color-mc-sky: #2064b4;
+  --color-mc-sky-light: #5787bf;
+  --color-mc-sky-dark: #1b4a86;
+
+  --color-mc-cloud: #dfeaf6;
+  --color-mc-cloud-light: #f2f7fd;
+  --color-mc-cloud-dark: #cfe0ef;
+
+  --color-mc-moss: #4a7024;
+  --color-mc-moss-light: #63903a;
+  --color-mc-moss-dark: #2f4a15;
+
+  --color-mc-path: #8a8378;
+  --color-mc-path-light: #a39b8e;
+  --color-mc-path-dark: #6b6459;
+
+  /* Deep-violet CTA + the title's fill/outline pair. mc-portal (#a02ce0) is
+     the bright brand violet; the mockup's button and heading sit much darker
+     and much paler respectively, so both ends get their own token. */
+  --color-mc-portal-deep: #46246f;
+  --color-mc-portal-pale: #e8dcfb;
+  --color-mc-portal-ink: #2a1a6e;
+
   /* UI surfaces — the dark slate the mockup's panels sit on */
   --color-mc-void: #0b0710;
   --color-mc-panel: #1d1526;
@@ -103,6 +129,41 @@
   box-shadow:
     inset var(--mc-bevel) var(--mc-bevel) 0 0 rgb(0 0 0 / 0.55),
     inset calc(var(--mc-bevel) * -1) calc(var(--mc-bevel) * -1) 0 0 rgb(255 255 255 / 0.12);
+}
+
+/* Chunky pixel outline + hard stepped drop for display headings.
+   A utility rather than an inline style because it is a ten-part text-shadow —
+   inlining it at the call site would bury the markup, and the ink colour must
+   come from the token scale, not be hand-picked. --emboss defaults to the
+   bevel width so the outline thickens with --mc-scale alongside everything
+   else; override it per-heading when a larger glyph needs a fatter edge.
+
+   Note this survives `background-clip: text`: the shadow paints behind the
+   clipped gradient fill, so only the offset ring shows. That is what gives the
+   mockup's title its lit-top, dark-edged look. */
+@utility title-emboss {
+  text-shadow:
+    /* 8-direction outline */
+    calc(var(--emboss, var(--mc-bevel)) * -1) 0 0 var(--color-mc-portal-ink),
+    var(--emboss, var(--mc-bevel)) 0 0 var(--color-mc-portal-ink),
+    0 calc(var(--emboss, var(--mc-bevel)) * -1) 0 var(--color-mc-portal-ink),
+    0 var(--emboss, var(--mc-bevel)) 0 var(--color-mc-portal-ink),
+    calc(var(--emboss, var(--mc-bevel)) * -1) calc(var(--emboss, var(--mc-bevel)) * -1) 0 var(--color-mc-portal-ink),
+    var(--emboss, var(--mc-bevel)) calc(var(--emboss, var(--mc-bevel)) * -1) 0 var(--color-mc-portal-ink),
+    calc(var(--emboss, var(--mc-bevel)) * -1) var(--emboss, var(--mc-bevel)) 0 var(--color-mc-portal-ink),
+    var(--emboss, var(--mc-bevel)) var(--emboss, var(--mc-bevel)) 0 var(--color-mc-portal-ink),
+    /* hard stepped drop, no blur — a soft shadow reads as non-pixel */
+    calc(var(--emboss, var(--mc-bevel)) * 2) calc(var(--emboss, var(--mc-bevel)) * 2) 0 var(--color-mc-portal-dark),
+    calc(var(--emboss, var(--mc-bevel)) * 3.5) calc(var(--emboss, var(--mc-bevel)) * 3.5) 0 rgb(0 0 0 / 0.45);
+}
+
+/* Same idea at one weight for small text over bright sky (the tagline, footer
+   links). Legibility, not decoration — white pixel type on #5787bf fails
+   contrast without it. */
+@utility pixel-shadow {
+  text-shadow:
+    var(--mc-bevel) var(--mc-bevel) 0 rgb(0 0 0 / 0.6),
+    0 0 calc(var(--mc-bevel) * 2) rgb(0 0 0 / 0.35);
 }
 
 /* Crisp pixel-art rendering. Applied by <PixelImage>; never rely on a bare

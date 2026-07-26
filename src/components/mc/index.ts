@@ -6,6 +6,7 @@ export { BlockModal } from "./block-modal";
 export { BlockToast, BlockToaster, showToast } from "./block-toast";
 export type { ToastSeverity } from "./block-toast";
 export { PixelImage, BlockTexture } from "./pixel-image";
+export { ItemIcon } from "./item-icon";
 export { PixelAvatar } from "./pixel-avatar";
 export { Hotbar } from "./hotbar";
 export { XpBar } from "./xp-bar";

@@ -38,6 +38,24 @@ export interface SceneLayer extends AssetSpec {
   blend?: "normal" | "screen" | "overlay" | "soft-light";
   /** Layer opacity 0–1. */
   opacity?: number;
+  /**
+   * Names a painter in `scene-art.ts`. When set, the layer draws finished
+   * generated art instead of the generic "art pending" silhouette — and draws
+   * it immediately, rather than only after the real file 404s. The `src` below
+   * still wins the moment a PNG exists at that path.
+   */
+  paint?: string;
+  /**
+   * `background-size` override. Default: `auto 100%` when tiling, else `cover`.
+   * Needed by edge-anchored layers, which must occupy a fixed share of the
+   * viewport width rather than being cover-cropped.
+   */
+  fit?: string;
+  /**
+   * `background-position` override. Default: `center bottom` for `fore`
+   * layers, `center` otherwise.
+   */
+  anchor?: string;
 }
 
 export interface Scene {
@@ -79,6 +97,19 @@ function layer(
   };
 }
 
+/**
+ * Intrinsic size for a full-bleed painted landform.
+ *
+ * Deliberately 1280×1080 rather than the 1920×1080 default. These layers are
+ * `cover`-fitted, and `cover` scales by the larger ratio — so a 16:9 source in
+ * a portrait phone viewport gets blown up more than 4×, turning a 24px block
+ * into a 98px slab and the distant ridge into a wall across the screen. A
+ * squarer source cuts that to about 1.8× and keeps the blocks block-sized at
+ * every aspect. It costs a little horizontal crop on ultrawide, which is the
+ * cheap direction to lose.
+ */
+const LANDFORM = { w: 1280, h: 1080 } as const;
+
 function scenePath(sceneKey: string, layerKey: string): string {
   return `/art/scenes/${sceneKey}/${layerKey}.png`;
 }
@@ -100,24 +131,110 @@ function buildScene(s: Omit<Scene, "layers"> & { layers: SceneLayer[] }): Scene 
 // ---------------------------------------------------------------------------
 
 export const SCENES: Record<string, Scene> = {
-  /** Landing page — the hero. A blocky valley at dusk with the portal ahead. */
+  /**
+   * Landing page — the hero, and the one scene that is fully painted rather
+   * than placeheld (see `scene-art.ts`).
+   *
+   * A bright afternoon valley: mossy stone walls closing in from both sides, a
+   * brick path running up to the portal. The daylight is deliberate — the
+   * portal is the only violet in frame, so it reads as the way out.
+   *
+   * The two `cliff-*` walls are separate edge-anchored layers instead of one
+   * wide background. A `cover`-fitted image crops from the sides, so on a
+   * portrait phone the framing would be the first thing lost.
+   */
   "portal-approach": buildScene({
     key: "portal-approach",
     name: "Portal Approach",
     brief:
-      "Dusk valley of blocky terraced hills, violet sky fading to deep indigo, " +
-      "a stone archway silhouetted on the ridge. Original voxel style, no game logos.",
-    baseGradient: "linear-gradient(180deg, #241040 0%, #140a1f 45%, #0b0710 100%)",
-    palette: ["#5f2a9a", "#2a1140"],
+      "Sunlit valley of blocky mossy-stone cliffs under a bright blue sky with " +
+      "stepped white clouds, a stone brick path leading to the portal. " +
+      "Original voxel style, no game logos.",
+    baseGradient: "linear-gradient(180deg, #1b4a86 0%, #2064b4 45%, #5787bf 100%)",
+    palette: ["#5787bf", "#1b4a86"],
     layers: [
-      layer("sky", "sky", 0, { pulse: 14, opacity: 0.95 }),
-      layer("stars", "sky", 0.04, { pulse: 7, blend: "screen", opacity: 0.7 }),
-      layer("clouds", "far", 0.1, { tile: true, drift: 7, opacity: 0.55 }),
-      layer("ridge", "far", 0.18, { h: 620 }),
-      layer("hills", "mid", 0.32, { h: 520 }),
-      layer("trees", "mid", 0.46, { tile: true, h: 380 }),
-      layer("ground", "fore", 0.62, { h: 320 }),
-      layer("haze", "overlay", 0.08, { blend: "screen", opacity: 0.35, pulse: 9 }),
+      layer("sky", "sky", 0, { paint: "sky-day" }),
+      layer("clouds", "far", 0.08, { paint: "clouds-blocky", tile: true, drift: 6, opacity: 0.95 }),
+      layer("ridge", "far", 0.18, { ...LANDFORM, paint: "ridge-far", opacity: 0.75 }),
+      // Same depth on both walls: they are one wall of rock the camera sits
+      // inside, so any difference would read as the valley shearing.
+      layer("cliff-left", "mid", 0.3, {
+        paint: "cliff-left",
+        w: 480,
+        h: 1080,
+        fit: "clamp(58px, 24vw, 430px) 100%",
+        anchor: "left bottom",
+      }),
+      layer("cliff-right", "mid", 0.3, {
+        paint: "cliff-right",
+        w: 480,
+        h: 1080,
+        fit: "clamp(58px, 24vw, 430px) 100%",
+        anchor: "right bottom",
+      }),
+      layer("grass", "fore", 0.5, { ...LANDFORM, paint: "grass-fore" }),
+      layer("path", "fore", 0.58, { ...LANDFORM, paint: "path-stones" }),
+      layer("spill", "overlay", 0.05, {
+        paint: "portal-spill",
+        blend: "screen",
+        opacity: 0.6,
+        pulse: 6,
+      }),
+    ],
+  }),
+
+  /**
+   * `/entering` — the same valley at night, stood right at the portal's foot.
+   *
+   * It reuses every landform painter from `portal-approach` unchanged and
+   * darkens them with a single veil layer, rather than duplicating the whole
+   * set in a night palette. One source of truth per landform; the two scenes
+   * cannot drift apart.
+   */
+  "portal-threshold": buildScene({
+    key: "portal-threshold",
+    name: "Portal Threshold",
+    brief:
+      "The valley at night: deep blue sky and stars, mossy stone walls lit only " +
+      "by the portal's violet spill, lantern-lit brick path. Original voxel style.",
+    baseGradient: "linear-gradient(180deg, #070b1c 0%, #0c1126 55%, #161f45 100%)",
+    palette: ["#2a3a6a", "#070b1c"],
+    layers: [
+      layer("sky", "sky", 0, { paint: "sky-night" }),
+      layer("ridge", "far", 0.16, { ...LANDFORM, paint: "ridge-far", opacity: 0.35 }),
+      layer("cliff-left", "mid", 0.28, {
+        paint: "cliff-left",
+        w: 480,
+        h: 1080,
+        fit: "clamp(80px, 29vw, 460px) 100%",
+        anchor: "left bottom",
+      }),
+      layer("cliff-right", "mid", 0.28, {
+        paint: "cliff-right",
+        w: 480,
+        h: 1080,
+        fit: "clamp(80px, 29vw, 460px) 100%",
+        anchor: "right bottom",
+      }),
+      layer("grass", "fore", 0.46, { ...LANDFORM, paint: "grass-fore" }),
+      layer("path", "fore", 0.54, { ...LANDFORM, paint: "path-stones" }),
+      // Veil first, THEN the spill — so the portal's light reads as the only
+      // light source rather than being dimmed along with everything else.
+      layer("veil", "overlay", 0.04, { paint: "night-veil" }),
+      layer("spill", "overlay", 0.05, {
+        paint: "portal-spill",
+        blend: "screen",
+        opacity: 0.85,
+        pulse: 5,
+      }),
+      layer("motes", "overlay", 0.22, {
+        paint: "air-motes",
+        tile: true,
+        drift: -4,
+        blend: "screen",
+        opacity: 0.8,
+        pulse: 7,
+      }),
     ],
   }),
 
@@ -138,19 +255,37 @@ export const SCENES: Record<string, Scene> = {
     ],
   }),
 
-  /** Auth screens — quieter, so forms stay readable on top. */
+  /**
+   * Auth screens — near-black with only a breath of violet.
+   *
+   * By far the quietest scene in the set, and that is the point: this is the
+   * one screen where the user is doing precise work (typing credentials), so
+   * the backdrop has to disappear. Painted rather than placeheld so it looks
+   * finished, but with nothing in it that could pull focus from the form.
+   */
   "realm-gate": buildScene({
     key: "realm-gate",
     name: "Realm Gate",
     brief:
-      "Calm night sky over distant blocky rooftops, soft violet glow on the " +
-      "horizon. Deliberately low-contrast — UI panels sit on top.",
-    baseGradient: "linear-gradient(180deg, #1a1024 0%, #0d0812 100%)",
-    palette: ["#3b2a5c", "#1a1024"],
+      "Near-black void with a faint violet bloom behind the panel and a few " +
+      "drifting embers. Deliberately almost empty — a form sits on top.",
+    baseGradient: "linear-gradient(180deg, #05040c 0%, #0a0616 55%, #04030a 100%)",
+    palette: ["#2a1a4a", "#05040c"],
     layers: [
-      layer("sky", "sky", 0, { opacity: 0.9 }),
-      layer("skyline", "far", 0.14, { tile: true, h: 420, opacity: 0.75 }),
-      layer("glow", "overlay", 0.06, { blend: "screen", opacity: 0.3, pulse: 11 }),
+      layer("glow", "overlay", 0.04, {
+        paint: "portal-spill",
+        blend: "screen",
+        opacity: 0.14,
+        pulse: 11,
+      }),
+      layer("motes", "overlay", 0.16, {
+        paint: "air-motes",
+        tile: true,
+        drift: -3,
+        blend: "screen",
+        opacity: 0.16,
+        pulse: 9,
+      }),
     ],
   }),
 

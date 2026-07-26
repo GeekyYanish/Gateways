@@ -21,7 +21,7 @@ import type { AssetSpec } from "./manifest";
  * which defeats the point of colour-coding placeholders. The xorshift-multiply
  * finisher spreads those neighbours across the palette.
  */
-function hash(str: string): number {
+export function hash(str: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);
@@ -49,12 +49,50 @@ const PALETTE = [
   { bg: "#2b1b3d", edge: "#0d0812" }, // obsidian
 ];
 
-function escapeXml(s: string): string {
+export function escapeXml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+/**
+ * Collapse whitespace and wrap an SVG source string as a data URI.
+ *
+ * encodeURIComponent rather than base64: smaller for SVG, and readable in
+ * devtools when debugging which image actually rendered.
+ */
+export function svgDataUri(svg: string): string {
+  return `data:image/svg+xml,${encodeURIComponent(svg.replace(/\s+/g, " ").trim())}`;
+}
+
+/**
+ * Lighten (`amount > 0`) or darken (`amount < 0`) a hex colour toward white or
+ * black. Used for atmospheric perspective — distant bands sit lighter and
+ * hazier, near bands darker and solid. Without it every silhouette is the same
+ * flat colour and a layer stack reads as one shape rather than receding planes.
+ */
+export function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = (c: number) =>
+    Math.round(c + (amount > 0 ? (255 - c) * amount : c * amount));
+  return `rgb(${mix((n >> 16) & 255)},${mix((n >> 8) & 255)},${mix(n & 255)})`;
+}
+
+/**
+ * Deterministic 0–1 generator seeded from a string key.
+ *
+ * Every generated image MUST be stable across reloads — a silhouette that
+ * reshuffles on each render reads as a rendering bug, not as art. An LCG off
+ * the hashed key gives that for free with no state to thread around.
+ */
+export function seededRandom(key: string): () => number {
+  let seed = hash(key);
+  return () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 0xffffffff;
+  };
 }
 
 /**
@@ -100,9 +138,7 @@ export function placeholderDataUri(spec: AssetSpec, label: string): string {
   ${kind === "tile" ? `<rect width="${w}" height="${h}" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1"/>` : ""}
 </svg>`;
 
-  // encodeURIComponent rather than base64: smaller for SVG, and readable in
-  // devtools when debugging which placeholder rendered.
-  return `data:image/svg+xml,${encodeURIComponent(svg.replace(/\s+/g, " ").trim())}`;
+  return svgDataUri(svg);
 }
 
 /**
@@ -137,11 +173,7 @@ export function sceneLayerPlaceholder(opts: {
 
   // Deterministic pseudo-random from the key, so a layer looks the same on
   // every reload (a shifting silhouette would look like a rendering bug).
-  let seed = hash(key);
-  const rnd = () => {
-    seed = (seed * 1664525 + 1013904223) >>> 0;
-    return seed / 0xffffffff;
-  };
+  const rnd = seededRandom(key);
 
   const blockyBand = (baseY: number, amp: number, fill: string, opacity = 1) => {
     const pts: string[] = [`0,${h}`];
@@ -156,17 +188,6 @@ export function sceneLayerPlaceholder(opts: {
     }
     pts.push(`${w},${h}`);
     return `<polygon points="${pts.join(" ")}" fill="${fill}" fill-opacity="${opacity}"/>`;
-  };
-
-  /**
-   * Atmospheric perspective: distant bands sit lighter and hazier, near bands
-   * darker and solid. Without this every silhouette is the same flat colour and
-   * the stack reads as one shape rather than receding planes.
-   */
-  const shade = (hex: string, amount: number) => {
-    const n = parseInt(hex.slice(1), 16);
-    const mix = (c: number) => Math.round(c + (amount > 0 ? (255 - c) * amount : c * amount));
-    return `rgb(${mix((n >> 16) & 255)},${mix((n >> 8) & 255)},${mix(n & 255)})`;
   };
 
   let body = "";
@@ -214,7 +235,7 @@ export function sceneLayerPlaceholder(opts: {
         text-anchor="${tile ? "middle" : "start"}">${escapeXml(key)} · ${layer}</text>
 </svg>`;
 
-  return `data:image/svg+xml,${encodeURIComponent(svg.replace(/\s+/g, " ").trim())}`;
+  return svgDataUri(svg);
 }
 
 /**
@@ -251,5 +272,5 @@ export function worldMapPlaceholder(
         font-size="${Math.round(h / 44)}" text-anchor="middle">village-map.png — ${w}×${h} placeholder</text>
   ${pins}
 </svg>`;
-  return `data:image/svg+xml,${encodeURIComponent(svg.replace(/\s+/g, " ").trim())}`;
+  return svgDataUri(svg);
 }

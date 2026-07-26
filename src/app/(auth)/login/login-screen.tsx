@@ -61,10 +61,46 @@ interface FormValues {
   remember: boolean;
 }
 
+/**
+ * Provider glyphs are ORIGINAL pixel marks in each service's familiar colours,
+ * not their logo files — consistent with the rest of the art in this project,
+ * and they scale with --mc-scale like everything else.
+ */
 const PROVIDERS = [
-  { id: "google", label: "Google", glyph: "G" },
-  { id: "discord", label: "Discord", glyph: "D" },
-  { id: "microsoft", label: "Microsoft", glyph: "M" },
+  {
+    id: "google",
+    label: "Google",
+    glyph: (
+      <svg viewBox="0 0 8 8" className="h-[18px] w-[18px]" shapeRendering="crispEdges" aria-hidden>
+        <path d="M2 0h4v2H2z" fill="#ea4335" />
+        <path d="M0 2h2v4H0z" fill="#fbbc05" />
+        <path d="M2 6h4v2H2z" fill="#34a853" />
+        <path d="M6 4h2v2H6z M4 3h4v2H4z" fill="#4285f4" />
+      </svg>
+    ),
+  },
+  {
+    id: "discord",
+    label: "Discord",
+    glyph: (
+      <svg viewBox="0 0 8 8" className="h-[18px] w-[18px]" shapeRendering="crispEdges" aria-hidden>
+        <path d="M2 1h4v1H2z M1 2h6v3H1z M0 3h1v2H0z M7 3h1v2H7z M1 5h2v1H1z M5 5h2v1H5z" fill="#5865f2" />
+        <path d="M2 3h1v1H2z M5 3h1v1H5z" fill="#0d0b16" />
+      </svg>
+    ),
+  },
+  {
+    id: "microsoft",
+    label: "Microsoft",
+    glyph: (
+      <svg viewBox="0 0 8 8" className="h-[18px] w-[18px]" shapeRendering="crispEdges" aria-hidden>
+        <path d="M0 0h3.5v3.5H0z" fill="#f25022" />
+        <path d="M4.5 0H8v3.5H4.5z" fill="#7fba00" />
+        <path d="M0 4.5h3.5V8H0z" fill="#00a4ef" />
+        <path d="M4.5 4.5H8V8H4.5z" fill="#ffb900" />
+      </svg>
+    ),
+  },
 ] as const;
 
 export function LoginScreen() {
@@ -130,24 +166,29 @@ export function LoginScreen() {
     reset({ email: "", password: "", confirm: "", remember: true });
   }
 
-  return (
-    <BlockPanel
-      variant="panel"
-      padded="lg"
-      className="w-full max-w-[440px] animate-block-in"
-    >
-      <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
-        <header className="text-center">
-          <h1 className="text-mc-portal-light text-lg md:text-xl">
-            {mode === "login" ? "WELCOME ADVENTURER" : "JOIN THE REALM"}
-          </h1>
-          <p className="mt-[calc(var(--mc-unit)*0.75)] text-mc-text-dim">
-            {mode === "login"
-              ? "Sign in to continue your journey."
-              : "Create an account to enter the realm."}
-          </p>
-        </header>
+  const heading = mode === "login" ? ["Welcome", "Adventurer"] : ["Join", "The Realm"];
 
+  return (
+    <div className="w-full max-w-[440px] animate-block-in">
+      {/* The wordmark sits ABOVE the card, not inside it, so the card reads as
+          the form and nothing else. */}
+      <header className="mb-[calc(var(--mc-unit)*2)] text-center">
+        <h1 className="title-emboss text-[28px] leading-[1.35] text-mc-portal-pale md:text-[36px]">
+          {heading.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
+        </h1>
+        <p className="mt-[calc(var(--mc-unit)*1.25)] text-mc-text-dim">
+          {mode === "login"
+            ? "Sign in to continue your journey."
+            : "Create an account to enter the realm."}
+        </p>
+      </header>
+
+      <BlockPanel variant="card" padded="lg">
+        <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
         {/* Tabs. role=tablist so the relationship is announced, with a Framer
             layout animation on the active indicator. */}
         <div role="tablist" aria-label="Authentication mode" className="relative flex">
@@ -159,18 +200,18 @@ export function LoginScreen() {
               aria-selected={mode === m}
               onClick={() => switchMode(m)}
               className={cn(
-                "relative flex-1 py-[var(--mc-unit)] font-pixel text-[11px] uppercase cursor-pointer",
+                "relative flex-1 py-[calc(var(--mc-unit)*1.1)] font-pixel text-[11px] uppercase cursor-pointer",
                 "border-b-[length:var(--mc-bevel)]",
                 mode === m
-                  ? "text-mc-portal-light border-transparent"
-                  : "text-mc-text-dim border-mc-border hover:text-mc-text",
+                  ? "border-transparent bg-gradient-to-b from-mc-portal/45 to-mc-portal-deep/35 text-white"
+                  : "border-mc-border text-mc-text-dim hover:text-mc-text",
               )}
             >
               {m === "login" ? "Login" : "Sign Up"}
               {mode === m ? (
                 <motion.span
                   layoutId="auth-tab-indicator"
-                  className="absolute inset-x-0 bottom-0 h-[var(--mc-bevel)] bg-mc-portal"
+                  className="absolute inset-x-0 bottom-0 h-[var(--mc-bevel)] bg-mc-portal-light"
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
               ) : null}
@@ -213,7 +254,7 @@ export function LoginScreen() {
               <BlockCheckbox label="Remember me" {...register("remember")} />
               <button
                 type="button"
-                className="text-[15px] text-mc-portal-light underline cursor-pointer hover:text-mc-text"
+                className="cursor-pointer text-[16px] text-mc-portal-light hover:text-mc-text hover:underline"
                 onClick={() =>
                   setFormError(
                     "Password reset needs a mail server — it arrives with the Supabase migration.",
@@ -242,6 +283,7 @@ export function LoginScreen() {
             type="submit"
             block
             size="lg"
+            variant="portal"
             loading={isSubmitting}
             className="mt-[var(--mc-unit)]"
           >
@@ -260,6 +302,7 @@ export function LoginScreen() {
             <BlockButton
               key={p.id}
               variant="ghost"
+              size="lg"
               onClick={() => onProvider(p.id)}
               loading={pendingProvider === p.id}
               aria-label={`Continue with ${p.label}`}
@@ -270,11 +313,12 @@ export function LoginScreen() {
           ))}
         </div>
 
-        <p className="text-center text-[14px] text-mc-text-dim">
-          Prototype: accounts are stored in this browser only.
-        </p>
-      </div>
-    </BlockPanel>
+          <p className="text-center text-[14px] text-mc-text-dim">
+            Prototype: accounts are stored in this browser only.
+          </p>
+        </div>
+      </BlockPanel>
+    </div>
   );
 }
 
@@ -309,7 +353,26 @@ function PasswordField({
           aria-label={visible ? "Hide password" : "Show password"}
           aria-pressed={visible}
         >
-          {visible ? "◡" : "◉"}
+          {/* Pixel eye — Press Start 2P has no glyph for ◉/◡, so a character
+              here renders as tofu. Open = lid outline with a pupil; closed =
+              a shut lid with lashes, which reads at 14px where a struck-through
+              eye does not. */}
+          <svg viewBox="0 0 12 8" className="h-[14px] w-[21px]" shapeRendering="crispEdges" aria-hidden>
+            {visible ? (
+              <>
+                <path
+                  d="M4 1h4v1H4z M2 2h2v1H2z M8 2h2v1H8z M1 3h1v2H1z M10 3h1v2h-1z M2 5h2v1H2z M8 5h2v1H8z M4 6h4v1H4z"
+                  fill="currentColor"
+                />
+                <path d="M5 3h2v2H5z" fill="currentColor" />
+              </>
+            ) : (
+              <path
+                d="M1 3h1v1H1z M2 4h2v1H2z M4 5h4v1H4z M8 4h2v1H8z M10 3h1v1h-1z M2 6h1v1H2z M5 6h1v1H5z M9 6h1v1H9z"
+                fill="currentColor"
+              />
+            )}
+          </svg>
         </BlockButton>
       }
       {...registration}

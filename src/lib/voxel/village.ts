@@ -16,7 +16,13 @@ import { VoxelWorld, makeRng, smoothNoise, type WorldAnchor } from "./world";
  * signposts (`WORLD_LOCATIONS`), so the 3D and 2D views describe one place.
  */
 
-const SIZE = 72;
+/**
+ * Village grid edge length. Exported because the 2D isometric map derives its
+ * canvas size from it — a diamond of SIZE×SIZE tiles has to fit exactly, and
+ * hardcoding 72 in two files is how the two views drift apart.
+ */
+export const VILLAGE_SIZE = 72;
+const SIZE = VILLAGE_SIZE;
 const SEED = 20260726;
 const SEA_LEVEL = 4;
 

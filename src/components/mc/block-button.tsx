@@ -34,6 +34,10 @@ const blockButton = cva(
     variants: {
       variant: {
         primary: "bg-mc-portal text-white [--bevel-light:var(--color-mc-portal-light)] [--bevel-dark:var(--color-mc-portal-dark)]",
+        // Deep violet. `primary` is the bright brand purple, which blows out
+        // against the landing page's daylight sky — this is the same hue two
+        // stops down, so white type on it actually holds contrast outdoors.
+        portal: "bg-mc-portal-deep text-white [--bevel-light:var(--color-mc-portal)] [--bevel-dark:var(--color-mc-portal-ink)]",
         emerald: "bg-mc-emerald text-mc-obsidian [--bevel-light:var(--color-mc-emerald-light)] [--bevel-dark:var(--color-mc-emerald-dark)]",
         stone: "bg-mc-stone text-white [--bevel-light:var(--color-mc-stone-light)] [--bevel-dark:var(--color-mc-stone-dark)]",
         gold: "bg-mc-gold text-mc-obsidian [--bevel-light:var(--color-mc-gold-light)] [--bevel-dark:var(--color-mc-gold-dark)]",

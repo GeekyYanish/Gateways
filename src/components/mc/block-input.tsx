@@ -217,18 +217,27 @@ export const BlockCheckbox = forwardRef<HTMLInputElement, BlockCheckboxProps>(
           className={cn("peer sr-only", className)}
           {...props}
         />
+        {/* The tick is a stepped SVG path, not a rotated bordered box: a
+            rotated edge antialiases, and a soft diagonal in a pixel UI is
+            immediately visible as wrong. */}
         <label
           htmlFor={fieldId}
           className={cn(
-            "relative shrink-0 cursor-pointer",
+            "relative grid shrink-0 cursor-pointer place-items-center",
             "w-[22px] h-[22px] bg-mc-slot bevel-inset",
-            "peer-checked:bg-mc-emerald",
+            "peer-checked:bg-mc-portal",
             "peer-focus-visible:outline peer-focus-visible:outline-[length:var(--mc-bevel)] peer-focus-visible:outline-mc-gold peer-focus-visible:outline-offset-2",
-            "after:content-[''] after:absolute after:inset-[5px] after:bg-mc-obsidian after:opacity-0",
-            "peer-checked:after:opacity-100",
+            "[&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100",
           )}
           aria-hidden
-        />
+        >
+          <svg viewBox="0 0 9 8" className="w-[13px]" shapeRendering="crispEdges">
+            <path
+              d="M7 1h2v2H7z M6 2h2v2H6z M5 3h2v2H5z M4 4h2v2H4z M3 5h2v2H3z M2 4h2v2H2z M1 3h2v2H1z M0 2h2v2H0z"
+              fill="#ffffff"
+            />
+          </svg>
+        </label>
         <label
           htmlFor={fieldId}
           className="cursor-pointer text-[16px] text-mc-text-dim select-none"

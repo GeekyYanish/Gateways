@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gsap, useGSAP } from "@/lib/animation/gsap-init";
+import { Lantern } from "@/components/portal/lantern";
 import { PortalFrame } from "@/components/portal/portal-frame";
 import { AnimatedBackground } from "@/components/scene";
 import { useReducedMotion } from "@/lib/animation/use-reduced-motion";
@@ -84,29 +85,43 @@ export function EnteringScreen() {
 
   return (
     <AnimatedBackground
-      scene="void-transit"
-      intensity={0.7}
-      className="flex flex-1 flex-col items-center justify-center"
+      scene="portal-threshold"
+      intensity={0.5}
+      className="flex flex-1 flex-col items-center justify-center overflow-hidden"
     >
-      <div ref={root} className="flex flex-1 flex-col items-center justify-center w-full">
-      <div className="entering-portal">
-        <PortalFrame intensity={1.6} />
-      </div>
-
-      <div className="absolute bottom-[18%] flex w-full max-w-[380px] flex-col items-center gap-[var(--mc-unit)] px-[calc(var(--mc-unit)*2)]">
-        <p
-          role="status"
-          className="font-pixel text-[11px] uppercase tracking-widest text-mc-text"
-        >
-          Entering the realm…
-        </p>
-        <div className="h-[calc(var(--mc-unit)*1)] w-full bg-mc-slot bevel-inset overflow-hidden">
-          <div
-            className="h-full bg-mc-portal-light origin-left"
-            style={{ transform: `scaleX(${progress / 100})` }}
-          />
+      <div ref={root} className="relative flex w-full flex-1 flex-col items-center justify-center">
+        {/* Lanterns are siblings of the portal, not children: the portal is
+            being zoomed into and they must stay put while it does. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-[16%] top-[46%] flex items-stretch justify-between px-[7vw] md:px-[13vw]">
+          <Lantern side="left" />
+          <Lantern side="right" />
         </div>
-      </div>
+
+        <div className="entering-portal relative z-10">
+          <PortalFrame intensity={1.6} />
+        </div>
+
+        <div className="absolute bottom-[9%] z-20 flex w-full max-w-[380px] flex-col items-center gap-[calc(var(--mc-unit)*1.25)] px-[calc(var(--mc-unit)*2)]">
+          <p
+            role="status"
+            className="pixel-shadow font-pixel text-[10px] uppercase tracking-[0.16em] text-mc-text md:text-[11px]"
+          >
+            Entering the realm…
+          </p>
+          <div
+            role="progressbar"
+            aria-valuenow={Math.round(progress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Entering the realm"
+            className="h-[calc(var(--mc-unit)*0.9)] w-full overflow-hidden bg-mc-slot bevel-inset"
+          >
+            <div
+              className="h-full origin-left bg-mc-portal-light"
+              style={{ transform: `scaleX(${progress / 100})` }}
+            />
+          </div>
+        </div>
       </div>
     </AnimatedBackground>
   );

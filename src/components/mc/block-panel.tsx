@@ -26,6 +26,10 @@ const blockPanel = cva(
         // Highlight panel for achievements/announcements.
         gold: "bg-mc-panel border-mc-gold [--bevel-light:var(--color-mc-gold)] [--bevel-dark:var(--color-mc-gold-dark)] bevel",
         portal: "bg-mc-obsidian border-mc-portal [--bevel-light:var(--color-mc-portal-light)] [--bevel-dark:var(--color-mc-portal-dark)] bevel",
+        // Flat dark card with a hairline border and NO bevel — for surfaces
+        // that hold a form. The bevelled panel's inset highlight competes with
+        // every field well inside it, and the result reads as boxes in boxes.
+        card: "bg-mc-panel-dark border-mc-border",
         ghost: "bg-transparent border-transparent",
       },
       padded: {
