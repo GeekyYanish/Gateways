@@ -58,3 +58,5 @@ next-env.d.ts
 # claude code (machine-local: contains absolute paths & per-user permissions)
 .claude/settings.local.json
 .claude/launch.json
+
+deliverables/

@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { MotionConfig } from "framer-motion";
-import { SessionProvider, useSession } from "@/components/auth/session-provider";
-import { PortalTransitionProvider } from "@/components/portal/portal-transition-overlay";
-import { BlockToaster, LoadingScreen } from "@/components/mc";
-import { AnnouncementListener } from "@/components/realtime/announcement-listener";
-import { applyReduceMotionAttribute } from "@/lib/animation/use-reduced-motion";
+import { SessionProvider, useSession } from "@/frontend/components/auth/session-provider";
+import { PortalTransitionProvider } from "@/frontend/components/portal/portal-transition-overlay";
+import { BlockToaster, LoadingScreen } from "@/frontend/components/mc";
+import { AnnouncementListener } from "@/frontend/components/realtime/announcement-listener";
+import { applyReduceMotionAttribute } from "@/frontend/lib/animation/use-reduced-motion";
 
 /**
  * Authenticated area.

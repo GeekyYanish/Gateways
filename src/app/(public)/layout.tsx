@@ -1,6 +1,6 @@
 import { MotionConfig } from "framer-motion";
-import { SessionProvider } from "@/components/auth/session-provider";
-import { BlockToaster } from "@/components/mc";
+import { SessionProvider } from "@/frontend/components/auth/session-provider";
+import { BlockToaster } from "@/frontend/components/mc";
 
 /**
  * Public pages: events, event details, leaderboard, schedule, sponsors.

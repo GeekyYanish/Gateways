@@ -40,11 +40,27 @@ Two dev-only pages (they 404 in production):
 
 ## Architecture
 
+### Source layout
+
+The App Router stays in `src/app`, so route groups, dynamic segments, layouts,
+and URLs remain visible in one place. Route files are deliberately thin:
+
+```text
+src/
+├── app/       Next.js pages, layouts, metadata, and global CSS
+├── frontend/  screens, reusable components, hooks, animation, and rendering
+└── backend/   repository contracts and data implementations
+```
+
+`src/backend` is the application's data boundary. Its current implementation is
+browser-local because Supabase has not landed yet; moving to a real server does
+not require reorganizing the frontend again.
+
 ### The data seam
 
 Screens never touch `localStorage`. Everything goes through the `Repository`
-interface (`src/lib/data/repository.ts`), currently implemented by
-`LocalRepository`. `src/lib/data/index.ts` is the single construction point, so
+interface (`src/backend/data/repository.ts`), currently implemented by
+`LocalRepository`. `src/backend/data/index.ts` is the single construction point, so
 swapping in Supabase is one line plus a second implementation.
 
 Every method is `async` even though localStorage is synchronous — otherwise
@@ -81,8 +97,8 @@ Consequences to be explicit about:
 
 Two manifests, and **no component hardcodes a path**:
 
-- `src/lib/assets/manifest.ts` — sprites, skins, blocks, items, badges, UI (42 assets)
-- `src/lib/assets/scenes.ts` — layered parallax scenes (10 scenes, 43 layers)
+- `src/frontend/lib/assets/manifest.ts` — sprites, skins, blocks, items, badges, UI (42 assets)
+- `src/frontend/lib/assets/scenes.ts` — layered parallax scenes (10 scenes, 43 layers)
 
 Each entry declares its intrinsic dimensions, and a generated SVG placeholder
 renders at exactly those dimensions until the real file lands in `public/art/**`.
@@ -120,7 +136,7 @@ overridden.
 ### Animated backgrounds and parallax
 
 ```tsx
-import { AnimatedBackground, BiomeScene } from "@/components/scene";
+import { AnimatedBackground, BiomeScene } from "@/frontend/components/scene";
 
 <AnimatedBackground scene="portal-approach">…</AnimatedBackground>
 <AnimatedBackground scene="realm-gate" intensity={0.5}>…</AnimatedBackground>

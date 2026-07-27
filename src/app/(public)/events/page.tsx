@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { LoadingScreen } from "@/components/mc";
-import { EventsScreen } from "./events-screen";
+import { LoadingScreen } from "@/frontend/components/mc";
+import { EventsScreen } from "@/frontend/screens/public/events/events-screen";
 
 export const metadata = { title: "Events — Fest Realm" };
 

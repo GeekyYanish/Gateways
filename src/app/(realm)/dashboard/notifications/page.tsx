@@ -1,4 +1,4 @@
-import { NotificationsScreen } from "./notifications-screen";
+import { NotificationsScreen } from "@/frontend/screens/realm/dashboard/notifications-screen";
 
 export const metadata = { title: "Notifications — Fest Realm" };
 

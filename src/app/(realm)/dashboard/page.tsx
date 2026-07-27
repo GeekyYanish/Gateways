@@ -1,4 +1,4 @@
-import { InventoryScreen } from "./inventory-screen";
+import { InventoryScreen } from "@/frontend/screens/realm/dashboard/inventory-screen";
 
 export const metadata = { title: "Inventory — Fest Realm" };
 

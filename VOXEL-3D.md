@@ -22,7 +22,7 @@ Open `/world` and pick **3D** (it auto-selects on capable desktop browsers).
 ## What is in the village
 
 Seven buildings, placed at the **same percentage coordinates** as the 2D map's
-signposts (`src/lib/world/world-locations.ts`), so both views describe one place:
+signposts (`src/frontend/lib/world/world-locations.ts`), so both views describe one place:
 
 Hackathon Mine (hillside cave, emerald seams, cart rails) · Photography Forest
 (blocky woodland) · Design Workshop (timber hut, pitched roof) · Quiz Library
@@ -38,10 +38,10 @@ to, so a village that reshuffled would move buildings out from under their label
 ## Files
 
 ```
-src/lib/voxel/blocks.ts      block palette (colour, transparency, emissive)
-src/lib/voxel/world.ts       sparse voxel grid, height map, visibility pass
-src/lib/voxel/village.ts     procedural village generator
-src/components/voxel/
+src/frontend/lib/voxel/blocks.ts      block palette (colour, transparency, emissive)
+src/frontend/lib/voxel/world.ts       sparse voxel grid, height map, visibility pass
+src/frontend/lib/voxel/village.ts     procedural village generator
+src/frontend/components/voxel/
   voxel-terrain.tsx          face-culled mesh builder  ← the renderer
   voxel-character.tsx        cube character, 5 archetypes, walk cycle
   player-controller.tsx      movement, collision, third-person camera

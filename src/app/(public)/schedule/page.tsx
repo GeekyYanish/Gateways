@@ -1,4 +1,4 @@
-import { ScheduleScreen } from "./schedule-screen";
+import { ScheduleScreen } from "@/frontend/screens/public/schedule-screen";
 
 export const metadata = { title: "Schedule — Fest Realm" };
 

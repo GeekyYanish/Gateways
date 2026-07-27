@@ -25,7 +25,7 @@ GSAP. If it is a single component reacting to state or presence → Framer Motio
 ## GSAP rules (non-negotiable)
 
 1. **Never register plugins at module top level in a shared file.** Do it once in
-   `src/lib/animation/gsap-init.ts`, which is `"use client"`.
+   `src/frontend/lib/animation/gsap-init.ts`, which is `"use client"`.
 2. **Always `useGSAP` from `@gsap/react`, never bare `useEffect` + `gsap.to`.**
    `useGSAP` wraps in `gsap.context()` and reverts on unmount. Without it,
    StrictMode's double-invoke leaves two tweens fighting over one element — the
@@ -46,7 +46,7 @@ GSAP. If it is a single component reacting to state or presence → Framer Motio
   interpolated: Framer bails and leaves the element at its initial value, which
   silently renders e.g. every XP bar empty. Animate `scaleX` (unitless) instead —
   it is also GPU-composited rather than triggering layout. This exact bug cost
-  real debugging time in Phase 1; see `src/components/mc/xp-bar.tsx`.
+  real debugging time in Phase 1; see `src/frontend/components/mc/xp-bar.tsx`.
 - Prefer declarative `animate={...}` over an imperative `useSpring` + `.set()`
   in an effect. With several instances mounting at once the imperative call can
   be lost mid-flight.

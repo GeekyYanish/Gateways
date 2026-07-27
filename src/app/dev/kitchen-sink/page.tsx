@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { KitchenSink } from "./kitchen-sink";
+import { KitchenSink } from "@/frontend/screens/dev/kitchen-sink";
 
 /**
  * Dev-only design-system showcase.

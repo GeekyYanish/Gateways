@@ -2,7 +2,7 @@
 
 Drop files into `public/art/**` at the paths and **exact dimensions** below.
 Nothing else needs to change — every component reads paths from
-`src/lib/assets/manifest.ts` and `src/lib/assets/scenes.ts`, and until a file
+`src/frontend/lib/assets/manifest.ts` and `src/frontend/lib/assets/scenes.ts`, and until a file
 exists it renders a generated placeholder at the same dimensions.
 
 That means:
@@ -112,7 +112,7 @@ Each becomes the banner on `/events?category=<slug>` and the card art.
 | `culture-stage` | Open-air night stage, string lights over a blocky courtyard | `night` `courtyard` `stage` `lights` |
 | `circuit-lab` | Clean workshop of blocky machinery, glowing conduit lines, teal/slate | `machines` `conduits` `bench` |
 
-Exact per-layer depths, sizes and blend modes live in `src/lib/assets/scenes.ts` —
+Exact per-layer depths, sizes and blend modes live in `src/frontend/lib/assets/scenes.ts` —
 that file is the source of truth, and the kitchen-sink page prints them under
 each preview.
 
@@ -158,7 +158,7 @@ Five archetypes, deliberately not resembling any existing game's characters:
 | `world/village-map-mobile.png` | 1024×1536 | Portrait recrop of the same scene |
 | `world/signpost.png` (+`-hover`) | 96×128 | Wooden sign with post, alpha |
 
-Hotspots are **percentages** in `src/lib/world/world-locations.ts`, so they stay
+Hotspots are **percentages** in `src/frontend/lib/world/world-locations.ts`, so they stay
 correct at any map resolution. Adjust the x/y once the real map exists.
 
 ### Portal sprites
@@ -201,7 +201,7 @@ because a checkerboard placeholder as the site's hero looks broken.
 ## Using the components
 
 ```tsx
-import { AnimatedBackground, BiomeScene } from "@/components/scene";
+import { AnimatedBackground, BiomeScene } from "@/frontend/components/scene";
 
 // Full-bleed animated background with parallax
 <AnimatedBackground scene="portal-approach">

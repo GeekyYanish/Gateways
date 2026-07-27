@@ -1,4 +1,4 @@
-import { AchievementsScreen } from "./achievements-screen";
+import { AchievementsScreen } from "@/frontend/screens/realm/dashboard/achievements-screen";
 
 export const metadata = { title: "Achievements — Fest Realm" };
 

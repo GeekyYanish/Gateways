@@ -7,8 +7,8 @@ domain model was fresh so the swap is mechanical rather than archaeological.
 ## Why the swap is cheap
 
 Nothing in the app imports a concrete data implementation. Screens and hooks
-depend only on the `Repository` interface in `src/lib/data/repository.ts`, and
-`src/lib/data/index.ts` is the single construction point:
+depend only on the `Repository` interface in `src/backend/data/repository.ts`, and
+`src/backend/data/index.ts` is the single construction point:
 
 ```ts
 // today
@@ -18,7 +18,7 @@ const instance = createSupabaseRepository();
 ```
 
 Every repository method is already `async`, and the domain types in
-`src/lib/data/types.ts` mirror the column names below one-to-one, so the Supabase
+`src/backend/data/types.ts` mirror the column names below one-to-one, so the Supabase
 implementation is a mapping layer — no call sites change.
 
 `src/app/dev/data-test` is the acceptance test. **It should pass unchanged
@@ -94,7 +94,7 @@ $$;
 `manages_event` matters: an organizer of Photography Forest must not read
 Hackathon Mine's registration list.
 
-**Service-role key discipline.** `src/lib/supabase/admin.ts` must begin with
+**Service-role key discipline.** `src/backend/supabase/admin.ts` must begin with
 `import "server-only"` and throw if `typeof window !== "undefined"`. It bypasses
 all RLS, so every call site needs an explicit role assertion first. Add a CI grep
 that fails the build if `SERVICE_ROLE` appears anywhere in `src/**` outside that
@@ -583,7 +583,7 @@ Client rules, all learned the hard way:
 3. **Write and run the RLS test script.** Do not skip this.
 4. Implement `SupabaseRepository` against the existing interface.
 5. Run `/dev/data-test` against it — it must pass unchanged.
-6. Flip the one line in `src/lib/data/index.ts`.
+6. Flip the one line in `src/backend/data/index.ts`.
 7. Move route protection from the client guard into `middleware.ts`; convert
    read-only screens to server components.
 8. Only then build QR check-in and the organizer/admin dashboards, which are

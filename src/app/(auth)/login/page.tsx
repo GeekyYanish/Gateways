@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { LoadingScreen } from "@/components/mc";
-import { LoginScreen } from "./login-screen";
+import { LoadingScreen } from "@/frontend/components/mc";
+import { LoginScreen } from "@/frontend/screens/auth/login-screen";
 
 export const metadata = { title: "Welcome Adventurer — Fest Realm" };
 
