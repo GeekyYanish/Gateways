@@ -1,5 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Ignore loose PNGs (exports, scratch) but ship committed art under public/art/.
 *.png
+!public/art/**/*.png
 # dependencies
 /node_modules
 /.pnp
