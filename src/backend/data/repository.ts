@@ -22,6 +22,7 @@ import type {
   TeamMember,
   UserAchievement,
   XpEntry,
+  PaymentReceipt,
 } from "./types";
 
 /**
@@ -51,6 +52,7 @@ export interface Repository {
   leaderboard: LeaderboardRepository;
   announcements: AnnouncementRepository;
   reference: ReferenceRepository;
+  paymentReceipts: PaymentReceiptRepository;
 }
 
 export type Unsubscribe = () => void;
@@ -176,4 +178,24 @@ export interface ReferenceRepository {
   categories(): Promise<EventCategory[]>;
   levels(): Promise<Level[]>;
   sponsors(): Promise<Sponsor[]>;
+}
+
+export interface PaymentReceiptRepository {
+  /** Submit a receipt PDF for a registration. One per registration. */
+  submit(input: {
+    registrationId: string;
+    eventId: string;
+    userId: string;
+    fileData: string;
+    fileName: string;
+    fileSizeBytes: number;
+  }): Promise<PaymentReceipt>;
+  /** Get the receipt for a specific registration, if any. */
+  getByRegistration(registrationId: string): Promise<PaymentReceipt | null>;
+  /** All receipts for an event (admin view). */
+  listForEvent(eventId: string): Promise<PaymentReceipt[]>;
+  /** All pending receipts across all events (admin dashboard). */
+  listPending(): Promise<PaymentReceipt[]>;
+  /** Admin approves or rejects a receipt. */
+  review(receiptId: string, decision: "verified" | "rejected", reviewedBy: string, note?: string): Promise<PaymentReceipt>;
 }

@@ -47,6 +47,9 @@ function SunLight({ center }: { center: [number, number, number] }) {
     }
   }, [center, target]);
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const shadowSize = isMobile ? 512 : 1024;
+
   return (
     <>
       <primitive object={target} />
@@ -62,7 +65,7 @@ function SunLight({ center }: { center: [number, number, number] }) {
         castShadow
         // 1024 across a frustum sized to the village footprint. A 2048 map over
         // a wider frustum gave the same texel density at four times the cost.
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[shadowSize, shadowSize]}
         shadow-camera-left={-58}
         shadow-camera-right={58}
         shadow-camera-top={58}

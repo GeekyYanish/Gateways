@@ -32,4 +32,5 @@ export const repo = new Proxy({} as Repository, {
 
 export type { Repository } from "./repository";
 export * from "./types";
+export type { PaymentReceipt, PaymentVerificationStatus } from "./types";
 export { xpProgress } from "./local/local-repository";

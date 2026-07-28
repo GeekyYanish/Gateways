@@ -686,39 +686,62 @@ export function portalMotes(key = "portal-motes"): string {
  * Returns `null` for an unknown name so the caller can fall back to the
  * generic placeholder rather than rendering an empty layer.
  */
+const paintCache = new Map<string, string | null>();
+
 export function paintSceneLayer(
   paint: string,
   w: number,
   h: number,
   key: string,
 ): string | null {
+  const cacheKey = `${paint}:${w}:${h}:${key}`;
+  if (paintCache.has(cacheKey)) {
+    return paintCache.get(cacheKey) ?? null;
+  }
+
+  let result: string | null = null;
   switch (paint) {
     case "sky-day":
-      return skyDay(w, h);
+      result = skyDay(w, h);
+      break;
     case "sky-night":
-      return skyNight(w, h, key);
+      result = skyNight(w, h, key);
+      break;
     case "night-veil":
-      return nightVeil(w, h);
+      result = nightVeil(w, h);
+      break;
     case "air-motes":
-      return airMotes(w, h, key);
+      result = airMotes(w, h, key);
+      break;
     case "clouds-blocky":
-      return cloudsBlocky(w, h, key);
+      result = cloudsBlocky(w, h, key);
+      break;
     case "ridge-far":
-      return ridgeFar(w, h, key);
+      result = ridgeFar(w, h, key);
+      break;
     case "cliff-left":
-      return cliffWall("left", w, h, key);
+      result = cliffWall("left", w, h, key);
+      break;
     case "cliff-right":
-      return cliffWall("right", w, h, key);
+      result = cliffWall("right", w, h, key);
+      break;
     case "grass-fore":
-      return grassFore(w, h, key);
+      result = grassFore(w, h, key);
+      break;
     case "path-stones":
-      return pathStones(w, h, key);
+      result = pathStones(w, h, key);
+      break;
     case "portal-spill":
-      return portalSpill(w, h);
+      result = portalSpill(w, h);
+      break;
     default:
       if (process.env.NODE_ENV !== "production") {
         console.warn(`[scene-art] unknown painter "${paint}" for layer "${key}"`);
       }
-      return null;
+      result = null;
+      break;
   }
+
+  paintCache.set(cacheKey, result);
+  return result;
 }

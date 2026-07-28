@@ -31,6 +31,7 @@ const NAV = [
   { href: "/schedule", label: "Schedule", icon: "◷" },
   { href: "/dashboard/team", label: "Team", icon: "◍" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "◈" },
+  { href: "/dashboard/verify-payments", label: "Verify Payments", icon: "◆" },
   { href: "/dashboard/profile", label: "Profile", icon: "◉" },
   { href: "/dashboard/settings", label: "Settings", icon: "⚙" },
 ] as const;

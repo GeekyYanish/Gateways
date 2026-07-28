@@ -343,6 +343,29 @@ export interface Certificate {
 }
 
 // ---------------------------------------------------------------------------
+// Communication
+// ---------------------------------------------------------------------------
+
+export type PaymentVerificationStatus = "pending" | "verified" | "rejected";
+
+export interface PaymentReceipt {
+  id: string;
+  registrationId: string;
+  eventId: string;
+  userId: string;
+  /** Base64-encoded PDF content (localStorage has no file system). */
+  fileData: string;
+  fileName: string;
+  fileSizeBytes: number;
+  status: PaymentVerificationStatus;
+  /** Admin who verified/rejected, null while pending. */
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  submittedAt: string;
+}
+
+// ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
 
@@ -362,7 +385,9 @@ export type DataErrorCode =
   | "TEAM_FULL"
   | "INVALID_JOIN_CODE"
   | "STORAGE_UNAVAILABLE"
-  | "VALIDATION_FAILED";
+  | "VALIDATION_FAILED"
+  | "RECEIPT_ALREADY_SUBMITTED"
+  | "PAYMENT_NOT_VERIFIED";
 
 export class DataError extends Error {
   readonly code: DataErrorCode;

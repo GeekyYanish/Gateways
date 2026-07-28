@@ -149,7 +149,6 @@ export function ParallaxLayer({
         backgroundSize: layer.fit ?? (layer.tile ? "auto 100%" : "cover"),
         // Pixel art must not be smoothed when scaled to cover the viewport.
         imageRendering: "pixelated",
-        willChange: "transform",
       }}
     />
   );
