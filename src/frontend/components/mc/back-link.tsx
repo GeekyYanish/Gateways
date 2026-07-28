@@ -9,7 +9,7 @@ import { cn } from "@/frontend/lib/utils";
  *
  * This intentionally uses an explicit href instead of router.back(): a visitor
  * who opens a page from an email, search result, or external site should stay
- * inside Fest Realm rather than being sent back out of the app.
+ * inside Parallax rather than being sent back out of the app.
  */
 export function BackLink({
   href,

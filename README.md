@@ -1,4 +1,4 @@
-# Fest Realm
+# Parallax
 
 A voxel-styled college fest portal. Blocky pixel-art UI, an animated portal entry
 sequence with layered parallax scenes, a **walkable 3D voxel village**, and a
@@ -17,7 +17,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 and click **ENTER THE PORTAL**.
+Open http://localhost:3000, scroll the homepage, and click **START THE JOURNEY**.
 
 Two dev-only pages (they 404 in production):
 
@@ -173,8 +173,21 @@ stops pulsing, and the transition routes skip straight to their destination.
 **Public** — no account needed, so the fest can actually be shared:
 `/` `/events` `/events/[slug]` `/leaderboard` `/schedule` `/sponsors`
 
+`/` is the fest homepage: a panning voxel-overworld hero, the Digital Twins
+theme story, and the registration/contact detail, with Events and Schedule in
+modals. Every fact it prints (dates, fees, contacts, socials) comes from
+`src/frontend/lib/fest.ts` — `grep TODO` there for what still needs real 2026
+values. The portal CTA sits at the end of the Parallax section rather than in
+the hero, so the ask lands after the explanation.
+
+**Start the Journey** goes to `/portal`, the gate — the portal screen with its
+own entry choreography — and *that* page's **Enter the Portal** fires the wipe
+into `/entering`. Two presses, deliberately: `/entering` redirects on arrival,
+so linking a marketing page straight at it would flash past and drop the
+visitor on a login form with no sense of having gone anywhere.
+
 **Auth**: `/login` `/create-character`
-**Transitions**: `/entering` `/travelling`
+**Gate + transitions**: `/portal` `/entering` `/travelling`
 **Authed**: `/world` `/dashboard` (+ `events`, `achievements`, `team`,
 `notifications`, `profile`, `settings`)
 

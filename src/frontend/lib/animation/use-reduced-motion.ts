@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "festrealm:reduce-motion";
+const STORAGE_KEY = "parallax:reduce-motion";
 
 /**
  * Live reduced-motion preference.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { gsap, useGSAP } from "@/frontend/lib/animation/gsap-init";
 import { getScene, type Scene } from "@/frontend/lib/assets/scenes";
 import { ParallaxLayer, type ParallaxLayerHandle } from "./parallax-layer";
@@ -44,6 +44,33 @@ export function AnimatedBackground({
   const root = useRef<HTMLDivElement>(null);
   const handles = useRef(new Map<string, ParallaxLayerHandle>());
   const scene: Scene | undefined = getScene(sceneKey);
+
+  /**
+   * Bumped on resize so the drift tweens rebuild.
+   *
+   * A drifting tile's loop distance is derived from the element's rendered
+   * height, so a resize (or a phone rotation) invalidates it and the seam the
+   * distance was chosen to hide would come back. Rebuilding on resize is the
+   * whole fix. It starts at 0 on both server and client, so it cannot cause a
+   * hydration mismatch.
+   */
+  const [resizeTick, setResizeTick] = useState(0);
+
+  useEffect(() => {
+    let timer = 0;
+    const onResize = () => {
+      // Debounced: a drag-resize fires continuously, and rebuilding a set of
+      // infinite tweens on every frame of it would be far more expensive than
+      // the seam we are avoiding.
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setResizeTick((n) => n + 1), 200);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
 
   const register = useCallback(
     (key: string) => (h: ParallaxLayerHandle | null) => {
@@ -132,15 +159,54 @@ export function AnimatedBackground({
           const node = root.current?.querySelector(sel);
           if (!node) continue;
 
-          // Horizontal drift for tileable strips (clouds, mist, pollen).
+          // Horizontal drift for tileable strips (clouds, treelines, meadow).
           if (l.drift) {
+            const speed = Math.abs(l.drift);
+
+            /**
+             * Travel EXACTLY one tile width per cycle.
+             *
+             * A repeating GSAP tween restarts from its recorded start value, so
+             * whatever distance is chosen here is also the distance the layer
+             * snaps back at the end of every cycle. One tile width is the only
+             * distance at which that snap is invisible: the pattern has just
+             * repeated itself, so the pixel it jumps to is identical to the one
+             * it jumped from. Any other number puts a seam through the sky on a
+             * fixed interval.
+             *
+             * With `background-size: auto 100%` the rendered tile is as wide as
+             * the element is tall, times the source aspect ratio.
+             */
+            const el = node as HTMLElement;
+            const tileWidth =
+              l.tile && el.clientHeight
+                ? Math.round(el.clientHeight * (l.w / l.h))
+                : speed * 100;
+
+            /**
+             * `fromTo` from an explicit 0, NOT a relative `+=` tween.
+             *
+             * These layers compute to `background-position-x: 50%` (the default
+             * anchor), and a relative tween would be asking GSAP for
+             * `50% += 400px` — mismatched units, which it drops on the floor.
+             * The layer then sits perfectly still, which is exactly what this
+             * used to do. Pinning the start to 0px makes the arithmetic
+             * unambiguous, and horizontal alignment is irrelevant for a
+             * `repeat-x` tile because it covers the element either way.
+             */
             tweens.push(
-              gsap.to(node, {
-                backgroundPositionX: `${l.drift > 0 ? "+" : "-"}=${Math.abs(l.drift) * 100}px`,
-                duration: 100 / Math.abs(l.drift),
-                repeat: -1,
-                ease: "none",
-              }),
+              gsap.fromTo(
+                node,
+                { backgroundPositionX: 0 },
+                {
+                  backgroundPositionX: l.drift > 0 ? tileWidth : -tileWidth,
+                  // Distance over speed, so `drift` means px/sec exactly as the
+                  // SceneLayer docs claim.
+                  duration: tileWidth / speed,
+                  repeat: -1,
+                  ease: "none",
+                },
+              ),
             );
           }
 
@@ -164,7 +230,7 @@ export function AnimatedBackground({
 
       return () => mm.revert();
     },
-    { scope: root, dependencies: [sceneKey] },
+    { scope: root, dependencies: [sceneKey, resizeTick] },
   );
 
   if (!scene) {

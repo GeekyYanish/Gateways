@@ -29,7 +29,7 @@ async function runSuite(): Promise<Result[]> {
   // Start from a clean store so results are deterministic.
   clearAll();
 
-  const email = `test${Date.now()}@festrealm.test`;
+  const email = `test${Date.now()}@parallax.test`;
 
   // --- auth ---------------------------------------------------------------
   const session = await repo.auth.signUp(email, "hunter2!");
@@ -63,7 +63,7 @@ async function runSuite(): Promise<Result[]> {
 
   // Passwords must never be recoverable from storage.
   const rawCreds = JSON.stringify(
-    JSON.parse(localStorage.getItem("festrealm:v1:credentials") ?? "[]"),
+    JSON.parse(localStorage.getItem("parallax:v1:credentials") ?? "[]"),
   );
   check(
     "password not stored in plaintext",

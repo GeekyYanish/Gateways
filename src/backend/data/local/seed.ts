@@ -77,7 +77,7 @@ const LEVELS: Level[] = [
 ];
 
 const ACHIEVEMENTS: Achievement[] = [
-  { id: "ach-first-steps", code: "first_steps", name: "First Steps", description: "Join the Fest Realm.", flavorText: "Every legend starts somewhere.", rarity: "common", xpReward: 25, triggerType: "profile_completed", triggerConfig: {}, isSecret: false, isActive: true, sortOrder: 1 },
+  { id: "ach-first-steps", code: "first_steps", name: "First Steps", description: "Join the Parallax.", flavorText: "Every legend starts somewhere.", rarity: "common", xpReward: 25, triggerType: "profile_completed", triggerConfig: {}, isSecret: false, isActive: true, sortOrder: 1 },
   { id: "ach-explorer", code: "explorer", name: "Explorer", description: "Register for your first event.", flavorText: "The realm opens up.", rarity: "common", xpReward: 30, triggerType: "first_registration", triggerConfig: {}, isSecret: false, isActive: true, sortOrder: 2 },
   { id: "ach-team-player", code: "team_player", name: "Team Player", description: "Create or join a team.", flavorText: "Better together.", rarity: "uncommon", xpReward: 50, triggerType: "team_created", triggerConfig: {}, isSecret: false, isActive: true, sortOrder: 3 },
   { id: "ach-showed-up", code: "showed_up", name: "Showed Up", description: "Check in to your first event.", flavorText: "Attendance is half the battle.", rarity: "uncommon", xpReward: 40, triggerType: "event_attended", triggerConfig: {}, isSecret: false, isActive: true, sortOrder: 4 },
@@ -95,9 +95,9 @@ function makeEvents(): FestEvent[] {
   const base = {
     rules: "Bring your own laptop. Team changes are not permitted after check-in. Judges' decisions are final.",
     registrationOpensAt: iso(-14 * DAY),
-    entryFeeInr: 250,
+    entryFeeInr: 0,
     requiresApproval: false,
-    contactEmail: "organizers@festrealm.test",
+    contactEmail: "organizers@parallax.test",
     createdBy: null,
     createdAt: iso(-20 * DAY),
     updatedAt: iso(-2 * DAY),
@@ -221,17 +221,8 @@ function migrateLegacySkins(): void {
  * app start, which is how it is wired (the repository calls it lazily).
  */
 export function seedIfNeeded(): void {
-  const meta = read<{ seededAt?: string; feesSeededV1?: boolean }>("meta", {});
+  const meta = read<{ seededAt?: string }>("meta", {});
   if (meta.seededAt && readList("events").length > 0) {
-    if (!meta.feesSeededV1) {
-      const existingEvents = readList<FestEvent>("events");
-      const updated = existingEvents.map((e) => ({
-        ...e,
-        entryFeeInr: e.entryFeeInr || (e.status === "completed" ? 0 : 250),
-      }));
-      write("events", updated);
-      write("meta", { ...meta, feesSeededV1: true });
-    }
     // Cheap no-op once every character is on a current skin id.
     migrateLegacySkins();
     return;

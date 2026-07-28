@@ -13,7 +13,7 @@ const MAX_WAIT_MS = 6000;
 const MIN_SHOW_MS = 1400;
 
 /**
- * SCREEN 5 — "Traveling to Fest Realm 73%"
+ * SCREEN 5 — "Traveling to Parallax 73%"
  *
  * The percentage is REAL. It is driven by actual preload work — the character,
  * registrations, events, achievements and world-map image — combined with an
@@ -301,7 +301,7 @@ export function TravellingScreen() {
         <div className="border-[length:var(--mc-bevel)] border-mc-border bg-mc-void/80 p-[calc(var(--mc-unit)*1.5)]">
           <div className="flex items-baseline justify-between gap-[var(--mc-unit)]">
             <p className="font-pixel text-[10px] uppercase tracking-[0.08em] text-mc-text md:text-[11px]">
-              Traveling to Fest Realm
+              Traveling to Parallax
             </p>
             <span className="font-pixel text-[11px] text-mc-portal-light tabular-nums">
               {shown}%

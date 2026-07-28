@@ -1071,7 +1071,7 @@ class LocalPaymentReceipts implements PaymentReceiptRepository {
     const userProfile = profiles.find((p) => p.id === receipt.userId);
     const events = readList<FestEvent>("events");
     const ev = events.find((e) => e.id === receipt.eventId);
-    const userEmail = userProfile?.email ?? `${receipt.userId}@festrealm.test`;
+    const userEmail = userProfile?.email ?? `${receipt.userId}@parallax.test`;
     const eventName = ev?.title ?? "Gateways Event";
 
     console.info(

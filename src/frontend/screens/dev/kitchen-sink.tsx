@@ -217,7 +217,7 @@ export function KitchenSink() {
             <BadgeSlot code="first_steps" name="First Steps" rarity="uncommon" unlocked size={72} />
             <div>
               <p className="font-pixel text-[12px] text-mc-gold-light">First Steps</p>
-              <p className="mt-1 text-mc-text-dim">You have joined the Fest Realm!</p>
+              <p className="mt-1 text-mc-text-dim">You have joined the Parallax!</p>
             </div>
           </div>
         </BlockModal>

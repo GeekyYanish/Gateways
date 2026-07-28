@@ -144,7 +144,7 @@ export class LocalAuth implements AuthRepository {
   async signInWithProvider(
     provider: "google" | "discord" | "microsoft",
   ): Promise<Session> {
-    const email = `demo.${provider}@festrealm.test`;
+    const email = `demo.${provider}@parallax.test`;
     const creds = readList<StoredCredential>("credentials");
     const existing = creds.find((c) => c.email === email);
 

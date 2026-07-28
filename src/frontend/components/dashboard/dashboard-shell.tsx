@@ -209,7 +209,7 @@ function SidebarContent({
         onClick={onNavigate}
         className="font-pixel text-[12px] text-mc-portal-light no-underline hover:text-mc-text"
       >
-        FEST REALM
+        PARALLAX
       </Link>
 
       <nav aria-label="Dashboard" className="flex flex-col gap-[2px]">

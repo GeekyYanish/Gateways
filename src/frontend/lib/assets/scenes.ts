@@ -184,6 +184,64 @@ export const SCENES: Record<string, Scene> = {
   }),
 
   /**
+   * Homepage hero — a sunlit overworld that pans forever.
+   *
+   * Modelled on the way a voxel game's title screen slowly sweeps across a
+   * landscape: nothing happens, but the world is never still, so the page feels
+   * alive before the visitor has done anything.
+   *
+   * Every layer is `tile: true` with its own `drift`, and the drift rates rise
+   * with depth — far hills crawl, the near meadow slides. That gradient IS the
+   * parallax; identical speeds would flatten the whole thing into one moving
+   * photograph. Pointer parallax still applies on top, so moving the mouse and
+   * simply waiting both produce depth.
+   *
+   * Bright by design. This is the fest's front door and the theme is a daylight
+   * world being mirrored, not a portal in a dark valley — so there is no violet
+   * anywhere in the stack.
+   */
+  "overworld-panorama": buildScene({
+    key: "overworld-panorama",
+    name: "Overworld Panorama",
+    brief:
+      "Sunlit blocky overworld panning slowly: banded blue sky, stepped white " +
+      "clouds, hazed rolling hills, a treeline, and a vivid near meadow. " +
+      "Seamlessly tileable horizontally. Original voxel style, no game logos.",
+    baseGradient: "linear-gradient(180deg, #1b4a86 0%, #2064b4 38%, #5787bf 68%, #5fa73f 100%)",
+    palette: ["#7ec850", "#2064b4"],
+    layers: [
+      layer("sky", "sky", 0, { paint: "sky-day" }),
+      // NO decorative cloud layer here, deliberately. The homepage writes its
+      // announcements into pixel clouds of its own (`sky-announcements.tsx`),
+      // and a second set of painted clouds drifting behind them turned the sky
+      // into visual noise — two cloud systems at different speeds, one of them
+      // carrying text. The announcement clouds ARE this scene's clouds.
+      layer("hills", "far", 0.16, {
+        paint: "hills-tile",
+        tile: true,
+        drift: -8,
+        w: 1600,
+        h: 900,
+        opacity: 0.9,
+      }),
+      layer("treeline", "mid", 0.3, {
+        paint: "treeline-tile",
+        tile: true,
+        drift: -15,
+        w: 1600,
+        h: 900,
+      }),
+      layer("meadow", "fore", 0.46, {
+        paint: "meadow-tile",
+        tile: true,
+        drift: -26,
+        w: 1600,
+        h: 900,
+      }),
+    ],
+  }),
+
+  /**
    * `/entering` — the same valley at night, stood right at the portal's foot.
    *
    * It reuses every landform painter from `portal-approach` unchanged and

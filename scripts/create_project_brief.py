@@ -10,7 +10,7 @@ from docx.shared import Inches, Pt, RGBColor
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "deliverables" / "Fest-Realm-Project-Handoff.docx"
+OUT = ROOT / "deliverables" / "Parallax-Project-Handoff.docx"
 ASSETS = ROOT / "assets"
 CLIPBOARD = Path("/var/folders/9b/_xlnvdpj7cd2hxwvgdmqkw3r0000gn/T")
 
@@ -226,7 +226,7 @@ def add_footer(section):
     p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     p.paragraph_format.space_before = Pt(0)
     p.paragraph_format.space_after = Pt(0)
-    r = p.add_run("Fest Realm · Project handoff")
+    r = p.add_run("Parallax · Project handoff")
     set_run_font(r, 8.5, MUTED)
     p.add_run("  |  ")
     field = OxmlElement("w:fldSimple")
@@ -271,8 +271,8 @@ def make_doc():
         s.paragraph_format.space_after = Pt(after)
         s.paragraph_format.line_spacing = 1.10
 
-    # Cover — editorial cover header pattern, with a restrained Fest Realm violet override.
-    paragraph(doc, "FEST REALM", size=10, color=VIOLET, bold=True, after=7, align=WD_ALIGN_PARAGRAPH.CENTER)
+    # Cover — editorial cover header pattern, with a restrained Parallax violet override.
+    paragraph(doc, "PARALLAX", size=10, color=VIOLET, bold=True, after=7, align=WD_ALIGN_PARAGRAPH.CENTER)
     title = paragraph(doc, "Project Design &\nImplementation Handoff", size=27, color=DEEP_VIOLET,
                       bold=True, after=5, align=WD_ALIGN_PARAGRAPH.CENTER)
     title.paragraph_format.line_spacing = 0.95
@@ -338,7 +338,7 @@ def make_doc():
     flow = doc.add_table(rows=1, cols=3)
     set_table_geometry(flow, [3120, 3120, 3120])
     images = [
-        (ASSETS / "Login" / "Minecraft UI copy.png", "1. Landing — establish the Fest Realm premise."),
+        (ASSETS / "Login" / "Minecraft UI copy.png", "1. Landing — establish the Parallax premise."),
         (ASSETS / "Login" / "No_1_Minecraft UI enter animation.png", "2. Entering — portal animation provides a loading bridge."),
         (ASSETS / "Login" / "No_2_Minecraft UI welcome page.png", "3. Login / signup — a focused, game-like form."),
     ]
@@ -469,11 +469,11 @@ def make_doc():
         cell_text(cells[1], detail, size=9.2)
         for cell in cells:
             set_cell_borders(cell, bottom={"val": "single", "sz": "4", "color": "DADCE0"})
-    paragraph(doc, "Visual references used in this handoff are the supplied Fest Realm screen images in assets/Login, assets/Homapage and the two supplied dashboard/mobile UI references. They are direction references; the product must continue using original assets and naming.", size=9, color=MUTED, italic=True, before=9, after=0)
+    paragraph(doc, "Visual references used in this handoff are the supplied Parallax screen images in assets/Login, assets/Homapage and the two supplied dashboard/mobile UI references. They are direction references; the product must continue using original assets and naming.", size=9, color=MUTED, italic=True, before=9, after=0)
 
-    doc.core_properties.title = "Fest Realm — Project Design & Implementation Handoff"
+    doc.core_properties.title = "Parallax — Project Design & Implementation Handoff"
     doc.core_properties.subject = "Current progress, visual direction and implementation approach"
-    doc.core_properties.author = "Fest Realm project team"
+    doc.core_properties.author = "Parallax project team"
     doc.save(OUT)
     print(OUT)
 
