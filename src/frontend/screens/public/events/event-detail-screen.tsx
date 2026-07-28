@@ -44,9 +44,9 @@ export function EventDetailScreen({
     async () => (event && userId ? repo.registrations.get(event.id, userId) : null),
     [event?.id, userId],
   );
-  const { data: paymentReceipt, reload: reloadReceipt } = useAsync(
-    async () => (registration ? repo.paymentReceipts.getByRegistration(registration.id) : null),
-    [registration?.id]
+  const { data: userReceipt, reload: reloadReceipt } = useAsync(
+    async () => (userId ? repo.paymentReceipts.getByUser(userId) : null),
+    [userId]
   );
   const { data: categories } = useAsync(() => repo.reference.categories(), []);
 
@@ -83,25 +83,17 @@ export function EventDetailScreen({
     if (!userId || !event) return;
     setBusy(true);
     try {
-      let reg = registration;
-      if (!reg || reg.status === "cancelled") {
-        reg = await repo.registrations.register(event.id, userId);
-        reloadReg();
-        reloadStats();
-      }
-      
-      if (event.entryFeeInr > 0) {
-        setPaymentModalOpen(true);
-      } else {
-        showToast({
-          title: reg.status === "waitlisted" ? "Added to waitlist" : "Registered!",
-          body:
-            reg.status === "waitlisted"
-              ? "This event is full — you will be promoted if a seat frees up."
-              : `You are in. See you at ${event.title}.`,
-          severity: reg.status === "waitlisted" ? "warning" : "success",
-        });
-      }
+      const reg = await repo.registrations.register(event.id, userId);
+      reloadReg();
+      reloadStats();
+      showToast({
+        title: reg.status === "waitlisted" ? "Added to waitlist" : "Registered!",
+        body:
+          reg.status === "waitlisted"
+            ? "This event is full — you will be promoted if a seat frees up."
+            : `You are in. See you at ${event.title}.`,
+        severity: reg.status === "waitlisted" ? "warning" : "success",
+      });
     } catch (e) {
       showToast({
         title: "Could not register",
@@ -129,12 +121,12 @@ export function EventDetailScreen({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--mc-unit)] p-[var(--mc-unit)]">
       <AchievementModal />
-      {event && registration && (
+      {event && (
         <PaymentUploadModal
           open={paymentModalOpen}
           onOpenChange={setPaymentModalOpen}
-          eventId={event.id}
-          registrationId={registration.id}
+          eventId="gateways-entry"
+          registrationId="gateways-entry"
           onSuccess={() => reloadReceipt()}
         />
       )}
@@ -154,7 +146,7 @@ export function EventDetailScreen({
 
         <dl className="mt-[calc(var(--mc-unit)*1.5)] grid gap-[var(--mc-unit)] sm:grid-cols-2">
           <Fact label="Entry Fee">
-            {event.entryFeeInr > 0 ? `₹${event.entryFeeInr}` : "Free"}
+            Gateways Pass
           </Fact>
           <Fact label="Starts">
             {new Date(event.startsAt).toLocaleString(undefined, {
@@ -199,8 +191,6 @@ export function EventDetailScreen({
 
         <div className="mt-[calc(var(--mc-unit)*2)] flex flex-wrap items-center gap-[var(--mc-unit)]">
           {!userId ? (
-            // Signed-out visitors can read everything; registering needs an
-            // account, so send them through the portal with a return path.
             <Link
               href={`/login?next=${encodeURIComponent(detailHref)}`}
               className={cn(
@@ -213,64 +203,73 @@ export function EventDetailScreen({
             >
               Sign in to register
             </Link>
-          ) : isRegistered && (event.entryFeeInr === 0 || paymentReceipt) ? (
+          ) : isRegistered ? (
+            <div className="flex items-center gap-[var(--mc-unit)]">
+              <span className="font-pixel text-[10px] uppercase text-mc-emerald-light">
+                {registration.status === "waitlisted" ? "On waitlist" : "Registered"}
+              </span>
+              <BlockButton variant="danger" size="sm" loading={busy} onClick={onCancel}>
+                Cancel registration
+              </BlockButton>
+            </div>
+          ) : userReceipt?.status === "verified" ? (
+            registrationOpen ? (
+              <BlockButton variant="emerald" size="lg" loading={busy} onClick={onRegister}>
+                {stats?.seatsLeft === 0 ? "Join waitlist" : "Register"}
+              </BlockButton>
+            ) : (
+              <span className="text-mc-text-dim">
+                Registration is closed for this event.
+              </span>
+            )
+          ) : (
             <div className="flex flex-col gap-[var(--mc-unit)] w-full">
-              {event.entryFeeInr > 0 && paymentReceipt?.status !== 'verified' ? (
+              {!userReceipt ? (
                 <>
-                  {paymentReceipt?.status === 'pending' && (
-                    <div className="flex flex-col gap-[var(--mc-unit)] w-full">
-                      <BlockPanel variant="slot" className="border-l-4 border-mc-gold p-[var(--mc-unit)] w-full">
-                        <p className="text-[14px]">
-                          ⏳ Registration is pending and requires verification. Come back after some time to check. If you face any issues, contact: <a href="mailto:committeeheads@gateways.in" className="text-mc-portal-light underline">committeeheads@gateways.in</a>
-                        </p>
-                      </BlockPanel>
-                      <div className="mt-[calc(var(--mc-unit)*0.5)]">
-                        <span className="font-pixel text-[14px] uppercase text-mc-emerald-light">
-                          Payment verification pending
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentReceipt?.status === 'rejected' && (
-                    <div className="flex flex-col gap-[var(--mc-unit)] w-full">
-                      <BlockPanel variant="slot" className="border-l-4 border-mc-redstone p-[var(--mc-unit)]">
-                        <p className="text-[14px] text-mc-redstone-light font-pixel uppercase mb-1">
-                          ❌ Payment Rejected
-                        </p>
-                        {paymentReceipt.reviewNote && (
-                          <p className="text-[14px] text-mc-text-dim">
-                            Reason: {paymentReceipt.reviewNote}
-                          </p>
-                        )}
-                      </BlockPanel>
-                      <div>
-                        <BlockButton variant="emerald" size="lg" onClick={() => setPaymentModalOpen(true)}>
-                          Re-upload Receipt
-                        </BlockButton>
-                      </div>
-                    </div>
-                  )}
+                  <BlockPanel variant="slot" className="border-l-4 border-mc-gold p-[var(--mc-unit)] w-full">
+                    <p className="text-[14px]">
+                      ⚠️ You need to pay the one-time Gateways entry fee first before registering for an event.
+                    </p>
+                  </BlockPanel>
+                  <div>
+                    <BlockButton variant="gold" size="lg" onClick={() => setPaymentModalOpen(true)}>
+                      Make Payment
+                    </BlockButton>
+                  </div>
+                </>
+              ) : userReceipt.status === "pending" ? (
+                <>
+                  <BlockPanel variant="slot" className="border-l-4 border-mc-gold p-[var(--mc-unit)] w-full">
+                    <p className="text-[14px]">
+                      ⏳ Your one-time entry fee payment is pending verification. Please wait while we verify your receipt before registering for events. If you face any issues, contact: <a href="mailto:committeeheads@gateways.in" className="text-mc-portal-light underline">committeeheads@gateways.in</a>
+                    </p>
+                  </BlockPanel>
+                  <div className="mt-[calc(var(--mc-unit)*0.5)]">
+                    <span className="font-pixel text-[14px] uppercase text-mc-emerald-light">
+                      Payment verification pending
+                    </span>
+                  </div>
                 </>
               ) : (
-                <div className="flex items-center gap-[var(--mc-unit)]">
-                  <span className="font-pixel text-[10px] uppercase text-mc-emerald-light">
-                    {registration.status === "waitlisted" ? "On waitlist" : "Registered"}
-                  </span>
-                  <BlockButton variant="danger" size="sm" loading={busy} onClick={onCancel}>
-                    Cancel registration
-                  </BlockButton>
-                </div>
+                <>
+                  <BlockPanel variant="slot" className="border-l-4 border-mc-redstone p-[var(--mc-unit)]">
+                    <p className="text-[14px] text-mc-redstone-light font-pixel uppercase mb-1">
+                      ❌ One-Time Payment Rejected
+                    </p>
+                    {userReceipt.reviewNote && (
+                      <p className="text-[14px] text-mc-text-dim">
+                        Reason: {userReceipt.reviewNote}
+                      </p>
+                    )}
+                  </BlockPanel>
+                  <div>
+                    <BlockButton variant="emerald" size="lg" onClick={() => setPaymentModalOpen(true)}>
+                      Re-upload Receipt
+                    </BlockButton>
+                  </div>
+                </>
               )}
             </div>
-          ) : registrationOpen ? (
-            <BlockButton variant="emerald" size="lg" loading={busy} onClick={onRegister}>
-              {stats?.seatsLeft === 0 ? "Join waitlist" : "Register"}
-            </BlockButton>
-          ) : (
-            <span className="text-mc-text-dim">
-              Registration is closed for this event.
-            </span>
           )}
         </div>
       </BlockPanel>
