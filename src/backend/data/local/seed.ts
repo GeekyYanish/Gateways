@@ -95,7 +95,7 @@ function makeEvents(): FestEvent[] {
   const base = {
     rules: "Bring your own laptop. Team changes are not permitted after check-in. Judges' decisions are final.",
     registrationOpensAt: iso(-14 * DAY),
-    entryFeeInr: 250,
+    entryFeeInr: 0,
     requiresApproval: false,
     contactEmail: "organizers@festrealm.test",
     createdBy: null,
@@ -221,16 +221,16 @@ function migrateLegacySkins(): void {
  * app start, which is how it is wired (the repository calls it lazily).
  */
 export function seedIfNeeded(): void {
-  const meta = read<{ seededAt?: string; feesSeededV1?: boolean }>("meta", {});
+  const meta = read<{ seededAt?: string; feesSeededV1?: boolean; feesSeededV2?: boolean }>("meta", {});
   if (meta.seededAt && readList("events").length > 0) {
-    if (!meta.feesSeededV1) {
+    if (!meta.feesSeededV2) {
       const existingEvents = readList<FestEvent>("events");
       const updated = existingEvents.map((e) => ({
         ...e,
-        entryFeeInr: e.entryFeeInr || (e.status === "completed" ? 0 : 250),
+        entryFeeInr: 0,
       }));
       write("events", updated);
-      write("meta", { ...meta, feesSeededV1: true });
+      write("meta", { ...meta, feesSeededV1: true, feesSeededV2: true });
     }
     // Cheap no-op once every character is on a current skin id.
     migrateLegacySkins();

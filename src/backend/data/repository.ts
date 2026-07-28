@@ -192,6 +192,8 @@ export interface PaymentReceiptRepository {
   }): Promise<PaymentReceipt>;
   /** Get the receipt for a specific registration, if any. */
   getByRegistration(registrationId: string): Promise<PaymentReceipt | null>;
+  /** Get the most recent one-time entry fee receipt for a user, if any. */
+  getByUser(userId: string): Promise<PaymentReceipt | null>;
   /** All receipts for an event (admin view). */
   listForEvent(eventId: string): Promise<PaymentReceipt[]>;
   /** All pending receipts across all events (admin dashboard). */
