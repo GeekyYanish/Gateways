@@ -37,7 +37,8 @@ export type Collection =
   | "schedule"
   | "sponsors"
   | "session"
-  | "meta";
+  | "meta"
+  | "paymentReceipts";
 
 function key(c: Collection): string {
   return `${NS}:v${SCHEMA_VERSION}:${c}`;

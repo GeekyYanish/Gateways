@@ -176,7 +176,7 @@ export function AnimatedBackground({
   }
 
   return (
-    <div ref={root} className={cn("relative isolate overflow-hidden", className)}>
+    <div ref={root} className={cn("relative isolate overflow-hidden", className)} style={{ contain: "content" }}>
       {/* Base gradient guarantees full coverage even if every layer 404s. */}
       <div
         aria-hidden

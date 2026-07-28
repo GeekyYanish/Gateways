@@ -155,7 +155,7 @@ export function TravellingScreen() {
      * one — there is no way to get that from discrete elements.
      */
     type Block = { x: number; y: number; z: number; s: number; hot: boolean };
-    const BLOCK_COUNT = 420;
+    const BLOCK_COUNT = 220;
     /** Vanishing point sits below centre, so the floor has room to read. */
     const HORIZON = 0.54;
     const SPEED = 0.007;

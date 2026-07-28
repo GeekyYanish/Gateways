@@ -10,6 +10,7 @@ import {
   showToast,
 } from "@/frontend/components/mc";
 import { AchievementModal } from "@/frontend/components/achievements/achievement-modal";
+import { PaymentUploadModal } from "@/frontend/components/registration/payment-upload-modal";
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
 import { repo } from "@/backend/data";
@@ -32,6 +33,7 @@ export function EventDetailScreen({
   const { session } = useSession();
   const userId = session?.userId;
   const [busy, setBusy] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const { data: event, loading } = useAsync(() => repo.events.getBySlug(slug), [slug]);
   const { data: stats, reload: reloadStats } = useAsync(
@@ -41,6 +43,10 @@ export function EventDetailScreen({
   const { data: registration, reload: reloadReg } = useAsync(
     async () => (event && userId ? repo.registrations.get(event.id, userId) : null),
     [event?.id, userId],
+  );
+  const { data: paymentReceipt, reload: reloadReceipt } = useAsync(
+    async () => (registration ? repo.paymentReceipts.getByRegistration(registration.id) : null),
+    [registration?.id]
   );
   const { data: categories } = useAsync(() => repo.reference.categories(), []);
 
@@ -77,17 +83,25 @@ export function EventDetailScreen({
     if (!userId || !event) return;
     setBusy(true);
     try {
-      const reg = await repo.registrations.register(event.id, userId);
-      reloadReg();
-      reloadStats();
-      showToast({
-        title: reg.status === "waitlisted" ? "Added to waitlist" : "Registered!",
-        body:
-          reg.status === "waitlisted"
-            ? "This event is full — you will be promoted if a seat frees up."
-            : `You are in. See you at ${event.title}.`,
-        severity: reg.status === "waitlisted" ? "warning" : "success",
-      });
+      let reg = registration;
+      if (!reg || reg.status === "cancelled") {
+        reg = await repo.registrations.register(event.id, userId);
+        reloadReg();
+        reloadStats();
+      }
+      
+      if (event.entryFeeInr > 0) {
+        setPaymentModalOpen(true);
+      } else {
+        showToast({
+          title: reg.status === "waitlisted" ? "Added to waitlist" : "Registered!",
+          body:
+            reg.status === "waitlisted"
+              ? "This event is full — you will be promoted if a seat frees up."
+              : `You are in. See you at ${event.title}.`,
+          severity: reg.status === "waitlisted" ? "warning" : "success",
+        });
+      }
     } catch (e) {
       showToast({
         title: "Could not register",
@@ -115,6 +129,15 @@ export function EventDetailScreen({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--mc-unit)] p-[var(--mc-unit)]">
       <AchievementModal />
+      {event && registration && (
+        <PaymentUploadModal
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          eventId={event.id}
+          registrationId={registration.id}
+          onSuccess={() => reloadReceipt()}
+        />
+      )}
 
       <BackLink href={backHref} />
 
@@ -130,6 +153,9 @@ export function EventDetailScreen({
         ) : null}
 
         <dl className="mt-[calc(var(--mc-unit)*1.5)] grid gap-[var(--mc-unit)] sm:grid-cols-2">
+          <Fact label="Entry Fee">
+            {event.entryFeeInr > 0 ? `₹${event.entryFeeInr}` : "Free"}
+          </Fact>
           <Fact label="Starts">
             {new Date(event.startsAt).toLocaleString(undefined, {
               dateStyle: "full",
@@ -187,15 +213,56 @@ export function EventDetailScreen({
             >
               Sign in to register
             </Link>
-          ) : isRegistered ? (
-            <>
-              <span className="font-pixel text-[10px] uppercase text-mc-emerald-light">
-                {registration.status === "waitlisted" ? "On waitlist" : "Registered"}
-              </span>
-              <BlockButton variant="danger" size="sm" loading={busy} onClick={onCancel}>
-                Cancel registration
-              </BlockButton>
-            </>
+          ) : isRegistered && (event.entryFeeInr === 0 || paymentReceipt) ? (
+            <div className="flex flex-col gap-[var(--mc-unit)] w-full">
+              {event.entryFeeInr > 0 && paymentReceipt?.status !== 'verified' ? (
+                <>
+                  {paymentReceipt?.status === 'pending' && (
+                    <div className="flex flex-col gap-[var(--mc-unit)] w-full">
+                      <BlockPanel variant="slot" className="border-l-4 border-mc-gold p-[var(--mc-unit)] w-full">
+                        <p className="text-[14px]">
+                          ⏳ Registration is pending and requires verification. Come back after some time to check. If you face any issues, contact: <a href="mailto:committeeheads@gateways.in" className="text-mc-portal-light underline">committeeheads@gateways.in</a>
+                        </p>
+                      </BlockPanel>
+                      <div className="mt-[calc(var(--mc-unit)*0.5)]">
+                        <span className="font-pixel text-[14px] uppercase text-mc-emerald-light">
+                          Payment verification pending
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentReceipt?.status === 'rejected' && (
+                    <div className="flex flex-col gap-[var(--mc-unit)] w-full">
+                      <BlockPanel variant="slot" className="border-l-4 border-mc-redstone p-[var(--mc-unit)]">
+                        <p className="text-[14px] text-mc-redstone-light font-pixel uppercase mb-1">
+                          ❌ Payment Rejected
+                        </p>
+                        {paymentReceipt.reviewNote && (
+                          <p className="text-[14px] text-mc-text-dim">
+                            Reason: {paymentReceipt.reviewNote}
+                          </p>
+                        )}
+                      </BlockPanel>
+                      <div>
+                        <BlockButton variant="emerald" size="lg" onClick={() => setPaymentModalOpen(true)}>
+                          Re-upload Receipt
+                        </BlockButton>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center gap-[var(--mc-unit)]">
+                  <span className="font-pixel text-[10px] uppercase text-mc-emerald-light">
+                    {registration.status === "waitlisted" ? "On waitlist" : "Registered"}
+                  </span>
+                  <BlockButton variant="danger" size="sm" loading={busy} onClick={onCancel}>
+                    Cancel registration
+                  </BlockButton>
+                </div>
+              )}
+            </div>
           ) : registrationOpen ? (
             <BlockButton variant="emerald" size="lg" loading={busy} onClick={onRegister}>
               {stats?.seatsLeft === 0 ? "Join waitlist" : "Register"}

@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  experimental: {
+    optimizePackageImports: ["three", "gsap", "framer-motion", "lucide-react"],
+  },
+  compress: true,
 };
 
 export default nextConfig;

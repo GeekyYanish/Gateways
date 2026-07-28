@@ -21,6 +21,7 @@ import {
   type TeamMember,
   type UserAchievement,
   type XpEntry,
+  type PaymentReceipt,
 } from "../types";
 import type {
   AchievementRepository,
@@ -32,6 +33,7 @@ import type {
   ProfileRepository,
   ReferenceRepository,
   RegistrationRepository,
+  PaymentReceiptRepository,
   Repository,
   TeamRepository,
   Unsubscribe,
@@ -553,6 +555,9 @@ class LocalRegistrations implements RegistrationRepository {
     // rather than creating a second row, which is what the DB constraint forces.
     const existing = all.find((r) => r.eventId === eventId && r.userId === userId);
     if (existing && existing.status !== "cancelled") {
+      if (event.entryFeeInr > 0 && existing.status === "pending") {
+        return existing;
+      }
       throw new DataError("ALREADY_REGISTERED", "You are already registered for this event.");
     }
 
@@ -575,7 +580,7 @@ class LocalRegistrations implements RegistrationRepository {
       teamId: teamId ?? null,
       // Over capacity waitlists rather than hard-failing, so the UI can show a
       // useful state instead of an error.
-      status: full ? "waitlisted" : event.requiresApproval ? "pending" : "confirmed",
+      status: event.entryFeeInr > 0 ? "pending" : full ? "waitlisted" : event.requiresApproval ? "pending" : "confirmed",
       registeredAt: nowIso(),
       cancelledAt: null,
     };
@@ -965,6 +970,125 @@ class LocalReference implements ReferenceRepository {
 }
 
 // ---------------------------------------------------------------------------
+// Payment Receipts
+// ---------------------------------------------------------------------------
+
+class LocalPaymentReceipts implements PaymentReceiptRepository {
+  #xp: LocalXp;
+  #achievements: LocalAchievements;
+
+  constructor(xp: LocalXp, achievements: LocalAchievements) {
+    this.#xp = xp;
+    this.#achievements = achievements;
+  }
+
+  async submit(input: {
+    registrationId: string;
+    eventId: string;
+    userId: string;
+    fileData: string;
+    fileName: string;
+    fileSizeBytes: number;
+  }): Promise<PaymentReceipt> {
+    ready();
+    const all = readList<PaymentReceipt>("paymentReceipts");
+    if (all.some((r) => r.registrationId === input.registrationId)) {
+      throw new DataError("RECEIPT_ALREADY_SUBMITTED", "A receipt has already been submitted for this registration.");
+    }
+    const receipt: PaymentReceipt = {
+      id: uid("rcpt"),
+      registrationId: input.registrationId,
+      eventId: input.eventId,
+      userId: input.userId,
+      fileData: input.fileData,
+      fileName: input.fileName,
+      fileSizeBytes: input.fileSizeBytes,
+      status: "pending",
+      reviewedBy: null,
+      reviewedAt: null,
+      reviewNote: null,
+      submittedAt: nowIso(),
+    };
+    all.push(receipt);
+    write("paymentReceipts", all);
+    return receipt;
+  }
+
+  async getByRegistration(registrationId: string): Promise<PaymentReceipt | null> {
+    ready();
+    return readList<PaymentReceipt>("paymentReceipts").find((r) => r.registrationId === registrationId) ?? null;
+  }
+
+  async listForEvent(eventId: string): Promise<PaymentReceipt[]> {
+    ready();
+    return readList<PaymentReceipt>("paymentReceipts").filter((r) => r.eventId === eventId);
+  }
+
+  async listPending(): Promise<PaymentReceipt[]> {
+    ready();
+    return readList<PaymentReceipt>("paymentReceipts").filter((r) => r.status === "pending");
+  }
+
+  async review(receiptId: string, decision: "verified" | "rejected", reviewedBy: string, note?: string): Promise<PaymentReceipt> {
+    ready();
+    const receipts = readList<PaymentReceipt>("paymentReceipts");
+    const idx = receipts.findIndex((r) => r.id === receiptId);
+    if (idx === -1) throw new DataError("NOT_FOUND", "Receipt not found.");
+    
+    const receipt = receipts[idx];
+    if (receipt.status !== "pending") {
+      throw new DataError("VALIDATION_FAILED", "Receipt is not pending.");
+    }
+
+    receipt.status = decision;
+    receipt.reviewedBy = reviewedBy;
+    receipt.reviewedAt = nowIso();
+    receipt.reviewNote = note ?? null;
+    write("paymentReceipts", receipts);
+
+    const regs = readList<Registration>("registrations");
+    const regIdx = regs.findIndex((r) => r.id === receipt.registrationId);
+    if (regIdx !== -1) {
+      regs[regIdx] = { ...regs[regIdx], status: decision === "verified" ? "confirmed" : "rejected" };
+      write("registrations", regs);
+      
+      if (decision === "verified") {
+        const events = readList<FestEvent>("events");
+        const ev = events.find((e) => e.id === receipt.eventId);
+        await this.#xp.award({
+          userId: receipt.userId,
+          amount: 10,
+          reason: `Registered for ${ev?.title ?? "event"}`,
+          sourceType: "registration",
+          sourceId: receipt.eventId,
+        });
+        await this.#achievements.evaluate(receipt.userId);
+      }
+    }
+
+    // Simulate email notification
+    const profiles = readList<Profile>("profiles");
+    const userProfile = profiles.find((p) => p.id === receipt.userId);
+    const events = readList<FestEvent>("events");
+    const ev = events.find((e) => e.id === receipt.eventId);
+    const userEmail = userProfile?.email ?? `${receipt.userId}@festrealm.test`;
+    const eventName = ev?.title ?? "Gateways Event";
+
+    console.info(
+      `\n[MOCK MAIL SERVER] Email Sent:\n` +
+      `  To: ${userEmail}\n` +
+      `  Subject: Gateways Registration Payment ${decision === "verified" ? "Verified" : "Rejected"} (${eventName})\n` +
+      `  Body: Hello ${userProfile?.fullName ?? "Player"},\n` +
+      `        Your payment receipt for ${eventName} has been ${decision}.\n` +
+      (note ? `        Note from registration team: ${note}\n` : "") +
+      `        ${decision === "verified" ? "You are now confirmed for the event! +10 XP awarded." : "Please check your dashboard or contact committeeheads@gateways.in if you face any issues."}\n`
+    );
+    
+    return receipt;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Composition
 // ---------------------------------------------------------------------------
 
@@ -986,5 +1110,6 @@ export function createLocalRepository(): Repository {
     leaderboard: new LocalLeaderboard(),
     announcements: new LocalAnnouncements(),
     reference: new LocalReference(),
+    paymentReceipts: new LocalPaymentReceipts(xp, achievements),
   };
 }
