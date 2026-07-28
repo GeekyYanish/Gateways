@@ -63,6 +63,19 @@ const C = {
 
   portal: "#a02ce0",
   portalPale: "#e8dcfb",
+
+  // Open-daylight greens for the panorama. The `grass*` set above is the
+  // valley floor sitting in cliff shadow and is far too dark for a sunlit
+  // meadow; these mirror the --color-mc-grass token scale instead.
+  meadow: "#5fa73f",
+  meadowLight: "#7ec850",
+  meadowDark: "#3d6b28",
+
+  trunk: "#6d5732",
+  trunkLight: "#8a6f43",
+  leaf: "#3f8f2f",
+  leafLight: "#5cb03f",
+  leafDark: "#2b6620",
 } as const;
 
 /** Linear blend between two hex colours. Used for banded sky ramps. */
@@ -686,6 +699,174 @@ export function portalMotes(key = "portal-motes"): string {
  * Returns `null` for an unknown name so the caller can fall back to the
  * generic placeholder rather than rendering an empty layer.
  */
+// ---------------------------------------------------------------------------
+// Panorama painters — the slowly-panning homepage backdrop.
+//
+// Every layer here is TILEABLE and drifts forever, so seamlessness is not a
+// nicety: a discontinuity at the tile edge becomes a vertical seam sliding
+// across the hero every few seconds, which is the most visible bug a
+// background can have.
+// ---------------------------------------------------------------------------
+
+/**
+ * A horizontal height field that is guaranteed to close on itself.
+ *
+ * Each component completes an INTEGER number of cycles across the tile width,
+ * so f(x + w) === f(x) exactly. That identity is the entire reason these layers
+ * can repeat and pan indefinitely. A random walk, value noise, or summed sines
+ * at arbitrary frequencies would all produce a silhouette whose two ends do not
+ * meet, and the seam would be obvious the moment the layer moved.
+ */
+function periodicHeight(
+  w: number,
+  key: string,
+  parts: Array<{ cycles: number; amp: number }>,
+): (x: number) => number {
+  const rnd = seededRandom(key);
+  const phases = parts.map(() => rnd() * Math.PI * 2);
+  return (x: number) => {
+    let v = 0;
+    for (let i = 0; i < parts.length; i++) {
+      v += parts[i].amp * Math.sin((2 * Math.PI * parts[i].cycles * x) / w + phases[i]);
+    }
+    return v;
+  };
+}
+
+/**
+ * Far rolling hills. Hazed heavily toward the sky so they read as distance
+ * rather than as a green wall behind the wordmark.
+ */
+function hillsTile(w: number, h: number, key: string): string {
+  const s = 20;
+  const baseY = h * 0.52;
+  const field = periodicHeight(w, key, [
+    { cycles: 1, amp: h * 0.1 },
+    { cycles: 2, amp: h * 0.05 },
+    { cycles: 5, amp: h * 0.02 },
+  ]);
+
+  const face = mix(C.meadow, C.skyLow, 0.6);
+  const crest = mix(C.meadowLight, C.skyLow, 0.52);
+
+  let body = "";
+  for (let x = 0; x < w; x += s) {
+    const y = Math.round((baseY + field(x + s / 2)) / s) * s;
+    body += rect(x, y, s, h - y, face);
+    body += rect(x, y, s, s, crest);
+  }
+  return svg(w, h, "none", body);
+}
+
+/**
+ * Mid-distance treeline on a grass shelf.
+ *
+ * The ground line is periodic; the trees are inset from both edges by more than
+ * the widest canopy, so no tree is ever cut in half by the tile boundary. That
+ * is the same trick `cloudsBlocky` uses, and for the same reason.
+ */
+function treelineTile(w: number, h: number, key: string): string {
+  const rnd = seededRandom(key);
+  const s = 16;
+  const groundY = h * 0.6;
+  const field = periodicHeight(w, `${key}-ground`, [
+    { cycles: 2, amp: h * 0.035 },
+    { cycles: 4, amp: h * 0.016 },
+  ]);
+
+  const soil = mix(C.meadow, C.skyLow, 0.3);
+  const soilTop = mix(C.meadowLight, C.skyLow, 0.24);
+  const leaf = mix(C.leaf, C.skyLow, 0.22);
+  const leafLit = mix(C.leafLight, C.skyLow, 0.16);
+  const leafDark = mix(C.leafDark, C.skyLow, 0.28);
+
+  const groundAt = (x: number) => Math.round((groundY + field(x)) / s) * s;
+
+  let body = "";
+  for (let x = 0; x < w; x += s) {
+    const y = groundAt(x + s / 2);
+    body += rect(x, y, s, h - y, soil);
+    body += rect(x, y, s, s / 2, soilTop);
+  }
+
+  const margin = s * 9;
+  const count = 10;
+  for (let i = 0; i < count; i++) {
+    const cx =
+      Math.round(
+        (margin + ((w - margin * 2) * (i + 0.5)) / count + (rnd() - 0.5) * s * 5) / s,
+      ) * s;
+    const base = groundAt(cx);
+    const trunkH = s * (2 + Math.floor(rnd() * 3));
+    const rows = 3 + Math.floor(rnd() * 2);
+    const halfW = 2 + Math.floor(rnd() * 2);
+
+    body += rect(cx, base - trunkH, s, trunkH, C.trunk);
+    body += rect(cx, base - trunkH, s / 2, trunkH, C.trunkLight);
+
+    // Canopy: widest at the bottom, narrowing upward, so it silhouettes as a
+    // crown instead of a box.
+    for (let r = 0; r < rows; r++) {
+      const shrink = Math.floor((r * halfW) / rows);
+      const half = Math.max(1, halfW - shrink);
+      const y = base - trunkH - (r + 1) * s;
+      for (let c = -half; c <= half; c++) {
+        const top = r === rows - 1;
+        body += rect(cx + c * s, y, s, s, top ? leafLit : c < 0 ? leaf : leafDark);
+      }
+    }
+  }
+
+  return svg(w, h, "none", body);
+}
+
+/**
+ * Foreground meadow. Saturated and unhazed — it is the nearest thing in frame,
+ * and the depth cue only works if the near band is the most vivid.
+ */
+function meadowTile(w: number, h: number, key: string): string {
+  const rnd = seededRandom(key);
+  const s = 24;
+  const topY = h * 0.66;
+  const field = periodicHeight(w, `${key}-edge`, [
+    { cycles: 3, amp: h * 0.03 },
+    { cycles: 7, amp: h * 0.012 },
+  ]);
+
+  let body = "";
+  for (let x = 0; x < w; x += s) {
+    const y = Math.round((topY + field(x + s / 2)) / s) * s;
+    body += rect(x, y, s, h - y, C.meadow);
+    body += rect(x, y, s, s, C.meadowLight);
+    body += rect(x, y, s, Math.max(2, s / 6), shade(C.meadowLight, 0.22));
+  }
+
+  // Depth banding toward the bottom edge, kept blocky.
+  const bands = 6;
+  for (let i = 0; i < bands; i++) {
+    const y = topY + ((h - topY) * i) / bands;
+    body += rect(0, y, w, (h - topY) / bands + 1, C.meadowDark, (i / bands) * 0.5);
+  }
+
+  // Tufts and flowers, inset so nothing is clipped at the seam.
+  const margin = s * 2;
+  for (let i = 0; i < 70; i++) {
+    const x = Math.round((margin + rnd() * (w - margin * 2)) / s) * s;
+    const y = Math.round((topY + rnd() * (h - topY)) / s) * s;
+    const flower = rnd() < 0.12;
+    body += rect(
+      x,
+      y,
+      s,
+      flower ? s / 3 : s / 2,
+      flower ? (rnd() < 0.5 ? "#f2b233" : "#e8dcfb") : C.meadowDark,
+      flower ? 0.9 : 0.45,
+    );
+  }
+
+  return svg(w, h, "none", body);
+}
+
 const paintCache = new Map<string, string | null>();
 
 export function paintSceneLayer(
@@ -733,6 +914,15 @@ export function paintSceneLayer(
       break;
     case "portal-spill":
       result = portalSpill(w, h);
+      break;
+    case "hills-tile":
+      result = hillsTile(w, h, key);
+      break;
+    case "treeline-tile":
+      result = treelineTile(w, h, key);
+      break;
+    case "meadow-tile":
+      result = meadowTile(w, h, key);
       break;
     default:
       if (process.env.NODE_ENV !== "production") {

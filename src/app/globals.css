@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   FEST REALM — theme contract
+   PARALLAX — theme contract
    Tailwind v4 is CSS-first: design tokens live in @theme, not tailwind.config.ts.
    Every token declared here becomes a utility (e.g. --color-mc-grass -> bg-mc-grass).
    ========================================================================= */
@@ -105,6 +105,17 @@
   --animate-portal-pulse: portal-pulse 3s ease-in-out infinite;
   --animate-float: float 4s ease-in-out infinite;
   --animate-block-in: block-in 0.35s var(--ease-block) both;
+  /* Announcements drifting in the hero sky. A slow ellipse rather than a bob:
+     a pure vertical bounce reads as a UI element animating, while drifting on
+     both axes reads as something suspended in air.
+
+     The cycle RETURNS TO THE ORIGIN, which is what makes reduced motion free —
+     the global `animation-duration: 0.01ms` override snaps to the 100% frame,
+     and here that is exactly where the element already sits. The ticker this
+     replaced could not do that: its end state was a -50% translate, so
+     snapping left the bar looking half-empty. */
+  --animate-sky-float: sky-float 13s ease-in-out infinite;
+  --animate-scroll-hint: scroll-hint 1.8s ease-in-out infinite;
 }
 
 /* ---- Bevel shadow presets --------------------------------------------------
@@ -298,6 +309,26 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes block-in {
   from { opacity: 0; transform: translateY(calc(var(--mc-unit) * 1.5)) scale(0.97); }
   to   { opacity: 1; transform: none; }
+}
+
+/* A sway: mostly side-to-side, with just enough rise and fall to read as
+   drifting rather than sliding on a rail. Symmetric about the origin so the
+   cloud never wanders from its slot, and it passes THROUGH the origin at 0%
+   and 100% — which is what makes reduced motion free. */
+@keyframes sky-float {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(calc(var(--mc-unit) * -1.4), calc(var(--mc-unit) * -0.4)); }
+  50%  { transform: translate(0, calc(var(--mc-unit) * -0.6)); }
+  75%  { transform: translate(calc(var(--mc-unit) *  1.4), calc(var(--mc-unit) * -0.4)); }
+  100% { transform: translate(0, 0); }
+}
+
+/* The scroll cue's up-and-down. Bigger travel than `float` because this one has
+   a job to do — it is telling the visitor the page continues below the fold,
+   and a 6px nudge does not read as an instruction. */
+@keyframes scroll-hint {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(calc(var(--mc-unit) * 1.1)); }
 }
 
 /* ============================================================================

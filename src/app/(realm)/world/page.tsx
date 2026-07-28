@@ -1,6 +1,6 @@
 import { WorldScreen } from "@/frontend/screens/realm/world-screen";
 
-export const metadata = { title: "World Spawn — Fest Realm" };
+export const metadata = { title: "World Spawn — Parallax" };
 
 export default async function WorldPage({
   searchParams,

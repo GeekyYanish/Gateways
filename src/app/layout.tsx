@@ -3,7 +3,7 @@ import { fontVariables } from "@/frontend/lib/fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Fest Realm — Another World Awaits",
+  title: "Parallax — Another World Awaits",
   description:
     "A Minecraft-inspired college fest portal. Create your adventurer, explore the realm, and register for events.",
 };

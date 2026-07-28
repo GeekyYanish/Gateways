@@ -1,0 +1,147 @@
+/**
+ * THE SINGLE SOURCE OF TRUTH FOR EVERY FEST FACT.
+ *
+ * Dates, money, phone numbers and links change late and change often, and they
+ * are exactly the things that get missed when they are scattered across a dozen
+ * components. No homepage section may hardcode one — import from here.
+ *
+ * Values still marked `TODO` are placeholders carried over from the 2025
+ * edition or invented as shape-correct stand-ins. Before launch:
+ *
+ *     grep -n "TODO" src/frontend/lib/fest.ts
+ *
+ * lists exactly what needs a real answer. Everything renders correctly with the
+ * placeholders in place, so the page is demoable today.
+ */
+
+export interface FestContact {
+  name: string;
+  phone: string;
+  role?: string;
+}
+
+export interface FestSocial {
+  label: string;
+  href: string;
+}
+
+/** Formats a rupee figure with Indian digit grouping: 63000 → "₹63,000". */
+export function inr(amount: number): string {
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
+
+/**
+ * Facts that appear in more than one place on the page.
+ *
+ * Hoisted out of the `FEST` literal so the sky announcements and the
+ * registration steps can interpolate them rather than restating them. They were
+ * spelled out twice
+ * before, and a date change is exactly the moment two copies of the same fact
+ * quietly stop agreeing — which is what happened here.
+ */
+const HACKATHON_DATE_LABEL = "2 October 2026";
+const PRIZE_POOL_INR = 63_000;
+const REGISTRATION_FEE_INR = 150;
+
+export const FEST = {
+  /** Display name of this edition. */
+  edition: "Gateways 2026",
+  shortEdition: "GATEWAYS 2026",
+
+  theme: {
+    /** The event name — also the project's name. */
+    name: "Parallax",
+    /** The technical subject the theme dramatises. */
+    subject: "Digital Twins",
+    /** Hero tagline, verbatim from the theme deck. */
+    tagline:
+      "See reality from two perspectives at once: the physical world and its living digital mirror.",
+    /** One-line reduction used in metadata and the nav. */
+    blurb: "One reality. Two vantage points. Better decisions.",
+  },
+
+  /**
+   * Countdown target and the two fest days.
+   * ISO with an explicit +05:30 offset so the countdown is identical for a
+   * visitor in another timezone; a bare local string would drift.
+   *
+   * The times of day are still assumptions — 09:30 open on day one and 18:00
+   * close on day two, mirroring 2025's inauguration and valedictory slots.
+   * TODO — confirm the start and end times; the DATES are confirmed.
+   */
+  datesIso: {
+    start: "2026-10-08T09:30:00+05:30",
+    end: "2026-10-09T18:00:00+05:30",
+  },
+  /** Human-readable date line under the hero wordmark. */
+  dateLabel: "8 & 9 October 2026",
+  /**
+   * Hackathon runs ahead of the main fest, as it did in 2025 (six days early).
+   * TODO — confirm; this is derived from the fest dates, not given.
+   */
+  hackathonDateLabel: HACKATHON_DATE_LABEL,
+
+  /** TODO — 2025 said "over 29 years", so 2026 should be 30. Confirm. */
+  yearsRunning: 30,
+
+  host: {
+    department: "Department of Computer Science",
+    programmes: "MCA · MSc AI-ML",
+    university: "CHRIST (Deemed to be University)",
+    universityUrl: "https://christuniversity.in",
+    city: "Bangalore",
+  },
+
+  /** All rupee figures. TODO — confirm every one of these for 2026. */
+  money: {
+    /** Flat fee covering any number of events, as in 2025. */
+    registrationFeeInr: REGISTRATION_FEE_INR,
+    prizePoolInr: PRIZE_POOL_INR,
+    accommodationPerDayInr: 300,
+    accommodationNote: "+ GST, per person per day",
+  },
+
+  /** TODO — the real Google Form and brochure links. */
+  links: {
+    register: "#register",
+    brochure: "#",
+  },
+
+  /**
+   * The registration walkthrough, rendered as a numbered recipe.
+   * Mirrors the 2025 flow: everything happens in an external form.
+   * TODO — confirm the steps still match the 2026 form.
+   */
+  registerSteps: [
+    "Browse the events and pick the ones you want.",
+    "Read each event's rules, team size and timing.",
+    "Open the registration form and enter your college.",
+    "Fill in your own participant details.",
+    "Add your teammates for any team event.",
+    `Pay the flat ${inr(REGISTRATION_FEE_INR)} entry fee for as many events as you like.`,
+    "Upload the payment screenshot or receipt (image or PDF).",
+    "Submit — you will receive a confirmation on the registered email.",
+  ],
+
+  /** TODO — replace with the 2026 organising team. */
+  contacts: [
+    { name: "TODO — Convenor", phone: "TODO", role: "General queries" },
+    { name: "TODO — Registrations", phone: "TODO", role: "Registration & payments" },
+    { name: "TODO — Hospitality", phone: "TODO", role: "Accommodation" },
+  ] as FestContact[],
+
+  /** TODO — point these at the fest's own handles once they exist. */
+  socials: [
+    { label: "Instagram", href: "https://www.instagram.com/christ_university_bangalore/" },
+    { label: "LinkedIn", href: "https://www.linkedin.com/school/christ-university-bangalore/" },
+    { label: "YouTube", href: "https://www.youtube.com/@gateways-2024" },
+  ] as FestSocial[],
+
+  /** The rolling announcement bar. TODO — confirm the copy each time it changes. */
+  announcements: [
+    "Registrations are open",
+    `Prize pool ${inr(PRIZE_POOL_INR)}`,
+    `Hackathon begins ${HACKATHON_DATE_LABEL}`,
+    "One reality. Two vantage points.",
+  ],
+} as const;

@@ -8,7 +8,7 @@
  * while still being scoped to the tab.
  */
 
-const KEY = "festrealm:transition";
+const KEY = "parallax:transition";
 
 export type TransitionState = "none" | "covering" | "revealing";
 

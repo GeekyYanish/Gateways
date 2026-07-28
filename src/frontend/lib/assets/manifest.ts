@@ -100,6 +100,31 @@ export const ART = {
     warpOrb: { src: "/art/items/warp-orb.png", w: 32, h: 32, kind: "sprite" },
   }),
 
+  /**
+   * The homepage's digital-twin comparison: the same object photographed and
+   * then rebuilt out of blocks, side by side. Both halves are declared at the
+   * SAME intrinsic size on purpose — the whole point of the section is that the
+   * pair reads as one object seen twice, and two different box sizes would
+   * break that the moment the real art lands.
+   */
+  twins: spec({
+    // Notes stay SHORT: the placeholder draws "<w>×<h> <note>" on one
+    // unwrapped line, so a long note runs straight out of the box.
+    physical: { src: "/art/twins/physical.png", w: 256, h: 256, kind: "sprite", note: "photo" },
+    mirrored: { src: "/art/twins/mirrored.png", w: 256, h: 256, kind: "sprite", note: "voxel" },
+  }),
+
+  /**
+   * Institutional marks. NOT pixel art, and the one group that must never go
+   * through `<PixelImage>` — `image-rendering: pixelated` on a smooth vector
+   * logo destroys its curves and misrepresents someone else's brand. Consumers
+   * render these with a plain <img> at a CSS height; the path still lives here
+   * so the no-hardcoded-paths rule holds.
+   */
+  brand: spec({
+    christUniversity: { src: "/art/brand/christ-university.png", w: 1795, h: 608, kind: "sprite", note: "CHRIST wordmark, white" },
+  }),
+
   ui: spec({
     hotbarFrame: { src: "/art/ui/hotbar.png", w: 364, h: 44, kind: "sprite" },
     slot: { src: "/art/ui/slot.png", w: 18, h: 18, kind: "sprite" },

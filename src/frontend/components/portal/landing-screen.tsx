@@ -9,9 +9,13 @@ import { PortalFrame } from "./portal-frame";
 import { usePortalTransition } from "./portal-transition-overlay";
 import { applyReduceMotionAttribute } from "@/frontend/lib/animation/use-reduced-motion";
 
-const TITLE = "FEST REALM";
+const TITLE = "PARALLAX";
 
 const FOOTER_LINKS = [
+  // "Home" first, and it is not optional: this screen is a full-viewport
+  // cinematic with no nav bar, so without it the only way back to the fest
+  // homepage is the browser's back button.
+  { href: "/", label: "Home" },
   { href: "/events", label: "Events" },
   { href: "/schedule", label: "Schedule" },
   { href: "/sponsors", label: "Sponsors" },
@@ -19,7 +23,12 @@ const FOOTER_LINKS = [
 ];
 
 /**
- * SCREEN 1 — Landing.
+ * SCREEN 2 — the portal gate, at `/portal`.
+ *
+ * Reached from the homepage's "Start the Journey". This is the threshold: the
+ * page whose only job is to make stepping into the realm feel like a decision.
+ * "Enter the Portal" fires the wipe into `/entering`, which then branches to
+ * login, character creation, or the world.
  *
  * Reads top to bottom exactly as the design does: title, tagline, portal, CTA,
  * and a footer bar welded to the bottom edge. The portal sits *below* the

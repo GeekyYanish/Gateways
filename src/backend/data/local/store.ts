@@ -13,7 +13,7 @@ import { DataError } from "../types";
  * their quota.
  */
 
-const NS = "festrealm";
+const NS = "parallax";
 export const SCHEMA_VERSION = 1;
 
 export type Collection =
@@ -132,7 +132,7 @@ export function remove(c: Collection): void {
   emitLocal(c);
 }
 
-/** Wipe every Fest Realm key — used by the dev reset button. */
+/** Wipe every Parallax key — used by the dev reset button. */
 export function clearAll(): void {
   if (typeof window === "undefined") {
     memory.clear();
