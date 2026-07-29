@@ -17,6 +17,11 @@ import { cn } from "@/frontend/lib/utils";
  *
  * The bar starts transparent over the hero and gains a solid panel background
  * once scrolled, so the wordmark does not sit on a bar floating over the sky.
+ *
+ * Left to right: the fest's own crest + wordmark (the identity this page is
+ * selling), the link list, then the host university's mark on the far right.
+ * The two logos are deliberately at opposite ends — ours anchors the page, the
+ * university's is an outbound credit and should not be mistaken for it.
  */
 
 const ANCHORS = [
@@ -54,40 +59,25 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
       )}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-[var(--mc-unit)] px-[calc(var(--mc-unit)*1.5)] py-[var(--mc-unit)]">
-        <div className="flex items-center gap-[calc(var(--mc-unit)*1.25)]">
-          {/*
-            The university mark, linking out to christuniversity.in — it used to
-            be a "CHRIST ↗" text link stranded on the far right.
-
-            A plain <img>, deliberately NOT <PixelImage>: that component applies
-            `image-rendering: pixelated`, which would shred the logo's curves
-            and lettering. The path still comes from the manifest, so the
-            no-hardcoded-paths rule holds. Height-constrained with width auto so
-            the 1795×608 source scales without distortion.
-          */}
-          <a
-            href={FEST.host.universityUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex shrink-0 items-center"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={ART.brand.christUniversity.src}
-              alt={`${FEST.host.university} — opens in a new tab`}
-              className="h-[22px] w-auto opacity-90 transition-opacity hover:opacity-100 md:h-[28px]"
-            />
-          </a>
-
-          <span aria-hidden className="h-[20px] w-px bg-mc-border md:h-[26px]" />
-
-          <a
-            href="#top"
-            className="pixel-shadow font-pixel text-[10px] uppercase tracking-[0.14em] text-mc-gold no-underline md:text-[12px]"
-          >
+        {/* Crest and wordmark are one link, not two adjacent ones — they are a
+            single lockup, and two targets to the same anchor would just give a
+            keyboard user a redundant stop. The crest is decorative here because
+            the wordmark beside it already names the link. */}
+        <a
+          href="#top"
+          className="flex shrink-0 items-center gap-[calc(var(--mc-unit)*0.75)] no-underline"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={ART.brand.gatewaysCrest.src}
+            alt=""
+            aria-hidden
+            className="h-[6rem] w-auto shrink-0 md:h-[3rem]"
+          />
+          <span className="pixel-shadow font-pixel text-[10px] uppercase tracking-[0.14em] text-mc-gold md:text-[12px]">
             {FEST.shortEdition}
-          </a>
-        </div>
+          </span>
+        </a>
 
         {/* Desktop nav. Hidden rather than unmounted on mobile so there is only
             one source of truth for the link list. */}
@@ -106,15 +96,44 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
           ))}
         </nav>
 
-        <div className="lg:hidden">
-          <BlockButton
-            variant="ghost"
-            size="sm"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
+        <div className="flex shrink-0 items-center gap-[calc(var(--mc-unit)*1.25)]">
+          {/* Separates the outbound university link from the in-page nav it now
+              sits beside. Only meaningful once the nav is visible. */}
+          <span aria-hidden className="hidden h-[20px] w-px bg-mc-border md:h-[26px] lg:block" />
+
+          {/*
+            The university mark, linking out to christuniversity.in.
+
+            A plain <img>, deliberately NOT <PixelImage>: that component applies
+            `image-rendering: pixelated`, which would shred the logo's curves
+            and lettering. The path still comes from the manifest, so the
+            no-hardcoded-paths rule holds. Height-constrained with width auto so
+            the 1795×608 source scales without distortion.
+          */}
+          <a
+            href={FEST.host.universityUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex shrink-0 items-center"
           >
-            ☰
-          </BlockButton>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={ART.brand.christUniversity.src}
+              alt={`${FEST.host.university} — opens in a new tab`}
+              className="h-[6rem] w-auto opacity-90 transition-opacity hover:opacity-100 md:h-[3rem]"
+            />
+          </a>
+
+          <div className="lg:hidden">
+            <BlockButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              ☰
+            </BlockButton>
+          </div>
         </div>
       </div>
 
