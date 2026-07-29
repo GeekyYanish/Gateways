@@ -221,8 +221,17 @@ function migrateLegacySkins(): void {
  * app start, which is how it is wired (the repository calls it lazily).
  */
 export function seedIfNeeded(): void {
-  const meta = read<{ seededAt?: string }>("meta", {});
+  const meta = read<{ seededAt?: string; feesSeededV1?: boolean; feesSeededV2?: boolean }>("meta", {});
   if (meta.seededAt && readList("events").length > 0) {
+    if (!meta.feesSeededV2) {
+      const existingEvents = readList<FestEvent>("events");
+      const updated = existingEvents.map((e) => ({
+        ...e,
+        entryFeeInr: 0,
+      }));
+      write("events", updated);
+      write("meta", { ...meta, feesSeededV1: true, feesSeededV2: true });
+    }
     // Cheap no-op once every character is on a current skin id.
     migrateLegacySkins();
     return;

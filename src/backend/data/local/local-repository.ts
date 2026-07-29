@@ -551,14 +551,18 @@ class LocalRegistrations implements RegistrationRepository {
 
     const all = readList<Registration>("registrations");
 
+    // Enforce one-time payment pass verification
+    const receipts = readList<PaymentReceipt>("paymentReceipts");
+    const hasVerifiedPayment = receipts.some((r) => r.userId === userId && r.status === "verified");
+    if (!hasVerifiedPayment) {
+      throw new DataError("PAYMENT_NOT_VERIFIED", "You must pay the one-time registration fee and be verified before registering for events.");
+    }
+
     // Unique (eventId, userId). Reactivates a previously cancelled registration
     // rather than creating a second row, which is what the DB constraint forces.
     const existing = all.find((r) => r.eventId === eventId && r.userId === userId);
     if (existing && existing.status !== "cancelled") {
-      if (event.entryFeeInr > 0 && existing.status === "pending") {
-        return existing;
-      }
-      throw new DataError("ALREADY_REGISTERED", "You are already registered for this event.");
+      return existing;
     }
 
     if (event.status !== "published" && event.status !== "ongoing") {
@@ -580,7 +584,7 @@ class LocalRegistrations implements RegistrationRepository {
       teamId: teamId ?? null,
       // Over capacity waitlists rather than hard-failing, so the UI can show a
       // useful state instead of an error.
-      status: event.entryFeeInr > 0 ? "pending" : full ? "waitlisted" : event.requiresApproval ? "pending" : "confirmed",
+      status: full ? "waitlisted" : event.requiresApproval ? "pending" : "confirmed",
       registeredAt: nowIso(),
       cancelledAt: null,
     };
@@ -992,8 +996,11 @@ class LocalPaymentReceipts implements PaymentReceiptRepository {
   }): Promise<PaymentReceipt> {
     ready();
     const all = readList<PaymentReceipt>("paymentReceipts");
-    if (all.some((r) => r.registrationId === input.registrationId)) {
+    if (input.registrationId !== "gateways-entry" && all.some((r) => r.registrationId === input.registrationId)) {
       throw new DataError("RECEIPT_ALREADY_SUBMITTED", "A receipt has already been submitted for this registration.");
+    }
+    if (input.registrationId === "gateways-entry" && all.some((r) => r.userId === input.userId && (r.status === "pending" || r.status === "verified"))) {
+      throw new DataError("RECEIPT_ALREADY_SUBMITTED", "You have already submitted a one-time entry fee receipt.");
     }
     const receipt: PaymentReceipt = {
       id: uid("rcpt"),
@@ -1017,6 +1024,17 @@ class LocalPaymentReceipts implements PaymentReceiptRepository {
   async getByRegistration(registrationId: string): Promise<PaymentReceipt | null> {
     ready();
     return readList<PaymentReceipt>("paymentReceipts").find((r) => r.registrationId === registrationId) ?? null;
+  }
+
+  async getByUser(userId: string): Promise<PaymentReceipt | null> {
+    ready();
+    const userReceipts = readList<PaymentReceipt>("paymentReceipts").filter((r) => r.userId === userId);
+    if (userReceipts.length === 0) return null;
+    const verified = userReceipts.find((r) => r.status === "verified");
+    if (verified) return verified;
+    const pending = userReceipts.find((r) => r.status === "pending");
+    if (pending) return pending;
+    return userReceipts.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0] ?? null;
   }
 
   async listForEvent(eventId: string): Promise<PaymentReceipt[]> {

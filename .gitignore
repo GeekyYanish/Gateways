@@ -62,3 +62,5 @@ next-env.d.ts
 .claude/launch.json
 
 deliverables/
+*.doc
+*.docx

@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { BackLink, BlockInput, BlockPanel, LoadingBlocks } from "@/frontend/components/mc";
+import { BackLink, BlockInput, BlockPanel, LoadingBlocks, BlockButton } from "@/frontend/components/mc";
 import { BiomeScene } from "@/frontend/components/scene";
+import { PaymentUploadModal } from "@/frontend/components/registration/payment-upload-modal";
+import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
 import { repo } from "@/backend/data";
 import { cn } from "@/frontend/lib/utils";
@@ -19,6 +21,9 @@ export function EventsScreen() {
   const params = useSearchParams();
   const categorySlug = params.get("category") ?? undefined;
   const [search, setSearch] = useState("");
+  const { session } = useSession();
+  const userId = session?.userId;
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const { data: categories } = useAsync(() => repo.reference.categories(), []);
   const { data: events, loading } = useAsync(
@@ -29,6 +34,10 @@ export function EventsScreen() {
         status: ["published", "ongoing", "registration_closed", "completed"],
       }),
     [categorySlug, search],
+  );
+  const { data: userReceipt, reload: reloadReceipt } = useAsync(
+    async () => (userId ? repo.paymentReceipts.getByUser(userId) : null),
+    [userId]
   );
 
   const activeCategory = categories?.find((c) => c.slug === categorySlug);
@@ -67,6 +76,47 @@ export function EventsScreen() {
           ) : null}
         </header>
       </BiomeScene>
+
+      {userId && (
+        <PaymentUploadModal
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          eventId="gateways-entry"
+          registrationId="gateways-entry"
+          onSuccess={() => reloadReceipt()}
+        />
+      )}
+
+      {(!userReceipt || userReceipt.status !== "verified") && (
+        <BlockPanel variant="slot" className="border-l-4 border-mc-gold p-[var(--mc-unit)] flex flex-col sm:flex-row gap-[var(--mc-unit)] items-start sm:items-center justify-between">
+          <div>
+            <p className="text-[14px]">
+              Want to register? Make the one time payment and register for your fav events you want.
+            </p>
+            {userReceipt?.status === "pending" && (
+              <p className="text-[10px] text-mc-emerald-light mt-[calc(var(--mc-unit)*0.5)] uppercase font-pixel">
+                Payment verification pending
+              </p>
+            )}
+            {userReceipt?.status === "rejected" && (
+              <p className="text-[10px] text-mc-redstone-light mt-[calc(var(--mc-unit)*0.5)] uppercase font-pixel">
+                Payment rejected
+              </p>
+            )}
+          </div>
+          {!userId ? (
+            <Link href="/login?next=/events" className="no-underline shrink-0">
+              <BlockButton variant="gold" size="sm">Make Payment</BlockButton>
+            </Link>
+          ) : userReceipt?.status === "pending" ? null : (
+            <div className="shrink-0">
+              <BlockButton variant={userReceipt?.status === "rejected" ? "emerald" : "gold"} size="sm" onClick={() => setPaymentModalOpen(true)}>
+                {userReceipt?.status === "rejected" ? "Re-upload Receipt" : "Make Payment"}
+              </BlockButton>
+            </div>
+          )}
+        </BlockPanel>
+      )}
 
       <BlockInput
         label="Search"
