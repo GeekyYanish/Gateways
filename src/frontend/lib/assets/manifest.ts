@@ -123,6 +123,7 @@ export const ART = {
    */
   brand: spec({
     christUniversity: { src: "/art/brand/christ-university.png", w: 1795, h: 608, kind: "sprite", note: "CHRIST wordmark, white" },
+    gatewaysCrest: { src: "/art/brand/Gateways_Pixel.png", w: 1254, h: 1254, kind: "sprite", note: "Gateways crest, chrome" },
   }),
 
   ui: spec({
