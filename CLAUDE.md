@@ -23,24 +23,24 @@ Both gate on `process.env.NODE_ENV === "production"` → `notFound()` in their `
 
 ## Architecture
 
-Read `README.md` first — it is the canonical project overview. The topic docs are `ANIMATION.md`, `ART-ASSETS.md`, `VOXEL-3D.md`, and `SUPABASE-MIGRATION.md` (full target schema + RLS design). Points below are the ones that change how you write code here.
+Read `README.md` first — it is the canonical project overview. The topic docs are `ANIMATION.md`, `ART-ASSETS.md`, `VOXEL-3D.md`, `MYSQL-MIGRATION.md` (full target schema + authorization design), and `DECISIONS.md` (why the backend is MySQL, and what that costs). Points below are the ones that change how you write code here.
 
 ### The data seam
 
-Nothing outside `src/backend/data/` may touch `localStorage`. Screens import `repo` from `@/backend/data` and depend only on the `Repository` interface (`src/backend/data/repository.ts`). `src/backend/data/index.ts` is the single construction point — the Supabase migration is one line there plus a second implementation.
+Nothing outside `src/backend/data/` may touch `localStorage`. Screens import `repo` from `@/backend/data` and depend only on the `Repository` interface (`src/backend/data/repository.ts`). `src/backend/data/index.ts` is the single construction point — the MySQL migration is one line there plus a second implementation.
 
 - **Every repository method is `async`**, even though localStorage is synchronous. Keep it that way; a synchronous signature would have to be unwound at every call site later.
-- Failures throw `DataError` with a stable `code` (`EMAIL_TAKEN`, etc.) matching what a Postgres RPC would return. Catch on `code`, not on message.
+- Failures throw `DataError` with a stable `code` (`EMAIL_TAKEN`, etc.) matching what the eventual server action would return. Catch on `code`, not on message.
 - Invariants the app leans on, enforced in `local-repository.ts` and asserted by `/dev/data-test`: XP grants idempotent on `(userId, sourceType, sourceId, reason)` with `totalXp` recomputed as the ledger **sum** (never incremented); no double registration; check-in idempotent; achievements unlock once. Preserve these in any new implementation.
 - Data fetching in components uses `useAsync` (`src/frontend/hooks/use-async.ts`), not TanStack Query. Its `{ data, error, loading, reload }` shape mirrors TanStack deliberately, so that's the swap point later.
 
-`localStorage is not a security boundary` — there is no server. Any role/XP gate is UI-only until Supabase lands.
+`localStorage is not a security boundary` — there is no server. Any role/XP gate is UI-only until the MySQL backend lands. Note that MySQL has no row-level security, so once it does land a missed authorization check has no database-level backstop — see `DECISIONS.md`.
 
 ### Routes
 
 App Router with route groups: `(public)` no account needed · `(auth)` login/character creation · `(portal)` cinematic transitions · `(realm)` authenticated.
 
-- Auth protection is a **client guard** in `src/app/(realm)/layout.tsx` (`status` is `unauthenticated` / `needs-character` / `ready`), because localStorage has no server presence. It moves to `middleware.ts` with Supabase.
+- Auth protection is a **client guard** in `src/app/(realm)/layout.tsx` (`status` is `unauthenticated` / `needs-character` / `ready`), because localStorage has no server presence. It moves to `middleware.ts` with the MySQL backend.
 - **Convention: `page.tsx` is a thin server component** holding `metadata` and rendering a client component from `src/frontend/screens/`. Mirror the route's domain under that folder when adding a screen.
 - `<MotionConfig reducedMotion="user">` is mounted once per route-group layout — don't remount it per component.
 

@@ -28,16 +28,16 @@ import type {
 /**
  * THE SWAP SEAM.
  *
- * Screens and hooks depend on this interface, never on localStorage or on
- * Supabase directly. Today `LocalRepository` implements it; later
- * `SupabaseRepository` will, and `src/backend/data/index.ts` changes by one line.
+ * Screens and hooks depend on this interface, never on localStorage or on the
+ * database directly. Today `LocalRepository` implements it; later
+ * `MySqlRepository` will, and `src/backend/data/index.ts` changes by one line.
  *
  * Every method is async even though localStorage is synchronous. That is
  * deliberate: if callers were written against synchronous returns, swapping in a
  * network-backed implementation would mean touching every call site.
  *
  * Methods throw `DataError` with a stable code on failure, matching the error
- * codes a Postgres RPC would return.
+ * codes the eventual server action will return.
  */
 export interface Repository {
   auth: AuthRepository;
@@ -61,7 +61,7 @@ export interface AuthRepository {
   signUp(email: string, password: string): Promise<Session>;
   signIn(email: string, password: string): Promise<Session>;
   /**
-   * OAuth. The local implementation shows a mock account chooser; the Supabase
+   * OAuth. The local implementation shows a mock account chooser; the Auth.js
    * one will redirect. Same signature either way.
    */
   signInWithProvider(provider: "google" | "discord" | "microsoft"): Promise<Session>;
@@ -165,9 +165,9 @@ export interface AnnouncementRepository {
   list(): Promise<Announcement[]>;
   create(input: Omit<Announcement, "id" | "publishedAt">): Promise<Announcement>;
   /**
-   * Same signature as a Supabase Realtime subscription, so the consumer does not
-   * change when the backend does. Locally backed by the `storage` event plus an
-   * in-page emitter.
+   * Signature is transport-agnostic, so the consumer does not change when the
+   * backend does. Locally backed by the `storage` event plus an in-page emitter;
+   * under MySQL it becomes a poll, since there is no LISTEN/NOTIFY equivalent.
    */
   subscribe(cb: (a: Announcement) => void): Unsubscribe;
 }

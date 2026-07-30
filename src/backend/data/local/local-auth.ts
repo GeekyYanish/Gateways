@@ -14,12 +14,12 @@ import type { AuthRepository, Unsubscribe } from "../repository";
  * localStorage is still fully offline-attackable, and there is no rate limiting,
  * no session signing, and no server-side verification of anything.
  *
- * Concretely this means the organizer and admin dashboards are UI-only until
- * Supabase lands, and QR check-in cannot be trusted (a forged token cannot be
- * detected without a server-held secret). That is an accepted, documented
- * trade-off for a prototype — see SUPABASE-MIGRATION.md for the real model,
- * where role lives in a `user_roles` table and RLS re-derives it on every
- * mutation rather than trusting anything the client says.
+ * Concretely this means the organizer and admin dashboards are UI-only until the
+ * MySQL backend lands, and QR check-in cannot be trusted (a forged token cannot
+ * be detected without a server-held secret). That is an accepted, documented
+ * trade-off for a prototype — see MYSQL-MIGRATION.md for the real model, where
+ * role lives in a `user_roles` table that every mutating server action re-reads
+ * rather than trusting anything the client says.
  */
 
 interface StoredCredential {
@@ -59,7 +59,7 @@ function normaliseEmail(email: string): string {
 
 /**
  * Constant-time-ish comparison. Not meaningful without a server, but avoids
- * teaching the wrong pattern to whoever ports this to the Supabase version.
+ * teaching the wrong pattern to whoever ports this to the server version.
  */
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -126,7 +126,7 @@ export class LocalAuth implements AuthRepository {
     );
 
     // Same error whether the email is unknown or the password is wrong — not
-    // meaningful here, but it is the correct habit and matches Supabase.
+    // meaningful here, but it avoids account enumeration once there is a server.
     if (!cred) throw new DataError("INVALID_CREDENTIALS", "Incorrect email or password.");
 
     const hash = await sha256Hex(`${cred.salt}:${password}`);
@@ -187,8 +187,8 @@ export class LocalAuth implements AuthRepository {
     }
 
     // Re-read roles rather than trusting the stored copy, so a role granted in
-    // another tab takes effect. (In the Supabase version this is exactly why
-    // RLS re-derives the role instead of trusting the JWT claim.)
+    // another tab takes effect. (In the server version this is exactly why every
+    // mutation re-derives the role instead of trusting the session claim.)
     return { ...s, roles: rolesFor(s.userId) };
   }
 
