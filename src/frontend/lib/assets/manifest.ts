@@ -115,15 +115,29 @@ export const ART = {
   }),
 
   /**
-   * Institutional marks. NOT pixel art, and the one group that must never go
-   * through `<PixelImage>` — `image-rendering: pixelated` on a smooth vector
-   * logo destroys its curves and misrepresents someone else's brand. Consumers
-   * render these with a plain <img> at a CSS height; the path still lives here
-   * so the no-hardcoded-paths rule holds.
+   * Brand marks. Mixed rendering rules — check before reaching for `<PixelImage>`:
+   *
+   * - `christUniversity` is a smooth vector wordmark and must NEVER go through
+   *   `<PixelImage>`; `image-rendering: pixelated` destroys its curves and
+   *   misrepresents someone else's brand. Render it with a plain <img> at a CSS
+   *   height. The path still lives here so the no-hardcoded-paths rule holds.
+   * - `gatewaysCrest` is the full-detail crest at 1254px. Its edges are smooth,
+   *   so it must only be pixelated at an integer multiple of its own size —
+   *   which in practice means never; render it at a CSS size and leave sampling
+   *   alone.
+   * - `gatewaysCrestPixel` IS pixel art: the crest redrawn at 152px against the
+   *   gold token ramp by `scripts/gen-splash-mask.mjs`. Draw it ONLY at integer
+   *   multiples of 152 (304/456/608/760) and always with `pixelated`. It is what
+   *   the splash screen assembles out of flying blocks.
+   * - `gatewaysCrestAperture` is not artwork at all — it is the crest's filled
+   *   silhouette, used only as a CSS mask so the splash can zoom into the logo
+   *   and reveal the page through it. Never render it directly.
    */
   brand: spec({
     christUniversity: { src: "/art/brand/christ-university.png", w: 1795, h: 608, kind: "sprite", note: "CHRIST wordmark, white" },
-    gatewaysCrest: { src: "/art/brand/Gateways_Pixel.png", w: 1254, h: 1254, kind: "sprite", note: "Gateways crest, chrome" },
+    gatewaysCrest: { src: "/art/brand/Gateways_Pixel.png", w: 1254, h: 1254, kind: "sprite", note: "Gateways crest, gold" },
+    gatewaysCrestPixel: { src: "/art/brand/gateways-crest-pixel.png", w: 152, h: 152, kind: "sprite", note: "crest, pixel art" },
+    gatewaysCrestAperture: { src: "/art/brand/gateways-crest-aperture.png", w: 152, h: 152, kind: "sprite", note: "crest silhouette, CSS mask" },
   }),
 
   ui: spec({

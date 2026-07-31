@@ -1,10 +1,10 @@
 /**
  * Domain types.
  *
- * Field names deliberately mirror the eventual Postgres column names (snake_case
+ * Field names deliberately mirror the eventual MySQL column names (snake_case
  * is avoided in favour of camelCase at the TS boundary, but the SHAPE and the
- * semantics match SUPABASE-MIGRATION.md one-to-one). That is what makes swapping
- * the localStorage repository for a Supabase one mechanical rather than a
+ * semantics match MYSQL-MIGRATION.md one-to-one). That is what makes swapping
+ * the localStorage repository for a MySQL one mechanical rather than a
  * rewrite: the mapping is a rename, never a restructure.
  *
  * Timestamps are ISO-8601 strings, not Date objects — they round-trip through
@@ -371,7 +371,7 @@ export interface PaymentReceipt {
 
 /**
  * Error codes the UI switches on. Strings rather than an enum so they survive
- * JSON round-trips and match what a Postgres RPC would return.
+ * JSON round-trips and match what the eventual server action will return.
  */
 export type DataErrorCode =
   | "NOT_AUTHENTICATED"

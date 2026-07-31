@@ -24,10 +24,17 @@ import { cn } from "@/frontend/lib/utils";
  * university's is an outbound credit and should not be mistaken for it.
  */
 
+/**
+ * The first two render before the Events/Schedule modal triggers, the rest
+ * after — see the split in the nav below. Sponsors is an in-page anchor rather
+ * than a link to /sponsors: the roll now lives on this page, and sending a
+ * visitor away mid-pitch to read a logo wall was never worth the navigation.
+ */
 const ANCHORS = [
   { href: "#about", label: "About" },
   { href: "#theme", label: "Theme" },
   { href: "#register", label: "Register" },
+  { href: "#sponsors", label: "Sponsors" },
   { href: "#contact", label: "Contact" },
 ] as const;
 

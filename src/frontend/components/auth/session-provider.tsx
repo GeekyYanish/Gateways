@@ -15,9 +15,9 @@ import type { Character, Session } from "@/backend/data/types";
  * Session + character context.
  *
  * The whole app is client-side for now because localStorage has no server
- * presence. After the Supabase migration this becomes a server-component read
+ * presence. After the MySQL migration this becomes a server-component read
  * plus a thin client provider, and route protection moves into middleware —
- * see SUPABASE-MIGRATION.md.
+ * see MYSQL-MIGRATION.md.
  *
  * `status` distinguishes three states the UI must render differently:
  *   loading           — do not redirect yet; we do not know if there is a session
@@ -62,7 +62,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     void load();
 
     // Fires on sign-in/out in this tab AND in other tabs, so two open tabs stay
-    // consistent — the same guarantee Supabase's onAuthStateChange gives.
+    // consistent — the same guarantee the server-backed session read must give.
     const unsub = repo.auth.onAuthStateChange(() => {
       void load();
     });

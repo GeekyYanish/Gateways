@@ -4,12 +4,12 @@ import { createLocalRepository } from "./local/local-repository";
 /**
  * THE SINGLE SWAP POINT.
  *
- * When Supabase lands, this file changes by one line:
+ * When the MySQL backend lands, this file changes by one line:
  *
- *   const repo = createSupabaseRepository();
+ *   const repo = createMySqlRepository();
  *
  * Nothing else in the app imports a concrete implementation — screens and hooks
- * only ever see the `Repository` interface. See SUPABASE-MIGRATION.md.
+ * only ever see the `Repository` interface. See MYSQL-MIGRATION.md.
  */
 
 let instance: Repository | null = null;

@@ -257,7 +257,7 @@ export function LoginScreen() {
                 className="cursor-pointer text-[16px] text-mc-portal-light hover:text-mc-text hover:underline"
                 onClick={() =>
                   setFormError(
-                    "Password reset needs a mail server — it arrives with the Supabase migration.",
+                    "Password reset needs a mail server — it arrives with the MySQL backend.",
                   )
                 }
               >

@@ -36,7 +36,7 @@ Two dev-only pages (they 404 in production):
 | Dialogs | Radix Dialog (focus trap + scroll lock), fully reskinned |
 | Forms | react-hook-form + zod |
 | Toasts | sonner, custom render surface |
-| Data | **localStorage** behind a repository interface — Supabase later |
+| Data | **localStorage** behind a repository interface — MySQL 8.4 + Drizzle later |
 
 ## Architecture
 
@@ -53,15 +53,15 @@ src/
 ```
 
 `src/backend` is the application's data boundary. Its current implementation is
-browser-local because Supabase has not landed yet; moving to a real server does
-not require reorganizing the frontend again.
+browser-local because the MySQL backend has not landed yet; moving to a real
+server does not require reorganizing the frontend again.
 
 ### The data seam
 
 Screens never touch `localStorage`. Everything goes through the `Repository`
 interface (`src/backend/data/repository.ts`), currently implemented by
 `LocalRepository`. `src/backend/data/index.ts` is the single construction point, so
-swapping in Supabase is one line plus a second implementation.
+swapping in MySQL is one line plus a second implementation.
 
 Every method is `async` even though localStorage is synchronous — otherwise
 swapping in a network backend would mean touching every call site.
@@ -78,8 +78,9 @@ Guarantees enforced in the local implementation (and verified by `/dev/data-test
 - **Achievements unlock once** — composite key on `(userId, achievementId)`.
 
 These mirror the actual SQL constraints in
-[SUPABASE-MIGRATION.md](SUPABASE-MIGRATION.md), which has the full schema, the
-RLS policy design, and the three-layer role model.
+[MYSQL-MIGRATION.md](MYSQL-MIGRATION.md), which has the full schema, the
+authorization model, and the transactions that enforce capacity and team size.
+[DECISIONS.md](DECISIONS.md) records why the backend is MySQL rather than Postgres.
 
 ### ⚠️ localStorage is not security
 
@@ -89,7 +90,7 @@ plaintext, which is better than nothing but still offline-attackable.
 
 Consequences to be explicit about:
 
-- Organizer/admin views built later are **UI-only** until Supabase lands.
+- Organizer/admin views built later are **UI-only** until the MySQL backend lands.
 - **QR check-in cannot be trusted** without a server-held signing secret.
 - Data does not sync across devices or browsers.
 
@@ -192,7 +193,7 @@ visitor on a login form with no sense of having gone anywhere.
 `notifications`, `profile`, `settings`)
 
 Route protection is a client guard in `(realm)/layout.tsx` because localStorage
-has no server presence. It moves into `middleware.ts` with Supabase.
+has no server presence. It moves into `middleware.ts` with the MySQL backend.
 
 ## Verify
 
@@ -219,11 +220,11 @@ which makes every animation look frozen at its initial value.
 |---|---|
 | 6 | Full events CRUD, richer registration flows |
 | 7 | Team creation/join UI (the data layer already supports it) |
-| 8 | QR check-in — HMAC rotating tokens, organizer scanner. **Needs HTTPS + Supabase** |
+| 8 | QR check-in — HMAC rotating tokens, organizer scanner. **Needs HTTPS + MySQL** |
 | 9 | Organizer + admin dashboards, realtime announcements |
 | 10 | Certificates, gallery, public profiles |
 | 11 | Drop in real art files |
 | 12 | Hardening, load test, Lighthouse pass |
 
-Supabase should land **before or with Phase 8** — QR attendance and role gating
-are meaningless without a real server boundary.
+The MySQL backend should land **before or with Phase 8** — QR attendance and role
+gating are meaningless without a real server boundary.

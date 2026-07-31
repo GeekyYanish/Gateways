@@ -5,7 +5,7 @@
 - `frontend/` contains screens, components, hooks, animation, asset manifests,
   and browser rendering logic.
 - `backend/` contains repository contracts and data implementations. The current
-  `local/` adapter uses browser storage; a future Supabase adapter belongs beside
+  `local/` adapter uses browser storage; a future MySQL adapter belongs beside
   it and is selected from `backend/data/index.ts`.
 
 Keep `page.tsx` files thin and import their UI from `frontend/screens`. This

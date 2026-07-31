@@ -28,7 +28,9 @@ const NAV = [
   { href: "/dashboard", label: "Inventory", icon: "▦" },
   { href: "/dashboard/events", label: "My Events", icon: "▤" },
   { href: "/dashboard/achievements", label: "Achievements", icon: "★" },
-  { href: "/schedule", label: "Schedule", icon: "◷" },
+  // The in-shell schedule, NOT the public /schedule route — that one lives
+  // outside the (realm) group, so it would drop the sidebar on the way there.
+  { href: "/dashboard/schedule", label: "Schedule", icon: "◷" },
   { href: "/dashboard/team", label: "Team", icon: "◍" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "◈" },
   { href: "/dashboard/profile", label: "Profile", icon: "◉" },
@@ -58,9 +60,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    // h-dvh (not flex-1) because nothing above this in the tree gives it a
+    // constrained height to grow into — the root layout's <body> is only
+    // min-h-full. Without an explicit height, this shell has no scroll
+    // container of its own, so the WHOLE PAGE scrolls once content (e.g. the
+    // Schedule list) outgrows the viewport, dragging the sidebar up and out of
+    // view with it. Pinning the shell to the viewport and letting only <main>
+    // scroll (below) is what keeps the sidebar in place.
+    <div className="flex h-dvh flex-col overflow-hidden">
       {/* Mobile header with the drawer trigger. */}
-      <header className="flex items-center justify-between gap-[var(--mc-unit)] border-b-[length:var(--mc-bevel)] border-mc-border p-[var(--mc-unit)] md:hidden">
+      <header className="flex shrink-0 items-center justify-between gap-[var(--mc-unit)] border-b-[length:var(--mc-bevel)] border-mc-border p-[var(--mc-unit)] md:hidden">
         <BlockButton
           size="sm"
           variant="ghost"
@@ -80,9 +89,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         ) : null}
       </header>
 
-      <div className="flex flex-1">
-        {/* Desktop sidebar. */}
-        <aside className="hidden w-[220px] shrink-0 flex-col gap-[var(--mc-unit)] border-r-[length:var(--mc-bevel)] border-mc-border p-[var(--mc-unit)] md:flex">
+      {/* min-h-0 overrides the flex default of min-height:auto, which would
+          otherwise let this row grow to fit <main>'s full content height
+          instead of clipping it at the space actually available — the same
+          fix <main>'s own overflow-y-auto needs to do anything. */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* Desktop sidebar. No overflow-y-auto here on purpose: the menu stays
+            put and never scrolls, independent of how tall <main> gets. */}
+        <aside className="hidden w-[220px] shrink-0 flex-col gap-[var(--mc-unit)] overflow-hidden border-r-[length:var(--mc-bevel)] border-mc-border p-[var(--mc-unit)] md:flex">
           <SidebarContent
             pathname={pathname}
             onNavigate={() => undefined}
@@ -128,8 +142,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ) : null}
         </AnimatePresence>
 
-        {/* Main content. pb clears the mobile tab bar. */}
-        <main className="min-w-0 flex-1 p-[var(--mc-unit)] pb-[88px] md:pb-[var(--mc-unit)]">
+        {/* Main content — the only scrollable region in the shell. pb clears
+            the mobile tab bar. */}
+        <main className="min-w-0 flex-1 overflow-y-auto p-[var(--mc-unit)] pb-[88px] md:pb-[var(--mc-unit)]">
           {character && progress ? (
             <BlockPanel
               variant="panel"
@@ -239,10 +254,15 @@ function SidebarContent({
       </nav>
 
       <div className="mt-auto flex flex-col gap-[var(--mc-unit)] pt-[var(--mc-unit)]">
+        {/* preferHistory={false}: this is a persistent "return to the map"
+            action shown on every dashboard page, not a one-off retracing of
+            how the player arrived — history would make it land wherever the
+            player happened to be a moment ago (e.g. Schedule) instead. */}
         <BackLink
           href="/world?view=map"
           onClick={onNavigate}
           className="w-full"
+          preferHistory={false}
         />
         <BlockButton variant="danger" size="sm" block onClick={onSignOut}>
           Logout

@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *
  * Deliberately not TanStack Query: with a synchronous localStorage backend there
  * is no network to cache, dedupe or retry, so a query client would be ceremony
- * with no benefit. When the Supabase repository lands, THIS is the place to swap
+ * with no benefit. When the MySQL repository lands, THIS is the place to swap
  * in TanStack Query — every consumer already destructures
  * `{ data, error, loading, reload }`, which mirrors its shape.
  */

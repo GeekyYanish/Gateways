@@ -332,6 +332,107 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================================================
+   Crest-assembly splash (see components/portal/pixel-splash.tsx)
+   ========================================================================= */
+
+/* --splash-size is ALWAYS an integer multiple of the pixel crest's 152px —
+   because the assembled artwork is real pixel art and a fractional scale makes
+   it shimmer (the same integer-scaling rule as --mc-scale).
+   152 = 38 x 4, so every valid size also divides by the 38-cell assembly grid
+   and by the 4 art pixels per block: --splash-tile and the art pixels both land
+   on whole pixels, and no hairline seams appear between assembled blocks.
+   The extra step at 1280 exists so a small laptop does not get a crest that
+   nearly touches both edges. */
+/* Declared on the root, not the stage, because the backdrop's aperture has to be
+   cut at exactly the crest's size for the two to line up during the reveal. */
+#pixel-splash {
+  --splash-size: 456px; /* 152 x 3 */
+  --splash-tile: calc(var(--splash-size) / 38);
+}
+
+@media (max-width: 767px) {
+  #pixel-splash { --splash-size: 304px; } /* 152 x 2 */
+}
+
+@media (min-width: 1280px) {
+  #pixel-splash { --splash-size: 608px; } /* 152 x 4 */
+}
+
+@media (min-width: 1920px) {
+  #pixel-splash { --splash-size: 760px; } /* 152 x 5 */
+}
+
+.splash-stage {
+  width: var(--splash-size);
+  height: var(--splash-size);
+}
+
+/* The reveal. The void is painted by THIS layer rather than the root, so a
+   crest-shaped hole can be punched through it: scaling the overlay then turns
+   the logo itself into the window the homepage arrives through.
+
+   Two mask layers composited with `exclude` — a full-coverage gradient minus the
+   crest silhouette — because CSS masks show content where the mask is opaque and
+   we need the exact inverse. `--splash-hole` starts at 0, so the second layer
+   contributes nothing and the backdrop is simply solid until the reveal begins.
+
+   The silhouette is a filled shape, not the crest line art: masking with the
+   artwork itself would open a few hairline slits rather than a window. */
+.splash-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--color-mc-void);
+  --splash-hole: 0px;
+  -webkit-mask-image: linear-gradient(#000, #000), var(--splash-aperture);
+  mask-image: linear-gradient(#000, #000), var(--splash-aperture);
+  -webkit-mask-repeat: no-repeat, no-repeat;
+  mask-repeat: no-repeat, no-repeat;
+  -webkit-mask-position: center, center;
+  mask-position: center, center;
+  -webkit-mask-size: 100% 100%, var(--splash-hole) var(--splash-hole);
+  mask-size: 100% 100%, var(--splash-hole) var(--splash-hole);
+  -webkit-mask-composite: xor; /* Safari's keyword for the same operation */
+  mask-composite: exclude;
+}
+
+/* Cut the aperture. Toggled by the timeline at the moment the zoom begins. */
+.splash-backdrop.is-open {
+  --splash-hole: var(--splash-size);
+}
+
+.splash-tile {
+  width: var(--splash-tile);
+  height: var(--splash-tile);
+  background-size: var(--splash-size) var(--splash-size);
+  background-repeat: no-repeat;
+  /* Integer UPSCALE of pixel art, so nearest-neighbour is exactly right here —
+     it keeps the art's pixel edges hard. (The full-detail 1254px crest is the
+     opposite case and must never be pixelated; see the manifest's brand note.) */
+  image-rendering: pixelated;
+}
+
+/* Faint buildable-space grid behind the crest. */
+.splash-grid {
+  background-image:
+    repeating-linear-gradient(to right, rgb(242 178 51 / 0.05) 0 1px, transparent 1px var(--mc-unit)),
+    repeating-linear-gradient(to bottom, rgb(242 178 51 / 0.05) 0 1px, transparent 1px var(--mc-unit));
+  mask-image: radial-gradient(circle at 50% 50%, #000 0%, transparent 70%);
+}
+
+/* Square rather than circular: a round shockwave in a voxel scene reads wrong.
+   It must never come to rest near the crest's own bounds — a hard-edged square
+   sitting still around the logo reads as a picture frame, not a shockwave — so
+   the timeline drives it straight out past the artwork while fading. */
+.splash-ring {
+  width: var(--splash-size);
+  height: var(--splash-size);
+  margin-left: calc(var(--splash-size) / -2);
+  margin-top: calc(var(--splash-size) / -2);
+  border: var(--mc-bevel) solid var(--color-mc-gold-light);
+  transform: scale(0.55);
+}
+
+/* ============================================================================
    Reduced motion
    The .gsap-hidden rule is a hard accessibility requirement, not a nicety:
    GSAP-animated elements start hidden via CSS class so there is no hydration
@@ -370,4 +471,21 @@ html[data-reduce-motion="true"] *::after {
 html[data-reduce-motion="true"] .gsap-hidden {
   opacity: 1 !important;
   transform: none !important;
+}
+
+/* The splash is a pure flourish with nothing behind it worth waiting for, so
+   under reduced motion it is removed outright rather than snapped to its end
+   state — the site simply loads. The component makes the same call in JS; this
+   rule wins the race by not needing JS at all.
+
+   The other way the overlay gets hidden — a repeat load in the same tab — is NOT
+   here: the boot script in the root layout injects its own `display:none` rule
+   before first paint. It has to be done from outside React's tree, or hydration
+   warns about the root element. See the comment on SPLASH_BOOT. */
+html[data-reduce-motion="true"] #pixel-splash {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pixel-splash { display: none; }
 }

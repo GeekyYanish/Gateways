@@ -112,7 +112,7 @@ export function SettingsScreen() {
         <p className="text-[15px] text-mc-text-dim">
           This build stores everything in this browser only — accounts, characters
           and registrations do not sync across devices, and anyone with devtools
-          can edit them. Real accounts arrive with the Supabase backend.
+          can edit them. Real accounts arrive with the MySQL backend.
         </p>
         <div className="mt-[var(--mc-unit)]">
           <BlockButton variant="danger" size="sm" onClick={resetEverything}>

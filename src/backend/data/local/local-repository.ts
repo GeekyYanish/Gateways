@@ -46,7 +46,7 @@ import { seedIfNeeded } from "./seed";
 /**
  * localStorage implementation of the Repository interface.
  *
- * Design rules that make the eventual Supabase swap mechanical:
+ * Design rules that make the eventual MySQL swap mechanical:
  *
  * - **Idempotency is enforced by a uniqueness check on the same tuple the SQL
  *   schema uses as a unique constraint.** XP grants key on
@@ -917,10 +917,9 @@ class LocalAnnouncements implements AnnouncementRepository {
   }
 
   /**
-   * Same signature as a Supabase Realtime subscription. Backed by the store's
-   * change notifier, which covers this tab and others, so an announcement
-   * created in one tab toasts in the rest — the same observable behaviour
-   * Realtime will provide.
+   * Transport-agnostic signature. Backed by the store's change notifier, which
+   * covers this tab and others, so an announcement created in one tab toasts in
+   * the rest — the same observable behaviour the server-side poll will provide.
    */
   subscribe(cb: (a: Announcement) => void): Unsubscribe {
     let known = new Set(readList<Announcement>("announcements").map((a) => a.id));

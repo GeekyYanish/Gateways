@@ -254,7 +254,12 @@ export function WorldScreen({
     <div className="flex flex-1 flex-col gap-[var(--mc-unit)] p-[var(--mc-unit)]">
       <header className="flex flex-wrap items-center justify-between gap-[var(--mc-unit)]">
         {/* In map view this card is overlaid on the map itself, as in the
-            design — rendering it here too would show the greeting twice. */}
+            design — rendering it here too would show the greeting twice.
+
+            The empty <div> is load-bearing. This row is `justify-between`, so
+            dropping to a single child would push the view switcher from the
+            right edge to the left, and it would visibly jump every time the
+            visitor selected Map. Holding the slot keeps it put. */}
         {character && view !== "map" ? (
           <BlockPanel
             variant="panel"
@@ -271,7 +276,9 @@ export function WorldScreen({
               </p>
             </div>
           </BlockPanel>
-        ) : null}
+        ) : (
+          <div aria-hidden />
+        )}
 
         <div className="flex items-center gap-[calc(var(--mc-unit)*0.75)]">
           {/* Not a decorative toggle: the list view is the screen-reader and

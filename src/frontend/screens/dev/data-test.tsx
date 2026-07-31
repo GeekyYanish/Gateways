@@ -11,7 +11,7 @@ import { clearAll } from "@/backend/data/local/store";
  * These are the guarantees the whole design leans on — idempotent XP grants,
  * no double registration, capacity handling, deterministic leaderboard ranking.
  * They are enforced in code that has no compiler help, so they get exercised
- * for real rather than assumed. When the Supabase repository lands, this same
+ * for real rather than assumed. When the MySQL repository lands, this same
  * page should pass unchanged: that is the point of the interface.
  */
 

@@ -13,9 +13,9 @@ import { applyReduceMotionAttribute } from "@/frontend/lib/animation/use-reduced
  * Authenticated area.
  *
  * Route protection is a CLIENT guard here because localStorage has no server
- * presence — there is nothing for middleware to read. After the Supabase
+ * presence — there is nothing for middleware to read. After the MySQL
  * migration this moves into `middleware.ts` and these become server components.
- * See SUPABASE-MIGRATION.md.
+ * See MYSQL-MIGRATION.md.
  *
  * `MotionConfig reducedMotion="user"` is mounted once here, which makes every
  * Framer animation in the authed app respect the OS preference for free.
