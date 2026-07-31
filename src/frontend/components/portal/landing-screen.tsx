@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
 import { gsap, useGSAP } from "@/frontend/lib/animation/gsap-init";
 import { BlockButton } from "@/frontend/components/mc";
 import { AnimatedBackground } from "@/frontend/components/scene";
@@ -11,17 +10,6 @@ import { applyReduceMotionAttribute } from "@/frontend/lib/animation/use-reduced
 
 const TITLE = "PARALLAX";
 
-const FOOTER_LINKS = [
-  // "Home" first, and it is not optional: this screen is a full-viewport
-  // cinematic with no nav bar, so without it the only way back to the fest
-  // homepage is the browser's back button.
-  { href: "/", label: "Home" },
-  { href: "/events", label: "Events" },
-  { href: "/schedule", label: "Schedule" },
-  { href: "/sponsors", label: "Sponsors" },
-  { href: "/leaderboard", label: "Leaderboard" },
-];
-
 /**
  * SCREEN 2 — the portal gate, at `/portal`.
  *
@@ -30,10 +18,9 @@ const FOOTER_LINKS = [
  * "Enter the Portal" fires the wipe into `/entering`, which then branches to
  * login, character creation, or the world.
  *
- * Reads top to bottom exactly as the design does: title, tagline, portal, CTA,
- * and a footer bar welded to the bottom edge. The portal sits *below* the
- * wordmark rather than above it, so the eye lands on the name first and is
- * then pulled down the stone path to the button.
+ * Reads top to bottom exactly as the design does: title, tagline, portal, CTA.
+ * The portal sits *below* the wordmark rather than above it, so the eye lands
+ * on the name first and is then pulled down the stone path to the button.
  *
  * Entry animation: title letters stagger in, then the tagline, then the portal
  * rises, then the CTA. Initial hidden state comes from the `.gsap-hidden` CLASS
@@ -80,8 +67,7 @@ export function LandingScreen() {
             { opacity: 1, y: 0, scale: 1, duration: 0.75, ease: "power2.out" },
             "-=0.3",
           )
-          .to(".landing-cta", { opacity: 1, y: 0, duration: 0.45 }, "-=0.4")
-          .to(".landing-footer", { opacity: 1, duration: 0.4 }, "-=0.2");
+          .to(".landing-cta", { opacity: 1, y: 0, duration: 0.45 }, "-=0.4");
 
         return () => tl.kill();
       });
@@ -153,30 +139,6 @@ export function LandingScreen() {
             Enter the Portal
           </BlockButton>
         </div>
-
-        {/* Welded to the bottom edge rather than flowing after the content, so
-            it reads as a bar across the base of the scene at every viewport
-            height. It stays INSIDE the scoped ref: `useGSAP({ scope: root })`
-            only resolves selectors within it, so a footer parked outside would
-            silently never be revealed and would sit at opacity 0 forever.
-            The ref div is static, so `bottom-0` still resolves against the
-            AnimatedBackground. */}
-        <footer className="landing-footer gsap-hidden absolute inset-x-0 bottom-0 z-10 border-t-2 border-mc-obsidian-light/50 bg-mc-void/90 py-[calc(var(--mc-unit)*1.25)]">
-          <nav
-            aria-label="Site"
-            className="flex flex-wrap justify-center gap-x-[calc(var(--mc-unit)*2.5)] gap-y-[var(--mc-unit)] px-[var(--mc-unit)]"
-          >
-            {FOOTER_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="font-pixel text-[9px] uppercase tracking-[0.12em] text-mc-text-dim no-underline transition-colors hover:text-mc-portal-light md:text-[10px]"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-        </footer>
       </div>
     </AnimatedBackground>
   );

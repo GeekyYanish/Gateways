@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { BlockPanel } from "@/frontend/components/mc";
 import { FEST } from "@/frontend/lib/fest";
 import { HomeSection } from "./home-section";
@@ -12,17 +11,11 @@ import { HomeSection } from "./home-section";
  * on a phone reading this page should be one tap from calling, and copying a
  * number off a screen is exactly the friction that loses a registration.
  *
- * The footer's route links replace the strip that used to be welded to the
- * bottom of the landing scene; now that the page scrolls, a real footer is the
- * right place for them.
+ * The footer used to carry a route list (Events / Schedule / Sponsors /
+ * Leaderboard). It no longer does: Events and Schedule open as modals from the
+ * nav, and Sponsors is now a section on this very page, so footer links to them
+ * were duplicating navigation the visitor had already scrolled past.
  */
-
-const ROUTES = [
-  { href: "/events", label: "Events" },
-  { href: "/schedule", label: "Schedule" },
-  { href: "/sponsors", label: "Sponsors" },
-  { href: "/leaderboard", label: "Leaderboard" },
-] as const;
 
 export function ContactSection() {
   return (
@@ -77,20 +70,6 @@ export function SiteFooter() {
             </p>
           </div>
 
-          <nav
-            aria-label="Footer"
-            className="flex flex-wrap gap-x-[calc(var(--mc-unit)*2)] gap-y-[calc(var(--mc-unit)*0.5)]"
-          >
-            {ROUTES.map((r) => (
-              <Link
-                key={r.href}
-                href={r.href}
-                className="font-pixel text-[9px] uppercase tracking-[0.12em] text-mc-text-dim no-underline transition-colors hover:text-mc-portal-light md:text-[10px]"
-              >
-                {r.label}
-              </Link>
-            ))}
-          </nav>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-[var(--mc-unit)] border-t-[length:var(--mc-bevel)] border-mc-border/60 pt-[calc(var(--mc-unit)*1.5)]">
