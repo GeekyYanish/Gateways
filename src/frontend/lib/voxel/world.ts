@@ -33,13 +33,23 @@ export interface WorldAnchor {
 
 export class VoxelWorld {
   readonly size: number;
+  /**
+   * Depth, when the world is not square. Defaults to `size`.
+   *
+   * A building is not a square: ours is 126 × 104. Nothing here indexes by it —
+   * storage is a sparse Map, so an oversized grid costs no memory — but the
+   * isometric map derives its canvas span from these, and a square span for a
+   * rectangular plan draws it off-centre in a quarter-empty canvas.
+   */
+  readonly sizeZ: number;
   private readonly blocks = new Map<string, BlockType>();
   readonly anchors: WorldAnchor[] = [];
   /** Ground height per column, so things can be placed on the surface. */
   private readonly heightMap = new Map<string, number>();
 
-  constructor(size = 64) {
+  constructor(size = 64, sizeZ = size) {
     this.size = size;
+    this.sizeZ = sizeZ;
   }
 
   private static key(x: number, y: number, z: number): string {
@@ -62,6 +72,29 @@ export class VoxelWorld {
   /** Surface height at a column, or -1 if empty. */
   groundAt(x: number, z: number): number {
     return this.heightMap.get(`${Math.round(x)},${Math.round(z)}`) ?? -1;
+  }
+
+  /**
+   * Highest solid block at or below `y` in a column, or -1.
+   *
+   * This is the one to use for "what am I standing on". `groundAt` returns the
+   * highest solid block ANYWHERE in the column, which stopped being the same
+   * thing the moment the world grew doorways: stand in a doorway and the
+   * highest solid block is the lintel above your head, so the player was
+   * placed on top of the door frame and every room in the building was sealed.
+   *
+   * Starts from the column's known top rather than from `y` so the common case
+   * — open ground, nothing overhead — still resolves on the first iteration.
+   */
+  groundBelow(x: number, y: number, z: number): number {
+    const cx = Math.round(x);
+    const cz = Math.round(z);
+    const top = this.heightMap.get(`${cx},${cz}`) ?? -1;
+    if (top < 0) return -1;
+    for (let cy = Math.min(top, Math.floor(y)); cy >= 0; cy--) {
+      if (isSolid(this.get(cx, cy, cz))) return cy;
+    }
+    return -1;
   }
 
   isSolidAt(x: number, y: number, z: number): boolean {
@@ -158,30 +191,5 @@ export function makeRng(seed: number): () => number {
   };
 }
 
-/** Cheap smooth noise for terrain — good enough for gentle rolling ground. */
-export function smoothNoise(
-  rng: () => number,
-  size: number,
-): (x: number, z: number) => number {
-  const gridSize = 8;
-  const g = gridSize + 1;
-  const grid: number[] = Array.from({ length: g * g }, () => rng());
-
-  return (x: number, z: number) => {
-    const fx = (x / size) * gridSize;
-    const fz = (z / size) * gridSize;
-    const x0 = Math.floor(fx);
-    const z0 = Math.floor(fz);
-    const tx = fx - x0;
-    const tz = fz - z0;
-    // Smoothstep so the terrain has no visible grid seams.
-    const sx = tx * tx * (3 - 2 * tx);
-    const sz = tz * tz * (3 - 2 * tz);
-    const at = (ix: number, iz: number) =>
-      grid[Math.min(g - 1, Math.max(0, iz)) * g + Math.min(g - 1, Math.max(0, ix))];
-
-    const a = at(x0, z0) * (1 - sx) + at(x0 + 1, z0) * sx;
-    const b = at(x0, z0 + 1) * (1 - sx) + at(x0 + 1, z0 + 1) * sx;
-    return a * (1 - sz) + b * sz;
-  };
-}
+// `smoothNoise` lived here to shape the old procedural terrain. The world is a
+// building on one flat level now, and it had no other caller.

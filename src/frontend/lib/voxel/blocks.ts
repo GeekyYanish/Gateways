@@ -6,8 +6,11 @@
  * cubes their readable form — the same trick that makes the CSS bevel system
  * work, applied in 3D.
  *
- * Each block type becomes ONE InstancedMesh at render time, so the count here
- * is effectively the draw-call budget for the world. Keep it small.
+ * Adding a type is CHEAP. `voxel-terrain.tsx` merges every opaque type into one
+ * geometry and every transparent type into a second — two draw calls for the
+ * whole world, regardless of how many types are listed here. (This comment used
+ * to claim one InstancedMesh per type; that described the implementation that
+ * was measured and replaced. See VOXEL-3D.md.)
  */
 
 export type BlockType =
@@ -30,7 +33,24 @@ export type BlockType =
   | "roofDark"
   | "roofRed"
   | "lantern"
-  | "path";
+  | "path"
+  // Architectural palette, for the floor plan.
+  | "wallPaint"
+  | "trim"
+  | "floorTile"
+  | "floorTileAlt"
+  | "carpet"
+  | "carpetBlue"
+  | "carpetGreen"
+  | "carpetGold"
+  | "carpetPurple"
+  | "desk"
+  | "board"
+  | "paving"
+  | "pavingAlt"
+  // Planting.
+  | "hedge"
+  | "flower";
 
 export interface BlockDef {
   /** Base colour, hex. */
@@ -52,7 +72,11 @@ export const BLOCKS: Record<BlockType, BlockDef> = {
   cobble: { color: "#6b6b6b", jitter: 0.09 },
   plank: { color: "#9c7f4e", jitter: 0.05 },
   log: { color: "#6d5732", jitter: 0.04 },
-  leaf: { color: "#3f8a34", transparent: true, opacity: 0.96, jitter: 0.1 },
+  // Opaque despite being walk-through. Rendering it at 0.96 alpha bought
+  // nothing visible and put every leaf in the depth-write-disabled pass, where
+  // overlapping canopies sorted against each other. `NON_SOLID` below is what
+  // makes it walk-through; that is a separate question from how it draws.
+  leaf: { color: "#4a9c3d", jitter: 0.11 },
   sand: { color: "#d9c89a", jitter: 0.05 },
   water: { color: "#2f6fd0", transparent: true, opacity: 0.62 },
   glass: { color: "#b8e4f0", transparent: true, opacity: 0.34 },
@@ -76,6 +100,34 @@ export const BLOCKS: Record<BlockType, BlockDef> = {
     emissiveIntensity: 1.4,
   },
   path: { color: "#b09b6a", jitter: 0.08 },
+
+  // Interior surfaces. Jitter is kept low: these cover large flat areas where
+  // the terrain palette's heavy jitter reads as noise rather than as texture.
+  wallPaint: { color: "#e6e0d0", jitter: 0.025 },
+  /** Skirting at the foot of every wall — the band that stops walls floating. */
+  trim: { color: "#8d7f6a", jitter: 0.03 },
+  /**
+   * Two floor tones laid in a checker. Ambient occlusion gives the room its
+   * corners; this gives the floor a sense of scale, which a single flat colour
+   * over 6,000 blocks cannot.
+   */
+  floorTile: { color: "#bdb6a8", jitter: 0.03 },
+  floorTileAlt: { color: "#aaa294", jitter: 0.03 },
+  /** One carpet per classroom, so a room is identifiable at a glance. */
+  carpet: { color: "#8a4c50", jitter: 0.045 },
+  carpetBlue: { color: "#3f5f86", jitter: 0.045 },
+  carpetGreen: { color: "#417a55", jitter: 0.045 },
+  carpetGold: { color: "#9a7736", jitter: 0.045 },
+  carpetPurple: { color: "#6b4a86", jitter: 0.045 },
+  desk: { color: "#b98f52", jitter: 0.04 },
+  board: { color: "#31513f", jitter: 0.03 },
+
+  /** Courtyard paving, checkered like the indoor tiles. */
+  paving: { color: "#9d9384", jitter: 0.05 },
+  pavingAlt: { color: "#8d8375", jitter: 0.05 },
+
+  hedge: { color: "#39702f", jitter: 0.09 },
+  flower: { color: "#e0687f", emissive: "#e0687f", emissiveIntensity: 0.15 },
 };
 
 export const BLOCK_TYPES = Object.keys(BLOCKS) as BlockType[];

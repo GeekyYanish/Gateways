@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  MAP_H,
-  MAP_W,
+  DEFAULT_PROJECTION,
+  mapMetrics,
   renderVillageMap,
+  type MapProjection,
+  type MapRotation,
   type MappedAnchor,
 } from "@/frontend/lib/world/village-map-art";
 import { cn } from "@/frontend/lib/utils";
@@ -24,12 +26,19 @@ import { cn } from "@/frontend/lib/utils";
  */
 export function VillageMapCanvas({
   onAnchors,
+  projection = DEFAULT_PROJECTION,
+  rotation = 0,
   className,
 }: {
-  /** Called once with the label positions, as percentages of the map. */
+  /** Called with the label positions, as percentages of the map, after each draw. */
   onAnchors?: (anchors: MappedAnchor[]) => void;
+  /** Which projection to draw. Changing it redraws. */
+  projection?: MapProjection;
+  /** Quarter turns clockwise. Changing it redraws. */
+  rotation?: MapRotation;
   className?: string;
 }) {
+  const metrics = mapMetrics(projection, rotation);
   const ref = useRef<HTMLCanvasElement>(null);
   const [drawn, setDrawn] = useState(false);
   // Latched in an effect rather than assigned during render: writing a ref in
@@ -42,14 +51,18 @@ export function VillageMapCanvas({
     cb.current = onAnchors;
   }, [onAnchors]);
 
+  // `projection` and `rotation` ARE dependencies: either one changes what is
+  // drawn. The whole point of latching `onAnchors` into a ref above is that it
+  // can stay out of this list while they do not.
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     let cancelled = false;
+    setDrawn(false);
 
     const raf = requestAnimationFrame(() => {
       if (cancelled) return;
-      const { anchors } = renderVillageMap(canvas);
+      const { anchors } = renderVillageMap(canvas, projection, rotation);
       cb.current?.(anchors);
       setDrawn(true);
     });
@@ -58,13 +71,13 @@ export function VillageMapCanvas({
       cancelled = true;
       cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [projection, rotation]);
 
   return (
     <canvas
       ref={ref}
-      width={MAP_W}
-      height={MAP_H}
+      width={metrics.width}
+      height={metrics.height}
       // Decorative: every location on it is also a real focusable link, and the
       // List view carries the same content as text.
       aria-hidden

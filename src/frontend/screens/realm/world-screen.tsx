@@ -21,8 +21,24 @@ import {
   useVoxelSupport,
 } from "@/frontend/components/voxel/voxel-world";
 import { useSession } from "@/frontend/components/auth/session-provider";
-import { WORLD_LOCATIONS, locationByKey } from "@/frontend/lib/world/world-locations";
-import { MAP_H, MAP_W, type MappedAnchor } from "@/frontend/lib/world/village-map-art";
+import {
+  HOTBAR_LOCATIONS,
+  WORLD_LOCATIONS,
+  locationByKey,
+} from "@/frontend/lib/world/world-locations";
+import {
+  DEFAULT_PROJECTION,
+  headingDegrees,
+  mapMetrics,
+  projectToPct,
+  ROTATION_LABELS,
+  type MapProjection,
+  type MapRotation,
+  type MappedAnchor,
+} from "@/frontend/lib/world/village-map-art";
+import { PlayerMarker } from "@/frontend/components/world/player-marker";
+import { getVillage } from "@/frontend/lib/voxel/village";
+import type { PlayerPose } from "@/frontend/components/voxel/player-controller";
 import { showToast } from "@/frontend/components/mc";
 import { cn } from "@/frontend/lib/utils";
 
@@ -107,23 +123,113 @@ export function WorldScreen({
   const compactPins = useNarrowViewport();
 
   /**
+   * Plan view or isometric.
+   *
+   * Both are honest views of the same voxel world; plan is the default because
+   * the world is a building, and "which room is next to which" is the question
+   * a floor plan answers and an isometric projection cannot.
+   */
+  const [projection, setProjection] = useState<MapProjection>(DEFAULT_PROJECTION);
+  /**
+   * Quarter turns clockwise. Shared by both projections rather than reset on
+   * switching: having turned the map to face your wing, flipping plan↔iso to
+   * compare them should not silently spin it back.
+   */
+  const [rotation, setRotation] = useState<MapRotation>(0);
+  const metrics = useMemo(() => mapMetrics(projection, rotation), [projection, rotation]);
+
+  /**
+   * Where the player is standing in the 3D world.
+   *
+   * Held here rather than in the scene because the canvas UNMOUNTS when you
+   * switch to the map — which is the exact moment the position becomes
+   * interesting. `null` until the 3D view has run at all; the map falls back to
+   * the spawn point so the marker is never simply missing.
+   */
+  const [pose, setPose] = useState<PlayerPose | null>(null);
+
+  const shownPose = useMemo((): PlayerPose | null => {
+    if (view !== "map") return null;
+    if (pose) return pose;
+    // Built once and cached, and the map canvas needs it anyway — so this costs
+    // nothing extra on the map view, and never runs on 3D or List.
+    const v = getVillage();
+    return { x: v.spawn.x, y: v.spawn.y, z: v.spawn.z, yaw: v.spawnYaw };
+  }, [view, pose]);
+
+  /** The marker's projected position, heading and a readable location name. */
+  const playerOnMap = useMemo(() => {
+    if (!shownPose) return null;
+    const { xPct, yPct } = projectToPct(metrics, shownPose.x, shownPose.y, shownPose.z);
+    // Name the room you are in, by the same proximity rule the 3D view uses to
+    // decide which building you can enter — so the two never disagree.
+    const near = getVillage().anchors.find(
+      (a) => Math.hypot(a.x - shownPose.x, a.z - shownPose.z) < a.radius,
+    );
+    return {
+      xPct,
+      yPct,
+      headingDeg: headingDegrees(metrics, shownPose.yaw),
+      where: near ? `in the ${near.label}` : "outside the building",
+      explored: pose !== null,
+    };
+  }, [shownPose, metrics, pose]);
+
+  /**
+   * Anchor percentages are per-projection AND per-rotation. Dropping them falls
+   * back to the floor plan's own positions for the frame before the canvas
+   * redraws, rather than leaving every marker at the old view's coordinates.
+   */
+  const chooseProjection = useCallback((next: MapProjection) => {
+    setProjection(next);
+    setAnchors(null);
+  }, []);
+
+  const turnMap = useCallback((delta: 1 | -1) => {
+    setRotation((r) => (((r + delta + 4) % 4) as MapRotation));
+    setAnchors(null);
+  }, []);
+
+  /**
+   * Fall back to icon-only pins when full labels cannot possibly fit.
+   *
+   * Ten labelled chips are ~2000px of chip across a map that is ~775px wide at
+   * fit zoom. No de-overlap search can place those without collisions — it is
+   * not a tuning problem, there is simply not enough room, and the previous
+   * viewport-width rule did not notice because the viewport was wide. Density
+   * against the map's on-screen width is the honest signal, and it means labels
+   * appear naturally as the user zooms in, the way a real map behaves.
+   *
+   * Compact pins keep their `aria-label`, `title` and link semantics, and the
+   * List view carries the same content as text, so nothing is lost but ink.
+   */
+  const denseLabels = useMemo(() => {
+    const total = WORLD_LOCATIONS.reduce((n, l) => n + 57 + l.label.length * 10, 0);
+    // ~1.6 map widths is about two notional rows of chips — as much as the
+    // de-overlap search can place before it starts stacking them off the map.
+    return compactPins || total > metrics.width * (mapScale || 1) * 1.6;
+  }, [compactPins, mapScale, metrics]);
+
+  /**
    * Marker positions, with overlapping labels pushed apart.
    *
-   * The isometric projection squashes the village's depth axis, so buildings
-   * that are far apart on the ground can land within a few pixels of each other
-   * on screen — Village Square and Quiz Library end up almost exactly stacked.
-   * Their chips are then unreadable, which is a labelling problem, so it is
-   * fixed at the labelling layer rather than by dragging the buildings apart
-   * (they are shared with the 3D view).
+   * The isometric projection squashes the depth axis, so rooms that are far
+   * apart on the ground can land within a few pixels of each other on screen.
+   * Plan view does not squash, but ten labels around one courtyard still
+   * collide at fit zoom. Either way it is a labelling problem, so it is fixed
+   * at the labelling layer rather than by dragging the rooms apart (their
+   * positions are the real floor plan, shared with the 3D view).
    *
    * Worked in SCREEN pixels because the chips counter-scale to a constant
    * on-screen size: how much they overlap depends on the current zoom, so a
    * fixed offset in map percentages would be wrong at every scale but one. Each
    * marker's `lift` grows until it clears the ones already placed, and the
-   * leader line stretches to match so the chip still points at its building.
+   * leader line stretches to match so the chip still points at its room.
    */
   const markers = useMemo(() => {
     const s = mapScale || 1;
+    /** Map extent in screen pixels — the box every chip has to stay inside. */
+    const mapWpx = metrics.width * s;
     const CHIP_H = 42;
     const GAP = 8;
     const BASE_LIFT = 18;
@@ -135,7 +241,7 @@ export function WorldScreen({
      * thinks they clear when they do not.
      */
     const chipWidth = (label: string) =>
-      compactPins ? 42 : 57 + label.length * 10;
+      denseLabels ? 42 : 57 + label.length * 10;
 
     const placed = WORLD_LOCATIONS.map((loc) => {
       const a = anchors?.find((m) => m.key === loc.key);
@@ -145,8 +251,8 @@ export function WorldScreen({
         ...loc,
         xPct,
         yPct,
-        sx: (xPct / 100) * MAP_W * s,
-        sy: (yPct / 100) * MAP_H * s,
+        sx: (xPct / 100) * metrics.width * s,
+        sy: (yPct / 100) * metrics.height * s,
         w: chipWidth(loc.label),
         lift: BASE_LIFT,
         dx: 0,
@@ -155,21 +261,28 @@ export function WorldScreen({
 
     /**
      * Candidates in increasing order of how far they move the chip from its
-     * building. Raising alone is not enough: at fit zoom every pair of
-     * buildings is within a chip-width horizontally, so a vertical-only search
-     * finds a clash at every level and stacks all seven into one tower off the
-     * top of the screen. Allowing a sideways jog lets them fan out instead,
-     * and the chip slides while the leader line stays over the building.
+     * building. Raising alone is not enough: at fit zoom every pair of rooms is
+     * within a chip-width horizontally, so a vertical-only search finds a clash
+     * at every level and stacks them into one tower off the top of the screen.
+     * Allowing a sideways jog lets them fan out instead, and the chip slides
+     * while the leader line stays over the room.
+     *
+     * The jogs have to be wider than a chip to clear a neighbour at all, and
+     * cheap enough to be preferred over stacking: a row of five classrooms
+     * along the north wall sits ~80px apart at fit zoom with ~230px chips, so
+     * with the old ±150 jogs and a 0.6 weight every one of them stacked and
+     * Quiz Library — the middle of the row — ended up above the top of the map,
+     * invisible and unclickable.
      */
     const candidates: Array<{ lift: number; dx: number }> = [];
-    const jogs = compactPins ? [0, -46, 46, -92, 92] : [0, -150, 150, -300, 300];
+    const jogs = denseLabels ? [0, -90, 90, -180, 180] : [0, -300, 300, -600, 600];
     for (let level = 0; level < 5; level++) {
       for (const dx of jogs) {
         candidates.push({ lift: BASE_LIFT + level * (CHIP_H + GAP), dx });
       }
     }
     candidates.sort(
-      (a, b) => a.lift + Math.abs(a.dx) * 0.6 - (b.lift + Math.abs(b.dx) * 0.6),
+      (a, b) => a.lift + Math.abs(a.dx) * 0.25 - (b.lift + Math.abs(b.dx) * 0.25),
     );
 
     // Nearest-first, so the labels that get displaced are the ones further back.
@@ -183,14 +296,32 @@ export function WorldScreen({
             Math.abs(a.sx + dx - (b.sx + b.dx)) < (a.w + b.w) / 2 &&
             Math.abs(a.sy - lift - (b.sy - b.lift)) < CHIP_H + GAP,
         );
-      const fit = candidates.find((c) => !clashes(c.lift, c.dx));
-      // Nothing clear? Take the highest option — overlapping is better than
-      // dropping a location off the map entirely.
-      a.lift = fit?.lift ?? candidates[candidates.length - 1].lift;
+      /**
+       * A chip may never be pushed outside the map.
+       *
+       * `sx`/`sy` are pixels from the map's own top-left, and the surface is
+       * `overflow-hidden`, so a chip moved past an edge is clipped away
+       * entirely — the location silently stops being visible or clickable.
+       * Overlapping slightly is very much the lesser evil, so both bounds are
+       * applied to the candidate set rather than left for the weights above to
+       * avoid by luck. (They did not: lifting alone hid Quiz Library off the
+       * top, and widening the jogs then sent Design Workshop off the side.)
+       */
+      const maxLift = Math.max(BASE_LIFT, a.sy - CHIP_H);
+      const usable = candidates.filter(
+        (c) =>
+          c.lift <= maxLift &&
+          a.sx + c.dx - a.w / 2 >= 0 &&
+          a.sx + c.dx + a.w / 2 <= mapWpx,
+      );
+      const fit = usable.find((c) => !clashes(c.lift, c.dx));
+      // Nothing clear? Take the highest option still on the map — overlapping
+      // is better than dropping a location off the map entirely.
+      a.lift = fit?.lift ?? usable[usable.length - 1]?.lift ?? BASE_LIFT;
       a.dx = fit?.dx ?? 0;
     }
     return placed;
-  }, [anchors, mapScale, compactPins]);
+  }, [anchors, mapScale, denseLabels, metrics]);
 
   const selectedLoc = selected ? locationByKey(selected) : undefined;
 
@@ -319,6 +450,75 @@ export function WorldScreen({
               List
             </BlockButton>
           </div>
+
+          {/* Only meaningful while the map is on screen, so it appears with it.
+              The row above is `justify-between` and holds its slots explicitly,
+              so adding a sibling here shifts nothing else. */}
+          {view === "map" ? (
+            <div role="group" aria-label="Map projection" className="flex gap-[3px]">
+              <BlockButton
+                size="sm"
+                variant={projection === "top-down" ? "primary" : "ghost"}
+                aria-pressed={projection === "top-down"}
+                title="Look straight down — the floor plan"
+                onClick={() => chooseProjection("top-down")}
+              >
+                Plan
+              </BlockButton>
+              <BlockButton
+                size="sm"
+                variant={projection === "isometric" ? "primary" : "ghost"}
+                aria-pressed={projection === "isometric"}
+                title="Angled view, showing height"
+                onClick={() => chooseProjection("isometric")}
+              >
+                Iso
+              </BlockButton>
+            </div>
+          ) : null}
+
+          {/* Turn the map. An isometric view only ever shows two sides of a
+              building, so without this the north and west faces of every room
+              are permanently hidden. The compass letter is which world
+              direction is currently at the top of the screen.
+
+              Plain ASCII chevrons, not ↺/↻: Press Start 2P has no glyph for
+              those, so the browser silently fell back to a system font and the
+              arrows rendered thin and half-size beside the chunky pixel
+              compass letter. Anything in these buttons has to exist in the
+              pixel font. */}
+          {view === "map" ? (
+            <div role="group" aria-label="Rotate map" className="flex gap-[3px]">
+              <BlockButton
+                size="icon"
+                variant="ghost"
+                aria-label="Rotate map anticlockwise"
+                onClick={() => turnMap(-1)}
+              >
+                {"<"}
+              </BlockButton>
+              <BlockButton
+                size="sm"
+                variant="ghost"
+                // Not a control — a readout of which way is up. Announced as
+                // words because a bare "N" is meaningless to a screen reader.
+                aria-label={`North is ${["up", "to the left", "down", "to the right"][rotation]}`}
+                title="Direction currently at the top of the map"
+                onClick={() => turnMap(1)}
+              >
+                {ROTATION_LABELS[rotation]}
+              </BlockButton>
+              <BlockButton
+                size="icon"
+                variant="ghost"
+                aria-label="Rotate map clockwise"
+                onClick={() => turnMap(1)}
+              >
+                {">"}
+              </BlockButton>
+            </div>
+          ) : null}
+
           {/* A Link styled as a block button, rather than a button wrapping a
               Link: keeps real anchor semantics (middle-click, focus, crawling). */}
           <Link
@@ -365,6 +565,7 @@ export function WorldScreen({
           ) : null}
           <VoxelWorldView
             skinId={character?.skinId ?? "prospector"}
+            onPose={setPose}
             className="min-h-[460px] flex-1 border-[length:var(--mc-bevel)] border-mc-border bevel-inset overflow-hidden"
           />
         </>
@@ -375,7 +576,15 @@ export function WorldScreen({
             className="min-h-[460px] flex-1"
             onScaleChange={setMapScale}
             onBackgroundClick={() => setSelected(null)}
-            map={<VillageMapCanvas onAnchors={setAnchors} />}
+            mapW={metrics.width}
+            mapH={metrics.height}
+            map={
+              <VillageMapCanvas
+                onAnchors={setAnchors}
+                projection={projection}
+                rotation={rotation}
+              />
+            }
           >
             {markers.map((l) => (
               <Signpost
@@ -388,7 +597,8 @@ export function WorldScreen({
                 scale={mapScale}
                 lift={l.lift}
                 dx={l.dx}
-                compact={compactPins}
+                // The pin you are pointing at names itself, even in dense mode.
+                compact={denseLabels && selected !== l.key && hovered !== l.key}
                 selected={selected === l.key}
                 dimmed={
                   (selected !== null && selected !== l.key) ||
@@ -398,6 +608,16 @@ export function WorldScreen({
                 onHover={(h) => setHovered(h ? l.key : null)}
               />
             ))}
+
+            {playerOnMap ? (
+              <PlayerMarker
+                xPct={playerOnMap.xPct}
+                yPct={playerOnMap.yPct}
+                headingDeg={playerOnMap.headingDeg}
+                scale={mapScale}
+                where={playerOnMap.where}
+              />
+            ) : null}
           </WorldViewport>
 
           {/* Welcome card, over the map's top-left as in the design. */}
@@ -522,7 +742,10 @@ export function WorldScreen({
         <Hotbar
           activeIndex={slot}
           onActiveChange={setSlot}
-          slots={WORLD_LOCATIONS.map((l) => ({
+          // HOTBAR_LOCATIONS, not WORLD_LOCATIONS: there are ten locations and
+          // Hotbar renders nine, silently dropping the rest. The filtered list
+          // makes the omission explicit and picks which one it is.
+          slots={HOTBAR_LOCATIONS.map((l) => ({
             item: l.item,
             label: l.label,
             // On the map the hotbar is a way to FLY to a place, not to leave

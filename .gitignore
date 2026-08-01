@@ -61,6 +61,7 @@ next-env.d.ts
 .claude/settings.local.json
 .claude/launch.json
 
+poster_page/
 deliverables/
 *.doc
 *.docx
