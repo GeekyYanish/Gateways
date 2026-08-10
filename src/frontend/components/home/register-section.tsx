@@ -1,6 +1,7 @@
 "use client";
 
 import { blockButton, BlockPanel } from "@/frontend/components/mc";
+import { ArchetypeBand, RegisterDecor } from "@/frontend/components/decor";
 import { FEST, inr } from "@/frontend/lib/fest";
 import { cn } from "@/frontend/lib/utils";
 import { HomeSection } from "./home-section";
@@ -13,27 +14,34 @@ import { HomeSection } from "./home-section";
  * form (as it did in 2025) — this section's only job is to make the process
  * legible before someone leaves the site for it.
  *
- * `FEST.links.register` is a placeholder until the real form exists, so the CTA
- * degrades to an in-page anchor rather than a dead external link.
+ * `FEST.links.register` now points at an on-site route. The external-link
+ * handling below is kept rather than deleted: the value is data, and a future
+ * edition that does hand registration to an external form should not need a
+ * component change to stop opening it in the same tab.
  */
 export function RegisterSection() {
-  const hasRealForm = FEST.links.register.startsWith("http");
+  const isExternal = FEST.links.register.startsWith("http");
 
   return (
     <HomeSection
       id="register"
       eyebrow="Take part"
+      decor={<RegisterDecor />}
       title="How to Register"
       lead={
         <>
           One flat fee of{" "}
-          <strong className="text-mc-gold">
+          <strong className="text-mc-accent">
             {inr(FEST.money.registrationFeeInr)}
           </strong>{" "}
           lets you enter as many events as you can fit into two days.
         </>
       }
     >
+      {/* The cast, immediately before the ask — this is the point where the page
+          invites someone to become one of them. */}
+      <ArchetypeBand />
+
       <div className="grid gap-[calc(var(--mc-unit)*1.5)] lg:grid-cols-[1.6fr_1fr]">
         <BlockPanel variant="gold" padded="lg" title="The recipe">
           <ol className="flex flex-col gap-[var(--mc-unit)] p-[calc(var(--mc-unit)*1.5)]">
@@ -44,7 +52,7 @@ export function RegisterSection() {
               >
                 <span
                   aria-hidden
-                  className="flex h-[28px] w-[28px] shrink-0 items-center justify-center bg-mc-slot font-pixel text-[9px] text-mc-gold bevel-inset"
+                  className="flex h-[28px] w-[28px] shrink-0 items-center justify-center bg-mc-slot font-pixel text-[9px] text-mc-accent bevel-inset"
                 >
                   {i + 1}
                 </span>
@@ -60,10 +68,10 @@ export function RegisterSection() {
             padded="lg"
             className="flex flex-col gap-[calc(var(--mc-unit)*0.75)]"
           >
-            <h3 className="text-[10px] uppercase text-mc-emerald-light md:text-[12px]">
+            <h3 className="text-[10px] uppercase text-mc-success md:text-[12px]">
               Entry
             </h3>
-            <p className="font-pixel text-[18px] text-mc-gold md:text-[22px]">
+            <p className="font-pixel text-[18px] text-mc-accent md:text-[22px]">
               {inr(FEST.money.registrationFeeInr)}
             </p>
             <p className="text-[16px] leading-snug text-mc-text-dim">
@@ -76,10 +84,10 @@ export function RegisterSection() {
             padded="lg"
             className="flex flex-col gap-[calc(var(--mc-unit)*0.75)]"
           >
-            <h3 className="text-[10px] uppercase text-mc-emerald-light md:text-[12px]">
+            <h3 className="text-[10px] uppercase text-mc-success md:text-[12px]">
               Accommodation
             </h3>
-            <p className="font-pixel text-[18px] text-mc-gold md:text-[22px]">
+            <p className="font-pixel text-[18px] text-mc-accent md:text-[22px]">
               {inr(FEST.money.accommodationPerDayInr)}
             </p>
             <p className="text-[16px] leading-snug text-mc-text-dim">
@@ -93,7 +101,7 @@ export function RegisterSection() {
               anchor's keyboard activation. */}
           <a
             href={FEST.links.register}
-            {...(hasRealForm
+            {...(isExternal
               ? { target: "_blank", rel: "noopener noreferrer" }
               : {})}
             className={cn(
@@ -101,7 +109,7 @@ export function RegisterSection() {
               "no-underline",
             )}
           >
-            {hasRealForm ? "Open registration form" : "Registration opens soon"}
+            Browse events and register
           </a>
 
           <a
@@ -111,7 +119,7 @@ export function RegisterSection() {
               : {})}
             className={cn(
               "text-center font-pixel text-[9px] uppercase tracking-[0.12em] no-underline transition-colors",
-              "text-mc-text-dim hover:text-mc-gold",
+              "text-mc-text-dim hover:text-mc-accent",
             )}
           >
             Read the brochure ↗

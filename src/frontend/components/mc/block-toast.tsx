@@ -19,10 +19,10 @@ const SEVERITY: Record<
   ToastSeverity,
   { border: string; accent: string; item: ItemName; label: string }
 > = {
-  info: { border: "border-mc-diamond", accent: "text-mc-diamond-light", item: "book", label: "Information" },
-  success: { border: "border-mc-emerald", accent: "text-mc-emerald-light", item: "trophy", label: "Success" },
-  warning: { border: "border-mc-gold", accent: "text-mc-gold-light", item: "compass", label: "Warning" },
-  critical: { border: "border-mc-redstone", accent: "text-mc-redstone-light", item: "sword", label: "Alert" },
+  info: { border: "border-mc-diamond", accent: "text-mc-info", item: "book", label: "Information" },
+  success: { border: "border-mc-emerald", accent: "text-mc-success", item: "trophy", label: "Success" },
+  warning: { border: "border-mc-gold", accent: "text-mc-accent-strong", item: "compass", label: "Warning" },
+  critical: { border: "border-mc-redstone", accent: "text-mc-danger", item: "sword", label: "Alert" },
 };
 
 export interface BlockToastProps {

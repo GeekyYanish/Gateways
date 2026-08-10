@@ -106,10 +106,10 @@ export function EventsModal({
                   className="transition-[filter] duration-75 hover:brightness-125"
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-[var(--mc-unit)]">
-                    <h3 className="text-[10px] uppercase text-mc-gold md:text-[12px]">
+                    <h3 className="text-[10px] uppercase text-mc-accent md:text-[12px]">
                       {e.title}
                     </h3>
-                    <span className="font-pixel text-[8px] uppercase tracking-[0.1em] text-mc-emerald-light">
+                    <span className="font-pixel text-[8px] uppercase tracking-[0.1em] text-mc-success">
                       {e.mode === "team" ? "Team" : "Solo"}
                     </span>
                   </div>
@@ -151,7 +151,7 @@ function CategoryChip({
         "border-[length:var(--mc-bevel)] px-[var(--mc-unit)] py-[calc(var(--mc-unit)*0.5)]",
         "font-pixel text-[8px] uppercase tracking-[0.1em] transition-colors md:text-[9px]",
         active
-          ? "border-mc-gold bg-mc-panel-light text-mc-gold"
+          ? "border-mc-gold bg-mc-panel-light text-mc-accent"
           : "border-mc-border bg-mc-slot text-mc-text-dim hover:text-mc-text",
       )}
     >

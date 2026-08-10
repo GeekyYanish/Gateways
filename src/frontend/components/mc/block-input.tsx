@@ -46,7 +46,7 @@ function FieldShell({
         >
           {label}
           {required ? (
-            <span className="text-mc-redstone-light" aria-hidden>
+            <span className="text-mc-danger" aria-hidden>
               {" "}
               *
             </span>
@@ -63,7 +63,7 @@ function FieldShell({
         aria-live="polite"
         className={cn(
           "text-[15px] leading-tight min-h-[1.2em]",
-          error ? "text-mc-redstone-light" : "text-mc-text-dim",
+          error ? "text-mc-danger" : "text-mc-text-dim",
         )}
       >
         {error ?? hint ?? ""}
@@ -226,7 +226,10 @@ export const BlockCheckbox = forwardRef<HTMLInputElement, BlockCheckboxProps>(
             "relative grid shrink-0 cursor-pointer place-items-center",
             "w-[22px] h-[22px] bg-mc-slot bevel-inset",
             "peer-checked:bg-mc-portal",
-            "peer-focus-visible:outline peer-focus-visible:outline-[length:var(--mc-bevel)] peer-focus-visible:outline-mc-gold peer-focus-visible:outline-offset-2",
+            /* --mc-focus-ring, like every other focusable thing. Literal gold
+               is ~1.8:1 against the light theme's cream panel, so the one
+               control that must never be lost was the one losing itself. */
+            "peer-focus-visible:outline peer-focus-visible:outline-[length:var(--mc-bevel)] peer-focus-visible:outline-[color:var(--mc-focus-ring)] peer-focus-visible:outline-offset-2",
             "[&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100",
           )}
           aria-hidden

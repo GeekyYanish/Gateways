@@ -145,11 +145,11 @@ export function PaymentUploadModal({
     >
       <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)] text-mc-text">
         <div>
-          <h3 className="font-pixel text-[12px] uppercase text-mc-emerald-light mb-[var(--mc-unit)]">
+          <h3 className="font-pixel text-[12px] uppercase text-mc-success mb-[var(--mc-unit)]">
             Instructions
           </h3>
           <ol className="list-decimal list-inside space-y-[calc(var(--mc-unit)*0.5)] text-[16px]">
-            <li>Visit the payment portal at <a href="https://christuniversity.in/online-payment-portal" target="_blank" rel="noopener noreferrer" className="text-mc-portal-light underline">https://christuniversity.in/online-payment-portal</a></li>
+            <li>Visit the payment portal at <a href="https://christuniversity.in/online-payment-portal" target="_blank" rel="noopener noreferrer" className="text-mc-eyebrow underline">https://christuniversity.in/online-payment-portal</a></li>
             <li>Select "Gateways" from the event list</li>
             <li>Complete the payment for the event</li>
             <li>Download/print the payment receipt as PDF</li>
@@ -158,7 +158,7 @@ export function PaymentUploadModal({
         </div>
 
         <div>
-          <h3 className="font-pixel text-[12px] uppercase text-mc-emerald-light mb-[var(--mc-unit)]">
+          <h3 className="font-pixel text-[12px] uppercase text-mc-success mb-[var(--mc-unit)]">
             Upload Receipt
           </h3>
           <div
@@ -180,7 +180,7 @@ export function PaymentUploadModal({
             />
             {file ? (
               <div className="text-center">
-                <p className="text-mc-emerald-light text-[16px] break-all">
+                <p className="text-mc-success text-[16px] break-all">
                   📄 {file.name}
                 </p>
                 <p className="text-mc-text-dim text-[14px] mt-1">

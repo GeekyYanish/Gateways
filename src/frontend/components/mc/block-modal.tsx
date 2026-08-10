@@ -35,7 +35,9 @@ export interface BlockModalProps {
 const VARIANT_CLASSES = {
   panel: "bg-mc-panel border-mc-border",
   gold: "bg-mc-panel border-mc-gold",
-  portal: "bg-mc-obsidian border-mc-portal",
+  // Themed surface, material accent border — see the matching note on
+  // BlockPanel's `portal` variant.
+  portal: "bg-mc-panel border-mc-portal",
 } as const;
 
 export function BlockModal({
@@ -62,7 +64,9 @@ export function BlockModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.18 }}
-                className="fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px]"
+                // --mc-scrim rather than black: on the light theme a 70% black
+                // veil is heavier than the dialog it is meant to sit behind.
+                className="fixed inset-0 z-50 bg-[var(--mc-scrim)] backdrop-blur-[2px]"
               />
             </Dialog.Overlay>
 
@@ -84,7 +88,10 @@ export function BlockModal({
                   className={cn(
                     "flex items-center justify-between gap-[var(--mc-unit)]",
                     "px-[calc(var(--mc-unit)*1.5)] py-[var(--mc-unit)]",
-                    "border-b-[length:var(--mc-bevel)] border-inherit bg-black/25",
+                    // The header bar reads as recessed against the dialog body.
+                    // bg-mc-slot rather than a black wash, which on the light
+                    // theme would just be a grey stripe.
+                    "border-b-[length:var(--mc-bevel)] border-inherit bg-mc-slot/60",
                   )}
                 >
                   <Dialog.Title className="font-pixel text-[12px] uppercase tracking-wider">

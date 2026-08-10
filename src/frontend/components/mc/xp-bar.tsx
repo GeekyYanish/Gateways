@@ -40,7 +40,7 @@ export function XpBar({
   return (
     <div className={cn("flex flex-col gap-[calc(var(--mc-unit)*0.5)]", className)}>
       <div className="flex items-baseline justify-between gap-[var(--mc-unit)]">
-        <span className="font-pixel text-[11px] uppercase text-mc-emerald-light">
+        <span className="font-pixel text-[11px] uppercase text-mc-success">
           Level {level}
           {title ? (
             <span className="text-mc-text-dim normal-case"> · {title}</span>

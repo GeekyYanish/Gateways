@@ -101,8 +101,12 @@ export function Hotbar({
               "bg-mc-slot bevel-inset cursor-pointer",
               "transition-[filter] duration-75",
               "hover:brightness-125",
+              // outline-mc-text, not outline-white: the slot underneath is the
+              // themed --slot, which is a pale sand in the light theme. A white
+              // ring on it is invisible, and this ring is the only thing saying
+              // which slot is selected.
               isActive &&
-                "outline outline-[calc(var(--mc-bevel)*0.8)] outline-white outline-offset-0 brightness-125 z-10",
+                "outline outline-[calc(var(--mc-bevel)*0.8)] outline-mc-text outline-offset-0 brightness-125 z-10",
             )}
           >
             {/* ItemIcon, not PixelImage: the item PNGs do not exist yet, and a
@@ -112,7 +116,7 @@ export function Hotbar({
             {/* Slot number, bottom-right like the real hotbar tooltip hint. */}
             <span
               aria-hidden
-              className="absolute bottom-0 right-[2px] font-pixel text-[7px] text-white/45"
+              className="absolute bottom-0 right-[2px] font-pixel text-[7px] text-mc-text/45"
             >
               {i + 1}
             </span>

@@ -25,7 +25,12 @@ const blockPanel = cva(
         stone: "bg-mc-stone [--bevel-light:var(--color-mc-stone-light)] [--bevel-dark:var(--color-mc-stone-dark)] bevel",
         // Highlight panel for achievements/announcements.
         gold: "bg-mc-panel border-mc-gold [--bevel-light:var(--color-mc-gold)] [--bevel-dark:var(--color-mc-gold-dark)] bevel",
-        portal: "bg-mc-obsidian border-mc-portal [--bevel-light:var(--color-mc-portal-light)] [--bevel-dark:var(--color-mc-portal-dark)] bevel",
+        // Portal-flavoured: the violet border and bevel carry the identity, the
+        // SURFACE is the themed panel — same construction as `gold` above.
+        // It used to be bg-mc-obsidian, which is a material colour and so stays
+        // near-black in the light theme; themed text on it came out unreadable.
+        // A variant's accent may name a material, its background may not.
+        portal: "bg-mc-panel border-mc-portal [--bevel-light:var(--color-mc-portal-light)] [--bevel-dark:var(--color-mc-portal-dark)] bevel",
         // Flat dark card with a hairline border and NO bevel — for surfaces
         // that hold a form. The bevelled panel's inset highlight competes with
         // every field well inside it, and the result reads as boxes in boxes.

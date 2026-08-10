@@ -78,7 +78,7 @@ export function ScheduleModal({
                   "border-[length:var(--mc-bevel)] px-[calc(var(--mc-unit)*1.5)] py-[calc(var(--mc-unit)*0.75)]",
                   "font-pixel text-[9px] uppercase tracking-[0.12em] transition-colors md:text-[10px]",
                   i === dayIndex
-                    ? "border-mc-gold bg-mc-panel-light text-mc-gold"
+                    ? "border-mc-gold bg-mc-panel-light text-mc-accent"
                     : "border-mc-border bg-mc-slot text-mc-text-dim hover:text-mc-text",
                 )}
               >
@@ -108,7 +108,7 @@ export function ScheduleModal({
                   >
                     <time
                       dateTime={slot.startsAt}
-                      className="font-pixel text-[8px] uppercase tracking-[0.08em] text-mc-diamond-light md:text-[9px]"
+                      className="font-pixel text-[8px] uppercase tracking-[0.08em] text-mc-info md:text-[9px]"
                     >
                       {timeRange(slot)}
                     </time>

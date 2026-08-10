@@ -93,14 +93,19 @@ export function Countdown({ targetIso, className }: CountdownProps) {
         {cells.map((cell) => (
           <div
             key={cell.label}
-            className="flex min-w-[54px] flex-col items-center gap-[calc(var(--mc-unit)*0.25)] bg-mc-slot/85 px-[var(--mc-unit)] py-[calc(var(--mc-unit)*0.75)] bevel-inset md:min-w-[72px]"
+            // Obsidian, NOT the themed mc-slot. These cells sit on the hero's
+            // daylight panorama, which is the same picture in both themes, so
+            // the plate behind the pale digits has to be dark in both. A themed
+            // slot goes near-white in the light theme and the whole countdown
+            // washes out to nothing.
+            className="flex min-w-[54px] flex-col items-center gap-[calc(var(--mc-unit)*0.25)] bg-mc-obsidian/70 px-[var(--mc-unit)] py-[calc(var(--mc-unit)*0.75)] bevel-inset md:min-w-[72px]"
           >
             <span className="font-pixel text-[16px] leading-none text-mc-portal-pale md:text-[22px]">
               {cell.value === undefined
                 ? "--"
                 : String(cell.value).padStart(2, "0")}
             </span>
-            <span className="font-pixel text-[7px] uppercase tracking-[0.12em] text-mc-text-dim md:text-[8px]">
+            <span className="font-pixel text-[7px] uppercase tracking-[0.12em] text-white/70 md:text-[8px]">
               {cell.label}
             </span>
           </div>

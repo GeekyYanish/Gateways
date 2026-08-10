@@ -2,14 +2,14 @@
 
 import { BlockButton, BlockPanel } from "@/frontend/components/mc";
 import { BiomeScene } from "@/frontend/components/scene";
+import { TorchPair, TwinsDecor } from "@/frontend/components/decor";
 import { usePortalTransition } from "@/frontend/components/portal/portal-transition-overlay";
 import { FEST, inr } from "@/frontend/lib/fest";
 import { HomeSection } from "./home-section";
 import { TwinCompare } from "./twin-compare";
 
 /**
- * Sections 4–7: who we are, what the theme is, why it is called Parallax, and
- * why the whole site is made of blocks.
+ * Sections 4–6: who we are, what the theme is, and why it is called Parallax.
  *
  * All body copy is VT323 (the document default), never Press Start 2P. The
  * Digital Twins paragraph is 60-odd words; in a pixel display face it would be
@@ -17,26 +17,12 @@ import { TwinCompare } from "./twin-compare";
  * a preference.
  */
 
-const VOXEL_CARDS = [
-  {
-    title: "Voxel = volume pixel",
-    body: "A 3D building block for rendered worlds and simulations.",
-  },
-  {
-    title: "Why it fits",
-    body: "A world visibly assembling is a twin being rendered.",
-  },
-  {
-    title: "Why it's practical",
-    body: "Cardboard and foam blocks. Geometric signs. Pixel banners.",
-  },
-] as const;
-
 export function AboutSection() {
   return (
     <HomeSection
       id="about"
       eyebrow="The fest"
+      decor={<TorchPair />}
       title={FEST.edition}
       lead={
         <>
@@ -70,7 +56,7 @@ function Stat({ label, value }: { label: string; value: string }) {
         <dt className="font-pixel text-[7px] uppercase tracking-[0.14em] text-mc-text-dim md:text-[8px]">
           {label}
         </dt>
-        <dd className="font-pixel text-[13px] text-mc-gold md:text-[16px]">
+        <dd className="font-pixel text-[13px] text-mc-accent md:text-[16px]">
           {value}
         </dd>
       </div>
@@ -80,14 +66,24 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export function DigitalTwinsSection() {
   return (
-    <HomeSection id="theme" eyebrow="This year's subject" title="Digital Twins">
+    <HomeSection
+      id="theme"
+      eyebrow="This year's subject"
+      title="Digital Twins"
+      decor={<TwinsDecor />}
+    >
       <BiomeScene
         scene="circuit-lab"
         className="min-h-[220px] border-[length:var(--mc-bevel)] border-mc-border bevel-inset"
       >
-        <div className="mt-auto w-full bg-black/55 p-[calc(var(--mc-unit)*2)]">
-          <p className="mx-auto max-w-[74ch] text-[17px] leading-relaxed text-mc-text md:text-[20px]">
-            <strong className="text-mc-diamond-light">Digital Twins</strong>{" "}
+        {/* This caption sits on the scene art, not on a themed surface, so it
+            keeps its own fixed colours: a literal black wash, white body text
+            and the material `diamond-light` accent. Swapping in the themed
+            tokens would darken all three against a backdrop that never changes,
+            which is the exact inversion of what they are for. */}
+        <div className="mt-auto w-full bg-mc-slot p-[calc(var(--mc-unit)*2)]">
+          <p className="mx-auto max-w-[74ch] text-[17px] leading-relaxed text-mc-obsidian md:text-[20px]">
+            <strong className="text-mc-portal-dark">Digital Twins</strong>{" "}
             represent the convergence of AI, IoT, cloud computing, and
             simulation by creating intelligent virtual replicas of real-world
             systems. These digital counterparts continuously learn from live
@@ -118,12 +114,15 @@ export function ParallaxSection() {
     >
       <TwinCompare />
 
-      <p className="mt-[calc(var(--mc-unit)*3)] text-center font-pixel text-[10px] uppercase leading-loose tracking-[0.14em] text-mc-portal-pale md:text-[13px]">
+      {/* Sits directly on the PAGE, unlike the portal-pale lines elsewhere in
+          this file which sit on art or on a black scrim — so it reads its
+          violet from the semantic token rather than the material one. */}
+      <p className="mt-[calc(var(--mc-unit)*3)] text-center font-pixel text-[10px] uppercase leading-loose tracking-[0.14em] text-mc-eyebrow md:text-[13px]">
         One reality.
         <br />
         Two vantage points.
         <br />
-        <span className="text-mc-gold">Better decisions.</span>
+        <span className="text-mc-accent">Better decisions.</span>
       </p>
 
       {/*
@@ -156,31 +155,3 @@ export function ParallaxSection() {
   );
 }
 
-export function VoxelLanguageSection() {
-  return (
-    <HomeSection
-      eyebrow="Visual language"
-      title="Voxel Design"
-      lead="Everything you see here — the buttons, the panels, the village — is built from blocks, because a world assembling itself out of blocks is the clearest picture of a twin being rendered."
-    >
-      <ul className="grid gap-[var(--mc-unit)] md:grid-cols-3">
-        {VOXEL_CARDS.map((card) => (
-          <li key={card.title}>
-            <BlockPanel
-              variant="panel"
-              padded="lg"
-              className="flex h-full flex-col gap-[var(--mc-unit)]"
-            >
-              <h3 className="text-[11px] uppercase text-mc-emerald-light md:text-[13px]">
-                {card.title}
-              </h3>
-              <p className="text-[17px] leading-relaxed text-mc-text-dim md:text-[19px]">
-                {card.body}
-              </p>
-            </BlockPanel>
-          </li>
-        ))}
-      </ul>
-    </HomeSection>
-  );
-}

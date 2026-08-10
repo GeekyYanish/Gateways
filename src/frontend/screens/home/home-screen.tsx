@@ -7,7 +7,6 @@ import {
   AboutSection,
   DigitalTwinsSection,
   ParallaxSection,
-  VoxelLanguageSection,
 } from "@/frontend/components/home/theme-sections";
 import { ExploreSection } from "@/frontend/components/home/explore-section";
 import { RegisterSection } from "@/frontend/components/home/register-section";
@@ -50,7 +49,6 @@ export function HomeScreen() {
         <AboutSection />
         <DigitalTwinsSection />
         <ParallaxSection />
-        <VoxelLanguageSection />
         <ExploreSection
           onOpenEvents={() => setEventsOpen(true)}
           onOpenSchedule={() => setScheduleOpen(true)}

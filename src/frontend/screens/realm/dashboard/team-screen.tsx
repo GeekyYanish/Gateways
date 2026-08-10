@@ -25,7 +25,7 @@ export function TeamScreen() {
 
   return (
     <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
-      <h1 className="text-mc-gold text-base md:text-lg">TEAM</h1>
+      <h1 className="text-mc-accent text-base md:text-lg">TEAM</h1>
 
       {loading ? (
         <BlockPanel variant="slot"><LoadingBlocks label="Loading teams" /></BlockPanel>
@@ -33,7 +33,7 @@ export function TeamScreen() {
         <BlockPanel variant="slot" className="text-center">
           <p className="text-mc-text-dim">
             You are not in a team yet. Team creation opens from a team event&apos;s page —{" "}
-            <Link href="/events" className="text-mc-portal-light underline">browse events</Link>.
+            <Link href="/events" className="text-mc-eyebrow underline">browse events</Link>.
           </p>
         </BlockPanel>
       ) : (
@@ -72,11 +72,11 @@ function TeamCard({
 
   return (
     <BlockPanel variant="panel" title={name} action={
-      isLeader ? <span className="font-pixel text-[9px] uppercase text-mc-gold-light">Leader</span> : null
+      isLeader ? <span className="font-pixel text-[9px] uppercase text-mc-accent-strong">Leader</span> : null
     }>
       <p className="text-[15px] text-mc-text-dim">{eventTitle}</p>
       <p className="mt-[calc(var(--mc-unit)*0.5)] text-[15px]">
-        Join code: <code className="font-pixel text-[11px] text-mc-emerald-light">{joinCode}</code>
+        Join code: <code className="font-pixel text-[11px] text-mc-success">{joinCode}</code>
       </p>
       <p className="mt-[var(--mc-unit)] font-pixel text-[9px] uppercase text-mc-text-dim">
         Members ({members?.length ?? 0})

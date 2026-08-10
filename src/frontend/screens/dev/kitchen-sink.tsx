@@ -34,7 +34,7 @@ function Section({ title, note, children }: { title: string; note?: string; chil
   return (
     <section className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
       <div>
-        <h2 className="font-pixel text-[14px] uppercase text-mc-gold">{title}</h2>
+        <h2 className="font-pixel text-[14px] uppercase text-mc-accent">{title}</h2>
         {note ? <p className="mt-1 text-[15px] text-mc-text-dim">{note}</p> : null}
       </div>
       {children}
@@ -57,7 +57,7 @@ export function KitchenSink() {
       <BlockToaster />
 
       <header className="flex flex-col gap-2">
-        <h1 className="text-mc-portal-light text-xl md:text-3xl">KITCHEN SINK</h1>
+        <h1 className="text-mc-eyebrow text-xl md:text-3xl">KITCHEN SINK</h1>
         <p className="text-mc-text-dim">
           Every design-system primitive in every variant. Dev-only. All art below
           is a generated placeholder — real files land in <code>/public/art</code>.
@@ -209,14 +209,14 @@ export function KitchenSink() {
             </>
           }
         >
-          <p>Register for <strong className="text-mc-emerald-light">Hackathon Mine</strong>? You will earn 50 XP on check-in.</p>
+          <p>Register for <strong className="text-mc-success">Hackathon Mine</strong>? You will earn 50 XP on check-in.</p>
         </BlockModal>
 
         <BlockModal open={goldModal} onOpenChange={setGoldModal} title="Achievement unlocked!" variant="gold" footer={<BlockButton variant="gold" onClick={() => setGoldModal(false)}>Awesome!</BlockButton>}>
           <div className="flex items-center gap-[calc(var(--mc-unit)*1.5)]">
             <BadgeSlot code="first_steps" name="First Steps" rarity="uncommon" unlocked size={72} />
             <div>
-              <p className="font-pixel text-[12px] text-mc-gold-light">First Steps</p>
+              <p className="font-pixel text-[12px] text-mc-accent-strong">First Steps</p>
               <p className="mt-1 text-mc-text-dim">You have joined the Parallax!</p>
             </div>
           </div>

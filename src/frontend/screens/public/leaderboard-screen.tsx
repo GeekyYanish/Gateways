@@ -19,7 +19,7 @@ export function LeaderboardScreen() {
       <BackLink href="/" label="Home" />
 
       <header>
-        <h1 className="text-mc-gold text-base md:text-lg">LEADERBOARD CASTLE</h1>
+        <h1 className="text-mc-accent text-base md:text-lg">LEADERBOARD CASTLE</h1>
         <p className="mt-[calc(var(--mc-unit)*0.5)] text-mc-text-dim">
           Earn XP by registering for events and checking in.
         </p>
@@ -69,7 +69,7 @@ export function LeaderboardScreen() {
                       isMe && "bg-mc-portal/20",
                     )}
                   >
-                    <td className="p-[calc(var(--mc-unit)*0.5)] font-pixel text-[11px] text-mc-gold-light tabular-nums">
+                    <td className="p-[calc(var(--mc-unit)*0.5)] font-pixel text-[11px] text-mc-accent-strong tabular-nums">
                       {r.rank}
                     </td>
                     <td className="p-[calc(var(--mc-unit)*0.5)]">
@@ -79,7 +79,7 @@ export function LeaderboardScreen() {
                           <span className="block truncate text-[16px]">
                             {r.playerName}
                             {isMe ? (
-                              <span className="ml-1 text-[13px] text-mc-portal-light">
+                              <span className="ml-1 text-[13px] text-mc-eyebrow">
                                 (you)
                               </span>
                             ) : null}
@@ -98,7 +98,7 @@ export function LeaderboardScreen() {
                     <td className="p-[calc(var(--mc-unit)*0.5)] text-right text-[16px] tabular-nums">
                       {r.level}
                     </td>
-                    <td className="p-[calc(var(--mc-unit)*0.5)] text-right text-[16px] text-mc-emerald-light tabular-nums">
+                    <td className="p-[calc(var(--mc-unit)*0.5)] text-right text-[16px] text-mc-success tabular-nums">
                       {r.totalXp}
                     </td>
                   </tr>

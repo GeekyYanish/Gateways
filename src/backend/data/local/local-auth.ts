@@ -222,6 +222,16 @@ export class LocalAuth implements AuthRepository {
       email,
       fullName: fullName ?? null,
       phone: null,
+      // The participant fields stay null until the registration form collects
+      // them. Sign-up asks for an email and a password and nothing else, and
+      // demanding a T-shirt size to create an account would be absurd.
+      gender: null,
+      dateOfBirth: null,
+      category: null,
+      tshirtSize: null,
+      emergencyName: null,
+      emergencyPhone: null,
+      dietaryPref: null,
       isBanned: false,
       createdAt: now,
       updatedAt: now,

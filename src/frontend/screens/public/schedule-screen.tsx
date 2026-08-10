@@ -15,7 +15,7 @@ export function ScheduleScreen() {
       <BackLink href="/" label="Home" />
 
       <header>
-        <h1 className="text-mc-gold text-base md:text-lg">SCHEDULE</h1>
+        <h1 className="text-mc-accent text-base md:text-lg">SCHEDULE</h1>
         <p className="mt-[calc(var(--mc-unit)*0.5)] text-mc-text-dim">
           Times shown in your local timezone.
         </p>

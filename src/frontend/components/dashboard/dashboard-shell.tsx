@@ -9,6 +9,7 @@ import {
   BlockButton,
   BlockPanel,
   PixelAvatar,
+  ThemeToggle,
   XpBar,
 } from "@/frontend/components/mc";
 import { useSession } from "@/frontend/components/auth/session-provider";
@@ -79,14 +80,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         >
           ☰
         </BlockButton>
-        {character ? (
-          <div className="flex items-center gap-[calc(var(--mc-unit)*0.75)]">
-            <span className="font-pixel text-[10px] text-mc-text">
-              {character.playerName}
-            </span>
-            <PixelAvatar skinId={character.skinId} size={32} />
-          </div>
-        ) : null}
+        <div className="flex items-center gap-[calc(var(--mc-unit)*0.75)]">
+          <ThemeToggle />
+          {character ? (
+            <>
+              <span className="font-pixel text-[10px] text-mc-text">
+                {character.playerName}
+              </span>
+              <PixelAvatar skinId={character.skinId} size={32} />
+            </>
+          ) : null}
+        </div>
       </header>
 
       {/* min-h-0 overrides the flex default of min-height:auto, which would
@@ -192,7 +196,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 "flex flex-1 flex-col items-center gap-[2px] py-[calc(var(--mc-unit)*0.75)] no-underline",
                 // 44px minimum touch target.
                 "min-h-[56px] justify-center",
-                active ? "text-mc-portal-light" : "text-mc-text-dim",
+                active ? "text-mc-eyebrow" : "text-mc-text-dim",
               )}
             >
               <span aria-hidden className="text-[18px] leading-none">
@@ -221,7 +225,7 @@ function SidebarContent({
       <Link
         href="/world"
         onClick={onNavigate}
-        className="font-pixel text-[12px] text-mc-portal-light no-underline hover:text-mc-text"
+        className="font-pixel text-[12px] text-mc-eyebrow no-underline hover:text-mc-text"
       >
         PARALLAX
       </Link>
@@ -264,9 +268,20 @@ function SidebarContent({
           className="w-full"
           preferHistory={false}
         />
-        <BlockButton variant="danger" size="sm" block onClick={onSignOut}>
-          Logout
-        </BlockButton>
+        <div className="flex items-center gap-[var(--mc-unit)]">
+          <BlockButton
+            variant="danger"
+            size="sm"
+            block
+            onClick={onSignOut}
+            className="min-w-0"
+          >
+            Logout
+          </BlockButton>
+          {/* Also in the mobile header above — this copy is the desktop one,
+              where the sidebar is the only persistent chrome. */}
+          <ThemeToggle className="shrink-0" />
+        </div>
       </div>
     </>
   );

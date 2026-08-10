@@ -54,10 +54,15 @@ export function ExploreSection({
                 className="flex h-full flex-col items-start gap-[var(--mc-unit)] transition-[filter] duration-75 hover:brightness-125"
               >
                 <ItemIcon item={f.item} size={40} />
-                <h3 className="text-[11px] uppercase text-mc-portal-pale md:text-[13px]">
+                {/* eyebrow, not portal-pale. This card's `portal` variant
+                    carries its identity in the BORDER — its surface is the
+                    themed panel, so #e8dcfb type on it disappears the moment
+                    that panel is a light one. mc-eyebrow is the same violet
+                    expressed as a meaning, and it darkens with the theme. */}
+                <h3 className="text-[11px] uppercase text-mc-eyebrow md:text-[13px]">
                   {f.name}
                 </h3>
-                <p className="font-pixel text-[8px] uppercase tracking-[0.12em] text-mc-gold">
+                <p className="font-pixel text-[8px] uppercase tracking-[0.12em] text-mc-accent">
                   {f.domain}
                 </p>
               </BlockPanel>

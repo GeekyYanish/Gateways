@@ -31,10 +31,13 @@ export function TwinCompare() {
         className="flex shrink-0 flex-row items-center justify-center gap-[calc(var(--mc-unit)*0.5)] py-[var(--mc-unit)] md:flex-col md:py-0"
         aria-hidden
       >
-        <span className="font-pixel text-[8px] uppercase tracking-[0.16em] text-mc-diamond md:text-[9px]">
+        {/* text-mc-info, matching the arrow below it — this label sits on the
+            page itself, not on art, and the raw diamond block colour is ~1.5:1
+            against the light theme's sky. */}
+        <span className="font-pixel text-[8px] uppercase tracking-[0.16em] text-mc-info md:text-[9px]">
           Live data
         </span>
-        <span className="font-pixel text-[14px] text-mc-diamond-light md:text-[18px]">
+        <span className="font-pixel text-[14px] text-mc-info md:text-[18px]">
           <span className="md:hidden">▼</span>
           <span className="hidden md:inline">▶</span>
         </span>
@@ -72,7 +75,7 @@ function TwinPanel({
         className="h-auto w-full max-w-[256px]"
       />
       <div className="flex flex-col items-center gap-[calc(var(--mc-unit)*0.25)] pb-[calc(var(--mc-unit)*0.5)] text-center">
-        <p className="font-pixel text-[9px] uppercase tracking-[0.14em] text-mc-gold md:text-[10px]">
+        <p className="font-pixel text-[9px] uppercase tracking-[0.14em] text-mc-accent md:text-[10px]">
           {label}
         </p>
         <p className="text-[16px] leading-snug text-mc-text-dim">{caption}</p>

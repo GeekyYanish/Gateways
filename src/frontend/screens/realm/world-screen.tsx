@@ -399,7 +399,7 @@ export function WorldScreen({
           >
             <PixelAvatar skinId={character.skinId} size={40} />
             <div>
-              <p className="font-pixel text-[11px] text-mc-emerald-light">
+              <p className="font-pixel text-[11px] text-mc-success">
                 Welcome, {character.playerName}!
               </p>
               <p className="text-[15px] text-mc-text-dim">
@@ -547,7 +547,7 @@ export function WorldScreen({
                 <button
                   type="button"
                   onClick={() => chooseView("map")}
-                  className="cursor-pointer text-mc-portal-light underline"
+                  className="cursor-pointer text-mc-eyebrow underline"
                 >
                   Map
                 </button>{" "}
@@ -555,7 +555,7 @@ export function WorldScreen({
                 <button
                   type="button"
                   onClick={() => chooseView("list")}
-                  className="cursor-pointer text-mc-portal-light underline"
+                  className="cursor-pointer text-mc-eyebrow underline"
                 >
                   List
                 </button>{" "}
@@ -629,7 +629,7 @@ export function WorldScreen({
             >
               <PixelAvatar skinId={character.skinId} size={36} />
               <div>
-                <p className="font-pixel text-[10px] text-mc-emerald-light">
+                <p className="font-pixel text-[10px] text-mc-success">
                   Welcome, {character.playerName}!
                 </p>
                 <p className="text-[15px] text-mc-text-dim">
@@ -653,7 +653,7 @@ export function WorldScreen({
               <div className="flex items-start gap-[var(--mc-unit)]">
                 <ItemIcon item={selectedLoc.item} size={28} />
                 <div className="min-w-0 flex-1">
-                  <p className="font-pixel text-[11px] uppercase text-mc-gold-light">
+                  <p className="font-pixel text-[11px] uppercase text-mc-accent-strong">
                     {selectedLoc.label}
                   </p>
                   <p className="mt-[calc(var(--mc-unit)*0.5)] text-[16px] text-mc-text-dim">
@@ -697,7 +697,7 @@ export function WorldScreen({
                 <div className="flex items-start gap-[var(--mc-unit)]">
                   <ItemIcon item={l.item} size={24} />
                   <div className="min-w-0">
-                    <p className="font-pixel text-[11px] uppercase text-mc-gold-light">
+                    <p className="font-pixel text-[11px] uppercase text-mc-accent-strong">
                       {l.label}
                     </p>
                     <p className="mt-[calc(var(--mc-unit)*0.5)] text-[16px] text-mc-text-dim">

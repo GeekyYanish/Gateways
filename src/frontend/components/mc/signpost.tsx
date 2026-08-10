@@ -134,7 +134,11 @@ export function Signpost({
                 ? "h-[38px] w-[38px] p-0"
                 : "px-[calc(var(--mc-unit)*1)] py-[calc(var(--mc-unit)*0.6)]",
               "rounded-[6px] border-2 no-underline whitespace-nowrap",
-              "bg-mc-void/92 shadow-[0_4px_0_0_rgba(0,0,0,0.55)]",
+              // Obsidian rather than the themed mc-void: this chip is pinned
+              // over the world map's art, which is the same picture in both
+              // themes. Its white label needs a dark plate behind it regardless
+              // of what the surrounding UI is doing.
+              "bg-mc-obsidian/92 shadow-[0_4px_0_0_rgba(0,0,0,0.55)]",
               "transition-[transform,border-color,filter] duration-100 ease-block",
               "hover:-translate-y-[3px] hover:brightness-125",
               "active:translate-y-0",

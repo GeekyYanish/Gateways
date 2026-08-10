@@ -31,6 +31,12 @@ export interface HomeSectionProps {
   className?: string;
   /** Centres the heading block. Defaults to true. */
   centered?: boolean;
+  /**
+   * Decorative props positioned against this section's edges. Pass a
+   * `<DecorLayer>` from `components/decor`; it is rendered BEHIND the content
+   * and takes no part in layout.
+   */
+  decor?: React.ReactNode;
 }
 
 export function HomeSection({
@@ -41,14 +47,16 @@ export function HomeSection({
   children,
   className,
   centered = true,
+  decor,
 }: HomeSectionProps) {
   return (
     <motion.section
       id={id}
       // scroll-mt clears the sticky nav when an anchor link jumps here;
       // without it the heading lands underneath the bar.
+      // `relative` is the positioning context <DecorLayer> anchors to.
       className={cn(
-        "mx-auto w-full max-w-6xl scroll-mt-[calc(var(--mc-unit)*8)] px-[calc(var(--mc-unit)*1.5)] py-[calc(var(--mc-unit)*4)]",
+        "relative mx-auto w-full max-w-6xl scroll-mt-[calc(var(--mc-unit)*8)] px-[calc(var(--mc-unit)*1.5)] py-[calc(var(--mc-unit)*4)]",
         className,
       )}
       initial={{ opacity: 0, y: 24 }}
@@ -56,6 +64,10 @@ export function HomeSection({
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
     >
+      {/* First in the DOM so it paints under the content without needing a
+          z-index on every child. */}
+      {decor}
+
       {eyebrow || title ? (
         <header
           className={cn(
@@ -64,12 +76,12 @@ export function HomeSection({
           )}
         >
           {eyebrow ? (
-            <p className="font-pixel text-[8px] uppercase tracking-[0.28em] text-mc-portal-light md:text-[9px]">
+            <p className="font-pixel text-[8px] uppercase tracking-[0.28em] text-mc-eyebrow md:text-[9px]">
               {eyebrow}
             </p>
           ) : null}
           {title ? (
-            <h2 className="text-[16px] uppercase text-mc-gold md:text-[24px]">
+            <h2 className="text-[16px] uppercase text-mc-accent md:text-[24px]">
               {title}
             </h2>
           ) : null}

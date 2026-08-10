@@ -67,14 +67,110 @@ export type AchievementTrigger =
 // Identity
 // ---------------------------------------------------------------------------
 
+/* The four participant enumerations below are copied VERBATIM from the
+   registration console's `src/lib/data/types.ts`. They are a wire contract, not
+   our taxonomy — `POST /v1/registrations` rejects anything outside these sets,
+   and the console's filters and CSV exports key off the exact strings. Widen or
+   rename them only in lockstep with that repo. */
+
+export type Gender = "male" | "female" | "other";
+
+/** Sets the base fee on the console's side (participant ₹350 … guest ₹0). */
+export type ParticipantCategory =
+  | "participant"
+  | "delegate"
+  | "accompanist"
+  | "faculty"
+  | "volunteer"
+  | "guest";
+
+export type TshirtSize = "XS" | "S" | "M" | "L" | "XL" | "XXL";
+
+export type DietaryPref = "veg" | "non_veg" | "vegan" | "jain";
+
+/**
+ * One row per person, matching the console's `Participant`.
+ *
+ * The seven fields below `phone` are the gap BACKEND-API-CONTRACT.md §1 named:
+ * the console cannot render a usable record without them, and
+ * `POST /v1/registrations` cannot be satisfied.
+ *
+ * All nullable, and that is not laziness — every profile created before this
+ * existed has none of them, and `local-auth.ts` still creates a profile with
+ * nothing but an email at sign-up. Completeness is asserted at registration
+ * time by `isParticipantComplete()`, not by the type.
+ *
+ * College, department and year deliberately do NOT live here. They are already
+ * on `Character`, and duplicating them would create two answers to the same
+ * question with no rule for which wins.
+ */
 export interface Profile {
   id: string;
   email: string;
   fullName: string | null;
   phone: string | null;
+  gender: Gender | null;
+  /** "YYYY-MM-DD". A plain date, not a timestamp — nobody has a birth instant. */
+  dateOfBirth: string | null;
+  category: ParticipantCategory | null;
+  tshirtSize: TshirtSize | null;
+  emergencyName: string | null;
+  emergencyPhone: string | null;
+  dietaryPref: DietaryPref | null;
   isBanned: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * What the registration form submits. Every field is required here — the
+ * optionality on `Profile` is about history, this is about intent.
+ *
+ * `email` is absent because it comes from the session, and it is the key the
+ * backend matches participants on; letting the form set it would let one
+ * account write another person's record.
+ */
+export interface ParticipantDetails {
+  fullName: string;
+  phone: string;
+  gender: Gender;
+  dateOfBirth: string;
+  category: ParticipantCategory;
+  tshirtSize: TshirtSize;
+  emergencyName: string;
+  emergencyPhone: string;
+  dietaryPref: DietaryPref;
+}
+
+/**
+ * Whether this user can be sent to the console as a Participant.
+ *
+ * Lives here rather than in a component because three callers need the same
+ * answer — the register button (to decide whether to open the form), the
+ * repository (to refuse an incomplete registration), and the form itself (to
+ * pre-fill). Three copies of this predicate would drift.
+ *
+ * Checks `Character` too: college and year are part of the contract's
+ * `participant` object even though they are stored on the character.
+ */
+export function isParticipantComplete(
+  profile: Profile | null,
+  character: Character | null,
+): boolean {
+  if (!profile || !character) return false;
+  return Boolean(
+    profile.fullName?.trim() &&
+      profile.phone?.trim() &&
+      profile.gender &&
+      profile.dateOfBirth &&
+      profile.category &&
+      profile.tshirtSize &&
+      profile.emergencyName?.trim() &&
+      profile.emergencyPhone?.trim() &&
+      profile.dietaryPref &&
+      character.collegeId &&
+      character.yearOfStudy != null,
+  );
 }
 
 export interface Character {

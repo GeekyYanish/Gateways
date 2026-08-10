@@ -103,7 +103,7 @@ function ReceiptCard({
   return (
     <BlockPanel variant="panel" padded="md" className="flex flex-col md:flex-row md:items-center justify-between gap-[var(--mc-unit)]">
       <div className="flex flex-col gap-[calc(var(--mc-unit)*0.5)]">
-        <p className="font-pixel text-[12px] text-mc-emerald-light">
+        <p className="font-pixel text-[12px] text-mc-success">
           {event ? event.title : "Loading event..."}
         </p>
         <p className="text-[16px] text-mc-text-dim">

@@ -254,7 +254,7 @@ export function LoginScreen() {
               <BlockCheckbox label="Remember me" {...register("remember")} />
               <button
                 type="button"
-                className="cursor-pointer text-[16px] text-mc-portal-light hover:text-mc-text hover:underline"
+                className="cursor-pointer text-[16px] text-mc-eyebrow hover:text-mc-text hover:underline"
                 onClick={() =>
                   setFormError(
                     "Password reset needs a mail server — it arrives with the MySQL backend.",
@@ -273,7 +273,7 @@ export function LoginScreen() {
               padded="sm"
               role="alert"
               aria-live="assertive"
-              className="border-mc-redstone text-mc-redstone-light text-[16px]"
+              className="border-mc-redstone text-mc-danger text-[16px]"
             >
               {formError}
             </BlockPanel>
