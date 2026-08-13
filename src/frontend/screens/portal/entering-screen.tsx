@@ -19,8 +19,7 @@ const DURATION_MS = 2600;
  * somewhere to live while the destination's code and data load. It zooms into
  * the portal, then routes onward based on auth state:
  *   signed out        → /login
- *   no character yet  → /create-character
- *   fully set up      → /travelling
+ *   signed in         → /travelling
  *
  * Under reduced motion it redirects immediately with no animation.
  */
@@ -32,7 +31,7 @@ export function EnteringScreen() {
   const [progress, setProgress] = useState(0);
 
   const destination =
-    status === "ready" ? "/travelling" : status === "needs-character" ? "/create-character" : "/login";
+    status === "ready" ? "/travelling" : "/login";
 
   // Warm the destination while the animation plays, so the push is instant.
   useEffect(() => {

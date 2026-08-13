@@ -1,8 +1,9 @@
 "use client";
 
-import { BlockButton, BlockPanel } from "@/frontend/components/mc";
+import { BlockButton, BlockPanel, PixelImage } from "@/frontend/components/mc";
 import { BiomeScene } from "@/frontend/components/scene";
-import { TorchPair, TwinsDecor } from "@/frontend/components/decor";
+import { AboutCharacterDecor, TorchPair } from "@/frontend/components/decor";
+import { ART } from "@/frontend/lib/assets/manifest";
 import { usePortalTransition } from "@/frontend/components/portal/portal-transition-overlay";
 import { FEST, inr } from "@/frontend/lib/fest";
 import { HomeSection } from "./home-section";
@@ -22,7 +23,12 @@ export function AboutSection() {
     <HomeSection
       id="about"
       eyebrow="The fest"
-      decor={<TorchPair />}
+      decor={
+        <>
+          <TorchPair />
+          <AboutCharacterDecor />
+        </>
+      }
       title={FEST.edition}
       lead={
         <>
@@ -33,12 +39,27 @@ export function AboutSection() {
         </>
       }
     >
-      <dl className="grid grid-cols-2 gap-[var(--mc-unit)] md:grid-cols-4">
+      <div
+        aria-hidden
+        className="pointer-events-none mb-[var(--mc-unit)] flex h-[170px] items-end justify-center xl:hidden"
+      >
+        <PixelImage
+          asset={ART.home.girl}
+          label="girl"
+          alt=""
+          className="h-full w-auto"
+          style={{ filter: "drop-shadow(0 10px 8px rgba(0,0,0,0.36))" }}
+        />
+      </div>
+      <div
+        aria-label="Festival highlights"
+        className="grid grid-cols-2 gap-[var(--mc-unit)] md:grid-cols-4"
+      >
         <Stat label="Years running" value={`${FEST.yearsRunning}+`} />
         <Stat label="Prize pool" value={inr(FEST.money.prizePoolInr)} />
         <Stat label="Entry" value={inr(FEST.money.registrationFeeInr)} />
         <Stat label="Days" value="2" />
-      </dl>
+      </div>
     </HomeSection>
   );
 }
@@ -50,15 +71,13 @@ function Stat({ label, value }: { label: string; value: string }) {
       padded="md"
       className="flex flex-col items-center gap-[calc(var(--mc-unit)*0.5)] text-center"
     >
-      {/* dd before dt in the DOM would break the pairing; the visual order is
-          achieved with flex-col-reverse instead of reordering the markup. */}
-      <div className="flex flex-col-reverse items-center gap-[calc(var(--mc-unit)*0.5)]">
-        <dt className="font-pixel text-[7px] uppercase tracking-[0.14em] text-mc-text-dim md:text-[8px]">
+      <div className="flex flex-col items-center gap-[calc(var(--mc-unit)*0.5)]">
+        <p className="order-2 font-pixel text-[7px] uppercase tracking-[0.14em] text-mc-text-dim md:text-[8px]">
           {label}
-        </dt>
-        <dd className="font-pixel text-[13px] text-mc-accent md:text-[16px]">
+        </p>
+        <p className="order-1 font-pixel text-[13px] text-mc-accent md:text-[16px]">
           {value}
-        </dd>
+        </p>
       </div>
     </BlockPanel>
   );
@@ -70,20 +89,52 @@ export function DigitalTwinsSection() {
       id="theme"
       eyebrow="This year's subject"
       title="Digital Twins"
-      decor={<TwinsDecor />}
     >
+      {/* The night workshop is the dark theme's; `circuit-lab-day` is the same
+          room with the shutters open. A tint would not have done it — the
+          conduits layer glows via `screen`, which composites to nothing on a
+          pale wall, so the day variant re-blends it as well as re-colouring. */}
       <BiomeScene
         scene="circuit-lab"
-        className="min-h-[220px] border-[length:var(--mc-bevel)] border-mc-border bevel-inset"
+        lightScene="circuit-lab-day"
+        className="relative min-h-[650px] overflow-hidden border-[length:var(--mc-bevel)] border-mc-border bevel-inset md:min-h-[430px]"
       >
-        {/* This caption sits on the scene art, not on a themed surface, so it
-            keeps its own fixed colours: a literal black wash, white body text
-            and the material `diamond-light` accent. Swapping in the themed
-            tokens would darken all three against a backdrop that never changes,
-            which is the exact inversion of what they are for. */}
-        <div className="mt-auto w-full bg-mc-slot p-[calc(var(--mc-unit)*2)]">
-          <p className="mx-auto max-w-[74ch] text-[17px] leading-relaxed text-mc-obsidian md:text-[20px]">
-            <strong className="text-mc-portal-dark">Digital Twins</strong>{" "}
+        <PixelImage
+          asset={ART.home.bowOne}
+          label="bow character one"
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute left-[-14px] top-[calc(var(--mc-unit)*1.5)] z-0 h-[230px] w-auto scale-x-[-1] md:bottom-0 md:top-auto md:h-[390px]"
+          style={{ filter: "drop-shadow(8px 10px 8px rgba(0,0,0,0.45))" }}
+        />
+        <PixelImage
+          asset={ART.home.bowTwo}
+          label="bow character two"
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute right-[-14px] top-[calc(var(--mc-unit)*1.5)] z-0 h-[230px] w-auto md:bottom-0 md:top-auto md:h-[390px]"
+          style={{ filter: "drop-shadow(-8px 10px 8px rgba(0,0,0,0.45))" }}
+        />
+        {/* THEMED, and that is a reversal worth explaining.
+
+            This was a fixed black wash with white text, on the rule that the
+            caption sits on scene art whose backdrop never changes — so themed
+            tokens would have darkened it against a constant. That rule was
+            right for as long as it held. It stopped holding the moment the card
+            gained `lightScene`: the backdrop is now a night workshop OR a day
+            one, and a hard black slab that disappeared into the first reads as a
+            hole punched in the second.
+
+            So it goes back to the semantic layer, which is what that layer is
+            for — `panel` and `text` flip together, and `info` is the one accent
+            that already has a light-theme value solved for cream (a deep teal,
+            where dark uses diamond). What must never come back is the ORIGINAL
+            bug: `bg-mc-slot/95` with a hardcoded `text-white`, one token themed
+            and the other not, which is how white on sand happened. Both sides of
+            a contrast pair are themed here, or neither is. */}
+        <div className="relative z-10 mx-[var(--mc-unit)] mb-[var(--mc-unit)] mt-auto bg-mc-panel/85 p-[calc(var(--mc-unit)*1.5)] bevel-inset md:mx-auto md:mb-[calc(var(--mc-unit)*2)] md:w-[68%] md:p-[calc(var(--mc-unit)*2)]">
+          <p className="mx-auto max-w-[74ch] text-[17px] leading-relaxed text-mc-text md:text-[20px]">
+            <strong className="text-mc-info">Digital Twins</strong>{" "}
             represent the convergence of AI, IoT, cloud computing, and
             simulation by creating intelligent virtual replicas of real-world
             systems. These digital counterparts continuously learn from live
@@ -154,4 +205,3 @@ export function ParallaxSection() {
     </HomeSection>
   );
 }
-

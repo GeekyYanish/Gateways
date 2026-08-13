@@ -173,7 +173,7 @@ export function LoginScreen() {
       {/* The wordmark sits ABOVE the card, not inside it, so the card reads as
           the form and nothing else. */}
       <header className="mb-[calc(var(--mc-unit)*2)] text-center">
-        <h1 className="title-emboss text-[28px] leading-[1.35] text-mc-portal-pale md:text-[36px]">
+        <h1 className="title-emboss text-[clamp(23px,8vw,28px)] leading-[1.35] text-mc-portal-pale md:text-[36px]">
           {heading.map((line) => (
             <span key={line} className="block">
               {line}
@@ -200,7 +200,7 @@ export function LoginScreen() {
               aria-selected={mode === m}
               onClick={() => switchMode(m)}
               className={cn(
-                "relative flex-1 py-[calc(var(--mc-unit)*1.1)] font-pixel text-[11px] uppercase cursor-pointer",
+                "relative min-h-11 flex-1 py-[calc(var(--mc-unit)*1.1)] font-pixel text-[11px] uppercase cursor-pointer",
                 "border-b-[length:var(--mc-bevel)]",
                 mode === m
                   ? "border-transparent bg-gradient-to-b from-mc-portal/45 to-mc-portal-deep/35 text-white"

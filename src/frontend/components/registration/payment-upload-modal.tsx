@@ -109,7 +109,7 @@ export function PaymentUploadModal({
 
       onSuccess();
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       showToast({
         title: "Upload Failed",
         body: "There was an error submitting your receipt. Please try again.",
@@ -150,7 +150,7 @@ export function PaymentUploadModal({
           </h3>
           <ol className="list-decimal list-inside space-y-[calc(var(--mc-unit)*0.5)] text-[16px]">
             <li>Visit the payment portal at <a href="https://christuniversity.in/online-payment-portal" target="_blank" rel="noopener noreferrer" className="text-mc-eyebrow underline">https://christuniversity.in/online-payment-portal</a></li>
-            <li>Select "Gateways" from the event list</li>
+            <li>Select &ldquo;Gateways&rdquo; from the event list</li>
             <li>Complete the payment for the event</li>
             <li>Download/print the payment receipt as PDF</li>
             <li>Upload the receipt PDF below</li>

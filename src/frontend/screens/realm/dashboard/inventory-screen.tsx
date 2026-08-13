@@ -91,7 +91,7 @@ export function InventoryScreen() {
                     </p>
                     <Link
                       href={`/events/${event.slug}`}
-                      className="mt-[var(--mc-unit)] inline-block text-[15px] text-mc-eyebrow underline"
+                      className="mt-[calc(var(--mc-unit)*0.5)] inline-flex min-h-11 items-center text-[15px] text-mc-eyebrow underline"
                     >
                       View
                     </Link>

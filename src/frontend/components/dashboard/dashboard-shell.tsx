@@ -38,6 +38,16 @@ const NAV = [
   { href: "/dashboard/settings", label: "Settings", icon: "⚙" },
 ] as const;
 
+/**
+ * Staff-only destinations, appended for organizers and admins.
+ *
+ * The verification queue is load-bearing: the entry fee is paid before
+ * registering, so until someone works this queue nobody can register for
+ * anything. It had no link at all, which made that a silent dead end.
+ *
+ * This capability check only decides whether to show the shortcut. `/admin`
+ * and every privileged mutation independently reload staff roles from MySQL.
+ */
 const TABS = [
   { href: "/world", label: "Home", icon: "⌂" },
   { href: "/events", label: "Events", icon: "▤" },
@@ -70,7 +80,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     // scroll (below) is what keeps the sidebar in place.
     <div className="flex h-dvh flex-col overflow-hidden">
       {/* Mobile header with the drawer trigger. */}
-      <header className="flex shrink-0 items-center justify-between gap-[var(--mc-unit)] border-b-[length:var(--mc-bevel)] border-mc-border p-[var(--mc-unit)] md:hidden">
+      <header className="flex shrink-0 items-center justify-between gap-[var(--mc-unit)] border-b-[length:var(--mc-bevel)] border-mc-border px-[calc(var(--mc-unit)*1.5)] pb-[var(--mc-unit)] pt-[max(var(--mc-unit),env(safe-area-inset-top))] md:hidden">
         <BlockButton
           size="sm"
           variant="ghost"
@@ -124,7 +134,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", stiffness: 380, damping: 34 }}
-                className="fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col gap-[var(--mc-unit)] overflow-y-auto bg-mc-panel p-[var(--mc-unit)] md:hidden"
+                className="fixed inset-y-0 left-0 z-50 flex w-[min(86vw,320px)] flex-col gap-[var(--mc-unit)] overflow-y-auto bg-mc-panel px-[calc(var(--mc-unit)*1.5)] pb-[max(var(--mc-unit),env(safe-area-inset-bottom))] pt-[max(var(--mc-unit),env(safe-area-inset-top))] md:hidden"
               >
                 <div className="flex justify-end">
                   <BlockButton
@@ -148,7 +158,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         {/* Main content — the only scrollable region in the shell. pb clears
             the mobile tab bar. */}
-        <main className="min-w-0 flex-1 overflow-y-auto p-[var(--mc-unit)] pb-[88px] md:pb-[var(--mc-unit)]">
+        <main className="min-w-0 flex-1 overflow-y-auto p-[calc(var(--mc-unit)*1.5)] pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-[calc(var(--mc-unit)*1.5)]">
           {character && progress ? (
             <BlockPanel
               variant="panel"

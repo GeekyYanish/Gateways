@@ -88,7 +88,7 @@ export function Countdown({ targetIso, className }: CountdownProps) {
     <div className={cn("flex flex-col items-center", className)}>
       <div
         aria-hidden
-        className="flex items-stretch gap-[calc(var(--mc-unit)*0.75)]"
+        className="grid grid-cols-2 items-stretch gap-[calc(var(--mc-unit)*0.75)] min-[280px]:grid-cols-4"
       >
         {cells.map((cell) => (
           <div

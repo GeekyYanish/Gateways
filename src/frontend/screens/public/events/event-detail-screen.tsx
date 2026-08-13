@@ -153,7 +153,7 @@ export function EventDetailScreen({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--mc-unit)] p-[var(--mc-unit)]">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--mc-unit)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*1.5)] md:p-[calc(var(--mc-unit)*2)]">
       <AchievementModal />
       {/* Mounted only once a registration exists, because the receipt now
           carries that registration's REAL id — the `"gateways-entry"` sentinel

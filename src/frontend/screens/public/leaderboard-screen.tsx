@@ -3,8 +3,8 @@
 import { BackLink, BlockPanel, LoadingBlocks, PixelAvatar } from "@/frontend/components/mc";
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
-import { repo } from "@/backend/data";
 import { cn } from "@/frontend/lib/utils";
+import { repo } from "@/backend/data";
 
 /**
  * Leaderboard. Ranked by XP desc with created-at as a deterministic tiebreak,
@@ -15,7 +15,7 @@ export function LeaderboardScreen() {
   const { data: rows, loading } = useAsync(() => repo.leaderboard.top(50), []);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--mc-unit)] p-[var(--mc-unit)]">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--mc-unit)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*1.5)] md:p-[calc(var(--mc-unit)*2)]">
       <BackLink href="/" label="Home" />
 
       <header>

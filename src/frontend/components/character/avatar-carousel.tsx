@@ -123,7 +123,7 @@ export function AvatarCarousel({
 
       {/* Direct-pick row, radio semantics: keyboard users should not have to
           cycle through five skins one arrow press at a time. */}
-      <div role="radiogroup" aria-label="Avatar" className="flex gap-[calc(var(--mc-unit)*0.5)]">
+      <div role="radiogroup" aria-label="Avatar" className="flex max-w-full flex-wrap justify-center gap-[calc(var(--mc-unit)*0.5)]">
         {SKINS.map((s) => (
           <button
             key={s}

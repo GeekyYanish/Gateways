@@ -1,8 +1,14 @@
 "use client";
 
-import { BlockButton, BlockPanel, ItemIcon } from "@/frontend/components/mc";
-import type { ItemName } from "@/frontend/lib/assets/manifest";
+import {
+  BlockButton,
+  BlockPanel,
+  ItemIcon,
+  PixelImage,
+} from "@/frontend/components/mc";
+import { ART, type ItemName } from "@/frontend/lib/assets/manifest";
 import { HomeSection } from "./home-section";
+import { ExploreCharacterDecor } from "@/frontend/components/decor";
 
 /**
  * The events + schedule gateway.
@@ -38,8 +44,21 @@ export function ExploreSection({
       id="events"
       eyebrow="What's on"
       title="Enter a Domain"
+      decor={<ExploreCharacterDecor />}
       lead="Technical and non-technical events across two days. Pick as many as you like — one entry fee covers all of them."
     >
+      <div
+        aria-hidden
+        className="pointer-events-none mb-[var(--mc-unit)] flex h-[170px] items-end justify-center xl:hidden"
+      >
+        <PixelImage
+          asset={ART.home.pickaxe}
+          label="pickaxe character"
+          alt=""
+          className="h-full w-auto"
+          style={{ filter: "drop-shadow(0 10px 8px rgba(0,0,0,0.36))" }}
+        />
+      </div>
       <ul className="grid gap-[var(--mc-unit)] md:grid-cols-3">
         {FEATURED.map((f) => (
           <li key={f.name}>

@@ -42,7 +42,7 @@ export function ContactSection() {
               ) : null}
               <a
                 href={`tel:${c.phone.replace(/\s+/g, "")}`}
-                className="mt-auto font-pixel text-[9px] tracking-[0.1em] text-mc-accent no-underline hover:text-mc-accent-strong md:text-[10px]"
+                className="mt-auto inline-flex min-h-11 items-center font-pixel text-[9px] tracking-[0.1em] text-mc-accent no-underline hover:text-mc-accent-strong md:text-[10px]"
               >
                 {c.phone}
               </a>
@@ -77,7 +77,7 @@ export function SiteFooter() {
           2.5 × --mc-unit at every --mc-scale. The parade used to occupy that
           band and hold the content off it; with the parade gone the text would
           otherwise start in the turf. */}
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-[calc(var(--mc-unit)*2)] px-[calc(var(--mc-unit)*1.5)] pb-[calc(var(--mc-unit)*3)] pt-[calc(var(--mc-unit)*3.5)]">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-[calc(var(--mc-unit)*2)] px-[calc(var(--mc-unit)*2)] pb-[calc(var(--mc-unit)*3)] pt-[calc(var(--mc-unit)*3.5)] md:px-[calc(var(--mc-unit)*1.5)]">
         <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)] md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-[calc(var(--mc-unit)*0.5)]">
             <p className="font-pixel text-[11px] uppercase tracking-[0.14em] text-mc-gold-light md:text-[13px]">
@@ -101,7 +101,7 @@ export function SiteFooter() {
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-pixel text-[9px] uppercase tracking-[0.12em] text-mc-cloud no-underline transition-colors hover:text-mc-gold-light"
+                  className="inline-flex min-h-11 items-center font-pixel text-[9px] uppercase tracking-[0.12em] text-mc-cloud no-underline transition-colors hover:text-mc-gold-light"
                 >
                   {s.label} ↗
                 </a>
@@ -113,7 +113,7 @@ export function SiteFooter() {
             href={FEST.host.universityUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-pixel text-[8px] uppercase tracking-[0.1em] text-mc-cloud no-underline transition-colors hover:text-mc-gold-light"
+            className="inline-flex min-h-11 items-center font-pixel text-[8px] uppercase tracking-[0.1em] text-mc-cloud no-underline transition-colors hover:text-mc-gold-light"
           >
             {FEST.host.university} ↗
           </a>

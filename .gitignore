@@ -27,6 +27,11 @@
 Thumbs.db
 *.pem
 
+# Large source-only 3D exports. Optimized runtime models live in public/art/.
+/assets/festive_world_-_minecraft.glb
+/assets/minecraft_3d_render_free.glb
+/assets/minecraft_village.glb
+
 # editors / IDE
 .vscode/
 .idea/

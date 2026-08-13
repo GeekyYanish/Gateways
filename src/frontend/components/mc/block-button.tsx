@@ -48,7 +48,7 @@ const blockButton = cva(
       size: {
         // Font sizes are integer px so Press Start 2P glyphs land on whole
         // pixels. Min-heights clear 44px on mobile for touch targets.
-        sm: "text-[10px] px-[calc(var(--mc-unit)*1.5)] py-[calc(var(--mc-unit)*0.75)] min-h-[36px]",
+        sm: "text-[10px] px-[calc(var(--mc-unit)*1.5)] py-[calc(var(--mc-unit)*0.75)] min-h-[44px]",
         md: "text-[12px] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*1)] min-h-[44px]",
         lg: "text-[14px] px-[calc(var(--mc-unit)*3)] py-[calc(var(--mc-unit)*1.5)] min-h-[52px]",
         xl: "text-[16px] px-[calc(var(--mc-unit)*4)] py-[calc(var(--mc-unit)*2)] min-h-[60px]",

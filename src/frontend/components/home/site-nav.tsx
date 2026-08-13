@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
 import { BlockButton, BlockModal, ThemeToggle } from "@/frontend/components/mc";
 import { ART } from "@/frontend/lib/assets/manifest";
 import { FEST } from "@/frontend/lib/fest";
@@ -72,14 +73,14 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
           : "border-b-[length:var(--mc-bevel)] border-transparent bg-transparent",
       )}
     >
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-[var(--mc-unit)] px-[calc(var(--mc-unit)*1.5)] py-[var(--mc-unit)]">
+      <div className="flex w-full items-center justify-between gap-[var(--mc-unit)] px-[calc(var(--mc-unit)*1.5)] py-[calc(var(--mc-unit)*0.75)] md:px-[calc(var(--mc-unit)*2)] md:py-[var(--mc-unit)] min-[1320px]:grid min-[1320px]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] min-[1320px]:gap-[calc(var(--mc-unit)*2)]">
         {/* Crest and wordmark are one link, not two adjacent ones — they are a
             single lockup, and two targets to the same anchor would just give a
             keyboard user a redundant stop. The crest is decorative here because
             the wordmark beside it already names the link. */}
         <a
           href="#top"
-          className="flex shrink-0 items-center gap-[calc(var(--mc-unit)*0.75)] no-underline"
+          className="flex min-h-11 min-w-11 shrink-0 items-center gap-[calc(var(--mc-unit)*0.75)] no-underline min-[1320px]:justify-self-start"
         >
           {/* Two crests, one shown. The gold mark is drawn for a dark ground
               and muddies against the light theme's sky, so that theme gets the
@@ -93,14 +94,14 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
             src={ART.brand.gatewaysCrest.src}
             alt=""
             aria-hidden
-            className="theme-only-dark h-[6rem] w-auto shrink-0 md:h-[3rem]"
+            className="theme-only-dark h-10 w-auto shrink-0 md:h-12"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={ART.brand.gatewaysCrestBlack.src}
             alt=""
             aria-hidden
-            className="theme-only-light h-[6rem] w-auto shrink-0 md:h-[3rem]"
+            className="theme-only-light h-10 w-auto shrink-0 md:h-12"
           />
           {/* accent-STRONG, not accent. The bar sits on open sky in the light
               theme, and the mid amber that worked on a near-white page is the
@@ -108,14 +109,14 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
               soft exactly where the wordmark most needs to hold. The deeper
               bronze is the dark end of the same gold the crest beside it is
               drawn in, so the lockup still reads as one mark. */}
-          <span className="font-pixel text-[10px] uppercase tracking-[0.14em] text-mc-accent-strong md:text-[12px]">
+          <span className="whitespace-nowrap font-pixel text-[9px] uppercase tracking-[0.1em] text-mc-accent-strong max-[359px]:hidden md:text-[12px] md:tracking-[0.14em]">
             {FEST.shortEdition}
           </span>
         </a>
 
         {/* Desktop nav. Hidden rather than unmounted on mobile so there is only
             one source of truth for the link list. */}
-        <nav aria-label="Main" className="hidden items-center gap-[calc(var(--mc-unit)*0.5)] lg:flex">
+        <nav aria-label="Main" className="hidden items-center justify-center gap-[calc(var(--mc-unit)*0.5)] min-[1320px]:flex">
           {ANCHORS.slice(0, 2).map((a) => (
             <NavLink key={a.href} href={a.href} label={a.label} />
           ))}
@@ -130,15 +131,26 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-[calc(var(--mc-unit)*1.25)]">
+        <div className="flex shrink-0 items-center gap-[calc(var(--mc-unit)*0.75)] md:gap-[calc(var(--mc-unit)*1.25)] min-[1320px]:justify-self-end">
           {/* Visible at every width, including mobile — a visitor who needs the
               light theme needs it on a phone too, and burying it in the menu
               modal would be the one control they have to go looking for. */}
           <ThemeToggle />
 
+          <div className="min-[1320px]:hidden">
+            <BlockButton
+              variant="ghost"
+              size="icon"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu aria-hidden size={20} strokeWidth={2.5} />
+            </BlockButton>
+          </div>
+
           {/* Separates the outbound university link from the in-page nav it now
               sits beside. Only meaningful once the nav is visible. */}
-          <span aria-hidden className="hidden h-[20px] w-px bg-mc-border md:h-[26px] lg:block" />
+          <span aria-hidden className="hidden h-[20px] w-px bg-mc-border md:h-[26px] min-[1320px]:block" />
 
           {/*
             The university mark, linking out to christuniversity.in.
@@ -153,26 +165,19 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
             href={FEST.host.universityUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex shrink-0 items-center"
+            className="hidden min-h-11 shrink-0 items-center sm:flex"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={ART.brand.christUniversity.src}
               alt={`${FEST.host.university} — opens in a new tab`}
-              className="h-[6rem] w-auto opacity-90 transition-opacity hover:opacity-100 md:h-[3rem]"
+              // `university-mark` is what the light theme hooks to invert this.
+              // The source art is white-on-transparent, drawn for the dark nav;
+              // on the light theme's pale sky it is all but gone. See globals.css.
+              className="university-mark h-8 w-auto opacity-90 transition-opacity hover:opacity-100 md:h-10 min-[1320px]:h-12"
             />
           </a>
 
-          <div className="lg:hidden">
-            <BlockButton
-              variant="ghost"
-              size="sm"
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
-            >
-              ☰
-            </BlockButton>
-          </div>
         </div>
       </div>
 
@@ -212,6 +217,14 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
           {ANCHORS.slice(2).map((a) => (
             <MenuLink key={a.href} href={a.href} label={a.label} onNavigate={() => setMenuOpen(false)} />
           ))}
+          <a
+            href={FEST.host.universityUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-11 items-center justify-center bg-mc-slot px-[calc(var(--mc-unit)*1.5)] py-[var(--mc-unit)] text-center font-pixel text-[10px] uppercase tracking-[0.08em] text-mc-text no-underline bevel-inset sm:hidden"
+          >
+            {FEST.host.university}
+          </a>
         </nav>
       </BlockModal>
     </header>

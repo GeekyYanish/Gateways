@@ -51,29 +51,6 @@ export function TorchPair() {
   );
 }
 
-/** A lab-ish arrangement for the Digital Twins section: ore and a drifting wisp. */
-export function TwinsDecor() {
-  return (
-    <DecorLayer>
-      <PixelDecor
-        asset={ART.decor.oreVein}
-        label="oreVein"
-        scale={2}
-        className={`absolute bottom-[calc(var(--mc-unit)*2)] ${OUT_LEFT} hidden xl:block`}
-      />
-      <PixelDecor
-        asset={ART.mobs.driftling}
-        label="driftling"
-        scale={2}
-        float
-        delay={0.7}
-        flip
-        className={`absolute ${OUT_RIGHT} top-[calc(var(--mc-unit)*4)] hidden xl:block`}
-      />
-    </DecorLayer>
-  );
-}
-
 /** Growth and a lantern, for the Register section's "take part" note. */
 export function RegisterDecor() {
   return (

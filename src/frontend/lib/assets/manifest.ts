@@ -34,6 +34,12 @@ export interface AssetSpec {
   /** Intrinsic height at 1x, in pixels. */
   h: number;
   kind: AssetKind;
+  /**
+   * Sampling mode for large rendered artwork. Pixel assets default to
+   * nearest-neighbour; antialiased 3D renders opt into normal browser
+   * resampling so their edges stay clean when scaled down responsively.
+   */
+  rendering?: "pixelated" | "smooth";
   /** Short note shown inside the placeholder to guide the artist. */
   note?: string;
 }
@@ -41,6 +47,15 @@ export interface AssetSpec {
 const spec = <T extends Record<string, AssetSpec>>(t: T) => t;
 
 export const ART = {
+  /** Supplied high-resolution character renders used only on the homepage. */
+  home: spec({
+    bowOne: { src: "/art/Bow_1.png", w: 935, h: 1681, kind: "sprite", rendering: "smooth" },
+    bowTwo: { src: "/art/Bow_2.png", w: 941, h: 1672, kind: "sprite", rendering: "smooth" },
+    girl: { src: "/art/Girl_1.png", w: 941, h: 1672, kind: "sprite", rendering: "smooth" },
+    pickaxe: { src: "/art/Pickaxe_1.png", w: 1122, h: 1402, kind: "sprite", rendering: "smooth" },
+    creeper: { src: "/art/creeper.png", w: 304, h: 657, kind: "sprite", rendering: "smooth" },
+  }),
+
   portal: spec({
     frame: { src: "/art/portal/portal-frame.png", w: 320, h: 400, kind: "sprite", note: "obsidian frame" },
     swirl: { src: "/art/portal/portal-swirl.png", w: 256, h: 320, kind: "sprite", note: "inner swirl" },

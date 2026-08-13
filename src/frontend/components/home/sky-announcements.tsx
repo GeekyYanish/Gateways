@@ -79,7 +79,7 @@ const SLOTS = [
  */
 const GATES = {
   /** Outer clouds: hidden on viewports too short to hold them clear of the title. */
-  short: "hidden [@media(min-height:620px)]:block",
+  short: "hidden [@media(min-width:280px)_and_(min-height:620px)]:block",
   /** Inner clouds: need width for the span AND height for the rise. */
   arch: "hidden [@media(min-width:1024px)_and_(min-height:700px)]:block",
 } as const;

@@ -51,7 +51,7 @@ export function EventsScreen() {
   const bannerScene = activeCategory?.slug ?? "portal-approach";
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-[calc(var(--mc-unit)*1.5)] p-[var(--mc-unit)]">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-[calc(var(--mc-unit)*1.5)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*1.5)] md:p-[calc(var(--mc-unit)*2)]">
       <BackLink
         href={
           categorySlug
@@ -190,7 +190,7 @@ function CategoryChip({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "inline-flex min-h-[36px] items-center px-[var(--mc-unit)] no-underline",
+        "inline-flex min-h-[44px] min-w-11 items-center justify-center px-[var(--mc-unit)] no-underline",
         "font-pixel text-[9px] uppercase tracking-wide",
         active
           ? "bg-mc-portal text-white [--bevel-light:var(--color-mc-portal-light)] [--bevel-dark:var(--color-mc-portal-dark)] bevel"

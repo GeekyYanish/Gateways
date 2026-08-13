@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { BlockPanel, LoadingBlocks } from "@/frontend/components/mc";
 import { useAsync } from "@/frontend/hooks/use-async";
-import { repo } from "@/backend/data";
 import { cn } from "@/frontend/lib/utils";
+import { repo } from "@/backend/data";
 
 /**
  * Fest schedule, grouped by day.

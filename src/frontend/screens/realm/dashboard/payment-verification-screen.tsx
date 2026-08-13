@@ -6,7 +6,6 @@ import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
 import { repo } from "@/backend/data";
 import { PaymentReceipt } from "@/backend/data/types";
-import { cn } from "@/frontend/lib/utils";
 
 export function PaymentVerificationScreen() {
   const { session } = useSession();
@@ -70,7 +69,7 @@ function ReceiptCard({
       await repo.paymentReceipts.review(receipt.id, 'verified', adminUserId);
       showToast({ title: "Receipt Verified", severity: "success" });
       onReviewed();
-    } catch (e) {
+    } catch {
       showToast({ title: "Error verifying receipt", severity: "critical" });
     } finally {
       setIsSubmitting(false);
@@ -85,7 +84,7 @@ function ReceiptCard({
       showToast({ title: "Receipt Rejected", severity: "warning" });
       setRejectModalOpen(false);
       onReviewed();
-    } catch (e) {
+    } catch {
       showToast({ title: "Error rejecting receipt", severity: "critical" });
     } finally {
       setIsSubmitting(false);

@@ -1,0 +1,685 @@
+.stage {
+  --portal-energy: 0;
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow: hidden;
+  /* Only the fallback gradient lives here. The photograph itself is on ::before
+     so it can be scaled past the viewport — see below. */
+  background: linear-gradient(180deg, #130c31 0%, #201344 52%, #0a0719 100%);
+}
+
+/* THE BACKDROP PHOTOGRAPH.
+   A pseudo-element rather than `.stage`'s own background, because `cover` can
+   only ever fit the viewport exactly — it has no way to overshoot. Bleeding the
+   element out past all four edges and covering THAT is what zooms the picture
+   in, so the garden reads at the scale of the pillars instead of sitting far
+   away behind them. `.stage` is `overflow: hidden`, so the spill is clipped.
+   `--bg-zoom` is the single knob: larger = closer. */
+.stage::before {
+  --bg-zoom: 16%;
+  content: "";
+  position: absolute;
+  inset: calc(var(--bg-zoom) * -1);
+  z-index: -6; /* behind .canvas, which sits at -5 */
+  background:
+    image-set(url("/art/portal/portal-bg-dark.jpg") 1x) center / cover no-repeat;
+  pointer-events: none;
+}
+
+.stage[data-energized="true"] {
+  --portal-energy: 1;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: -5;
+}
+
+/* Just the portal's glow, no fill. The sky lives on `.stage` underneath, so an
+   opaque loading colour here would hide it until the canvas mounts. */
+.canvasLoading {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 50% 52%,
+    rgb(162 76 214 / 0.3),
+    transparent 24%
+  );
+}
+
+.skyWash,
+.aurora,
+.mist,
+.vignette,
+.scanlines,
+.portalBloom {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+}
+
+/* Moonlight off the top-left corner — the reference's crescent sits there — and
+   the night closing in along the bottom. Both tinted indigo now rather than the
+   old navy, so the wash and the scene's own sky are the same night. */
+.skyWash {
+  z-index: -4;
+  background:
+    radial-gradient(circle at 18% 14%, rgb(150 130 210 / 0.22), transparent 25%),
+    linear-gradient(180deg, rgb(20 12 48 / 0.14), transparent 44%, rgb(8 5 24 / 0.72));
+}
+
+.aurora {
+  z-index: -3;
+  inset: 8% -12% 38%;
+  opacity: 0.26;
+  background:
+    linear-gradient(
+      112deg,
+      transparent 10%,
+      rgb(255 158 199 / 0.08) 24%,
+      rgb(196 73 126 / 0.3) 42%,
+      rgb(179 82 235 / 0.32) 58%,
+      transparent 81%
+    );
+  clip-path: polygon(0 18%, 17% 36%, 35% 22%, 51% 54%, 67% 28%, 84% 44%, 100% 24%, 100% 62%, 80% 76%, 61% 57%, 44% 82%, 24% 58%, 0 71%);
+  filter: blur(30px);
+  transform: translateX(-2%);
+  animation: aurora-shift 11s ease-in-out infinite alternate;
+}
+
+.portalBloom {
+  z-index: -3;
+  inset: 18% 25% 10%;
+  opacity: calc(0.58 + var(--portal-energy) * 0.24);
+  transform: scale(calc(1 + var(--portal-energy) * 0.08));
+  transition: opacity 260ms ease, transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    rgb(197 92 255 / 0.3),
+    rgb(100 52 190 / 0.12) 35%,
+    transparent 70%
+  );
+  filter: blur(28px);
+}
+
+.mist {
+  z-index: -2;
+  inset: auto -18% -13%;
+  height: 44%;
+  opacity: 0.58;
+  /* Warm lantern haze on one side, blossom-pink on the other, settling into the
+     indigo ground fog — the three light sources the reference actually has. */
+  background:
+    radial-gradient(ellipse at 23% 55%, rgb(255 186 120 / 0.16), transparent 40%),
+    radial-gradient(ellipse at 73% 46%, rgb(224 130 178 / 0.2), transparent 43%),
+    linear-gradient(180deg, transparent, rgb(14 9 34 / 0.78));
+  filter: blur(22px);
+  animation: mist-drift 14s ease-in-out infinite alternate;
+}
+
+.vignette {
+  z-index: 8;
+  box-shadow:
+    inset 0 0 120px 28px rgb(0 5 12 / 0.72),
+    inset 0 -120px 100px -50px rgb(0 0 0 / 0.7);
+}
+
+.scanlines {
+  z-index: 9;
+  opacity: 0.1;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 3px,
+    rgb(255 255 255 / 0.08) 3px 4px
+  );
+  mix-blend-mode: soft-light;
+}
+
+.content {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  min-height: 100svh;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  padding: clamp(26px, 5.5vh, 68px) clamp(18px, 4vw, 64px) clamp(28px, 5vh, 60px);
+  pointer-events: none;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  filter: drop-shadow(0 10px 24px rgb(0 0 0 / 0.55));
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #73e8e4;
+  font-family: var(--font-pixel);
+  font-size: clamp(7px, 0.7vw, 10px);
+  letter-spacing: 0.22em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.eyebrow::before,
+.eyebrow::after {
+  width: clamp(24px, 4vw, 54px);
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, transparent, #73e8e4);
+  box-shadow: 0 0 8px rgb(115 232 228 / 0.7);
+}
+
+.eyebrow::after {
+  transform: scaleX(-1);
+}
+
+.title {
+  margin-top: clamp(12px, 2vh, 22px);
+  font-size: clamp(34px, 6.1vw, 84px);
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+}
+
+/* Per-letter fill for the wordmark. Lives here rather than as a `text-mc-*`
+   class on the span so this screen's whole palette themes from one file. */
+.titleLetter {
+  color: var(--color-mc-portal-pale);
+}
+
+.tagline {
+  margin-top: clamp(13px, 2.2vh, 24px);
+  color: #f4edff;
+  font-family: var(--font-pixel);
+  font-size: clamp(8px, 0.9vw, 12px);
+  letter-spacing: clamp(0.12em, 0.35vw, 0.24em);
+  line-height: 1.7;
+  text-transform: uppercase;
+  text-shadow: 0 3px 0 rgb(14 7 28 / 0.85), 0 0 18px rgb(189 105 255 / 0.38);
+}
+
+.portalMarker {
+  align-self: center;
+  margin-top: clamp(40px, 12vh, 120px);
+  color: rgb(210 231 242 / 0.76);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.portalMarker::before {
+  display: block;
+  width: 1px;
+  height: clamp(25px, 4vh, 44px);
+  margin: 0 auto 12px;
+  content: "";
+  background: linear-gradient(transparent, #c376ff);
+  box-shadow: 0 0 8px #b755ff;
+}
+
+.actions {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.enterButton {
+  min-width: min(330px, calc(100vw - 44px));
+  border: 1px solid rgb(221 171 255 / 0.28);
+  box-shadow:
+    inset var(--mc-bevel) var(--mc-bevel) 0 0 var(--color-mc-portal),
+    inset calc(var(--mc-bevel) * -1) calc(var(--mc-bevel) * -1) 0 0 var(--color-mc-portal-ink),
+    0 var(--mc-bevel) 0 0 rgb(3 5 13 / 0.9),
+    0 0 calc(20px + var(--portal-energy) * 18px) rgb(187 77 255 / calc(0.22 + var(--portal-energy) * 0.25));
+}
+
+.hint {
+  color: rgb(210 222 231 / 0.65);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  letter-spacing: 0.15em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.telemetry {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgb(187 218 225 / 0.7);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+}
+
+.telemetry::before {
+  width: 1px;
+  height: 55px;
+  content: "";
+  background: linear-gradient(transparent, rgb(115 232 228 / 0.62), transparent);
+}
+
+.telemetryLeft {
+  left: clamp(18px, 3.2vw, 52px);
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.telemetryRight {
+  right: clamp(18px, 3.2vw, 52px);
+  transform: translateY(-50%);
+}
+
+.creeperEncounter {
+  position: absolute;
+  bottom: clamp(120px, 18vh, 170px);
+  z-index: 11;
+  width: clamp(104px, 10.5vw, 154px);
+  opacity: 0;
+  filter: drop-shadow(0 18px 18px rgb(0 0 0 / 0.72));
+}
+
+.creeperLeft {
+  left: clamp(72px, 9vw, 150px);
+  transform: translateX(-28px) scale(0.94);
+}
+
+.creeperRight {
+  right: clamp(72px, 9vw, 150px);
+  transform: translateX(28px) scale(0.94);
+}
+
+.creeperLeft .creeperCaption {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.creeperEncounter::after {
+  position: absolute;
+  right: 5%;
+  bottom: 22px;
+  left: 5%;
+  z-index: -1;
+  height: 17px;
+  content: "";
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.62);
+  filter: blur(7px);
+  transform: perspective(60px) rotateX(62deg);
+}
+
+.creeperGlow {
+  position: absolute;
+  inset: 8% -38% 10%;
+  z-index: -2;
+  border-radius: 50%;
+  opacity: 0.65;
+  background: radial-gradient(circle, rgb(85 237 111 / 0.35), transparent 68%);
+  filter: blur(18px);
+  animation: creeper-alert 2.8s ease-in-out infinite alternate;
+}
+
+.creeperTarget {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 304 / 720;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.creeperTarget:focus-visible {
+  outline: 2px solid #92ff9f;
+  outline-offset: 6px;
+  box-shadow: 0 0 24px rgb(102 255 129 / 0.38);
+}
+
+.creeperCanvas,
+.creeperFallback {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.creeperCanvas {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.creeperCanvasReady {
+  opacity: 1;
+}
+
+.creeperFallback {
+  object-fit: contain;
+  object-position: center bottom;
+  opacity: 0.92;
+  transition: opacity 220ms ease;
+}
+
+.creeperFallbackHidden {
+  opacity: 0;
+}
+
+.creeperMirrored {
+  transform: scaleX(-1);
+}
+
+.creeperCaption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  margin-top: -3px;
+  color: rgb(201 255 194 / 0.86);
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  letter-spacing: 0.12em;
+  line-height: 1.45;
+  text-align: right;
+  text-shadow: 0 2px 0 #08130b, 0 0 10px rgb(86 255 115 / 0.3);
+  text-transform: uppercase;
+}
+
+.creeperCaption span:last-child {
+  color: rgb(211 224 215 / 0.6);
+  font-size: 5px;
+}
+
+@keyframes mist-drift {
+  from {
+    transform: translate3d(-2.5%, 0, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(2.5%, -3%, 0) scale(1.08);
+  }
+}
+
+@keyframes aurora-shift {
+  from {
+    opacity: 0.2;
+    transform: translate3d(-2%, -1%, 0) scaleX(0.96);
+  }
+  to {
+    opacity: 0.34;
+    transform: translate3d(2%, 2%, 0) scaleX(1.04);
+  }
+}
+
+@keyframes creeper-alert {
+  from {
+    opacity: 0.42;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 0.74;
+    transform: scale(1.06);
+  }
+}
+
+@media (max-width: 700px) {
+  .content {
+    padding-top: 34px;
+    padding-bottom: 28px;
+  }
+
+  .telemetry {
+    display: none;
+  }
+
+  .creeperEncounter {
+    bottom: 142px;
+    width: clamp(64px, 20vw, 78px);
+  }
+
+  .creeperLeft {
+    left: 8px;
+  }
+
+  .creeperRight {
+    right: 8px;
+  }
+
+  .creeperCaption {
+    display: none;
+  }
+
+  .portalBloom {
+    inset: 22% 2% 14%;
+  }
+
+  .portalMarker {
+    visibility: hidden;
+  }
+
+  .vignette {
+    box-shadow:
+      inset 0 0 76px 6px rgb(0 5 12 / 0.72),
+      inset 0 -90px 70px -42px rgb(0 0 0 / 0.72);
+  }
+}
+
+@media (max-height: 690px) and (min-width: 701px) {
+  .content {
+    padding-top: 24px;
+    padding-bottom: 22px;
+  }
+
+  .heading {
+    transform: scale(0.82);
+    transform-origin: top center;
+  }
+
+  .portalMarker {
+    visibility: hidden;
+  }
+}
+
+/* ==========================================================================
+   LIGHT THEME — noon at the ruin
+
+   Overrides, not a rewrite: every dark declaration above is left exactly as it
+   was, so the default theme is byte-identical and this block is the only thing
+   a light-theme visitor changes. Whole declarations are replaced rather than
+   the file being tokenised into custom properties — most of these colours are
+   used once, and twenty `--pg-*` variables to serve one caller each would be
+   more indirection than the file can pay for.
+
+   WHAT DOES NOT CHANGE, deliberately:
+
+   - The 3D ruin (`portal-world.tsx`). It is authored geometry with its own
+     materials, and it reads fine lit from a bright sky. Re-tuning its lighting
+     rig is the one change here most likely to look worse than what it replaced.
+   - Anything EMISSIVE. The portal bloom, the button's violet glow and the
+     creepers' glow all stay. That is the same rule the light theme's material
+     relight follows: things that merely reflect get relit for daylight, things
+     that emit their own light keep emitting. The portal is the one light source
+     in frame and it should still read as one at noon — which is also what stops
+     this page from becoming a plain white screen with a logo on it.
+   ========================================================================= */
+
+html[data-theme="light"] .stage {
+  background:
+    radial-gradient(circle at 50% 38%, rgb(255 255 255 / 0.78), transparent 34%),
+    linear-gradient(180deg, #86c8ec 0%, #b9e2f5 56%, #6da2c2 100%);
+}
+
+/* MUST be overridden, not merely left alone. `.stage::before` above is not
+   theme-scoped, so without this the light theme would inherit the dark sakura
+   photograph and show a night garden under a noon sky. */
+html[data-theme="light"] .stage::before {
+  background:
+    image-set(url("/art/portal/portal-bg-light.jpg") 1x) center / cover no-repeat;
+}
+
+html[data-theme="light"] .canvasLoading {
+  background: radial-gradient(
+    circle at 50% 52%,
+    rgb(162 76 214 / 0.22),
+    transparent 24%
+  );
+}
+
+/* The wash inverts its job. At night it darkened the frame edges into the
+   backdrop; at noon it is sun off the top of the sky and haze collecting at the
+   horizon, so the gradient runs light-to-hazy rather than transparent-to-black.
+   The reference's clouds are flat opaque white, so the top-left bloom is pure
+   white rather than a tinted one. */
+html[data-theme="light"] .skyWash {
+  background:
+    radial-gradient(circle at 18% 14%, rgb(255 255 255 / 0.62), transparent 30%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.3), transparent 44%, rgb(112 178 214 / 0.45));
+}
+
+/* An aurora is not visible in daylight. Not removed — the clip-path and drift
+   still give the sky some structure — just taken down to where it reads as
+   high cloud instead of a light show. */
+html[data-theme="light"] .aurora {
+  opacity: 0.1;
+}
+
+/* Cloud, not fog. The reference's horizon is banked white cumulus over green,
+   so the two blooms go pure white and the floor tint carries a little grass. */
+html[data-theme="light"] .mist {
+  opacity: 0.55;
+  background:
+    radial-gradient(ellipse at 23% 55%, rgb(255 255 255 / 0.55), transparent 40%),
+    radial-gradient(ellipse at 73% 46%, rgb(255 255 255 / 0.5), transparent 43%),
+    linear-gradient(180deg, transparent, rgb(150 199 224 / 0.7));
+}
+
+html[data-theme="light"] .vignette {
+  box-shadow:
+    inset 0 0 120px 28px rgb(255 255 255 / 0.3),
+    inset 0 -120px 100px -50px rgb(104 166 205 / 0.4);
+}
+
+/* Type. Cyan-on-black and pale-violet-on-black are both invisible here, so each
+   drops to the deep end of its own hue rather than changing hue — the screen
+   keeps its teal-and-violet identity, it is just no longer backlit. */
+html[data-theme="light"] .eyebrow {
+  color: #0b565d;
+}
+
+html[data-theme="light"] .eyebrow::before,
+html[data-theme="light"] .eyebrow::after {
+  background: linear-gradient(90deg, transparent, #0b565d);
+  box-shadow: none; /* nothing glows at noon */
+}
+
+html[data-theme="light"] .titleLetter {
+  color: #3f1360;
+}
+
+html[data-theme="light"] .tagline {
+  color: #3c2357;
+  text-shadow: 0 3px 0 rgb(255 255 255 / 0.7), 0 0 18px rgb(255 255 255 / 0.55);
+}
+
+html[data-theme="light"] .heading {
+  filter: drop-shadow(0 10px 24px rgb(90 122 150 / 0.34));
+}
+
+/* This one lands ON the ruin rather than on sky, so a flat dark ink is not
+   enough — mid-tone stone is exactly the value it would disappear into. The
+   halo is what carries it, the same way the tagline's does. */
+html[data-theme="light"] .portalMarker {
+  color: rgb(24 42 60 / 0.92);
+  text-shadow: 0 0 6px rgb(255 255 255 / 0.85), 0 0 14px rgb(255 255 255 / 0.6);
+}
+
+html[data-theme="light"] .hint {
+  color: rgb(30 50 68 / 0.78);
+}
+
+html[data-theme="light"] .telemetry {
+  color: rgb(16 62 72 / 0.82);
+}
+
+html[data-theme="light"] .telemetry::before {
+  background: linear-gradient(transparent, rgb(11 86 93 / 0.62), transparent);
+}
+
+/* Only the hard drop changes — the violet bevel and the energy glow are the
+   portal's own light and stay exactly as they are. */
+html[data-theme="light"] .enterButton {
+  box-shadow:
+    inset var(--mc-bevel) var(--mc-bevel) 0 0 var(--color-mc-portal),
+    inset calc(var(--mc-bevel) * -1) calc(var(--mc-bevel) * -1) 0 0 var(--color-mc-portal-ink),
+    0 var(--mc-bevel) 0 0 rgb(63 19 96 / 0.55),
+    0 0 calc(20px + var(--portal-energy) * 18px) rgb(187 77 255 / calc(0.22 + var(--portal-energy) * 0.25));
+}
+
+html[data-theme="light"] .creeperCaption {
+  color: rgb(18 74 32 / 0.9);
+  text-shadow: 0 2px 0 rgb(255 255 255 / 0.65);
+}
+
+html[data-theme="light"] .creeperCaption span:last-child {
+  color: rgb(46 66 52 / 0.75);
+}
+
+/* Acid green on a pale sky is not a focus ring. Same reasoning as the light
+   theme's `--mc-focus-ring`: the keyboard cursor has to be the most obvious
+   thing on screen, so it goes dark here instead of bright. */
+html[data-theme="light"] .creeperTarget:focus-visible {
+  outline-color: #0f5c1f;
+  box-shadow: 0 0 24px rgb(15 92 31 / 0.32);
+}
+
+html[data-theme="light"] .creeperEncounter {
+  filter: drop-shadow(0 18px 18px rgb(96 126 150 / 0.42));
+}
+
+html[data-theme="light"] .creeperEncounter::after {
+  background: rgb(84 114 140 / 0.42);
+}
+
+@media (max-width: 700px) {
+  html[data-theme="light"] .vignette {
+    box-shadow:
+      inset 0 0 76px 6px rgb(255 255 255 / 0.34),
+      inset 0 -90px 70px -42px rgb(139 173 201 / 0.44);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mist {
+    animation: none;
+  }
+
+  .aurora {
+    animation: none;
+  }
+
+  .creeperGlow {
+    animation: none;
+  }
+
+  .portalBloom,
+  .enterButton {
+    transition: none;
+  }
+}

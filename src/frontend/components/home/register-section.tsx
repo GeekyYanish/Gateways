@@ -1,7 +1,7 @@
 "use client";
 
 import { blockButton, BlockPanel } from "@/frontend/components/mc";
-import { ArchetypeBand, RegisterDecor } from "@/frontend/components/decor";
+import { RegisterDecor } from "@/frontend/components/decor";
 import { FEST, inr } from "@/frontend/lib/fest";
 import { cn } from "@/frontend/lib/utils";
 import { HomeSection } from "./home-section";
@@ -38,10 +38,6 @@ export function RegisterSection() {
         </>
       }
     >
-      {/* The cast, immediately before the ask — this is the point where the page
-          invites someone to become one of them. */}
-      <ArchetypeBand />
-
       <div className="grid gap-[calc(var(--mc-unit)*1.5)] lg:grid-cols-[1.6fr_1fr]">
         <BlockPanel variant="gold" padded="lg" title="The recipe">
           <ol className="flex flex-col gap-[var(--mc-unit)] p-[calc(var(--mc-unit)*1.5)]">
@@ -118,7 +114,7 @@ export function RegisterSection() {
               ? { target: "_blank", rel: "noopener noreferrer" }
               : {})}
             className={cn(
-              "text-center font-pixel text-[9px] uppercase tracking-[0.12em] no-underline transition-colors",
+              "inline-flex min-h-11 items-center justify-center text-center font-pixel text-[9px] uppercase tracking-[0.12em] no-underline transition-colors",
               "text-mc-text-dim hover:text-mc-accent",
             )}
           >

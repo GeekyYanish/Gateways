@@ -83,7 +83,7 @@ function TeamCard({
       </p>
       <ul className="mt-[calc(var(--mc-unit)*0.5)] flex flex-col gap-[2px] text-[15px] text-mc-text-dim">
         {(members ?? []).map((m) => (
-          <li key={m.userId}>
+          <li key={m.userId} className="break-all">
             {m.userId} {m.role === "leader" ? "· leader" : ""}
           </li>
         ))}
