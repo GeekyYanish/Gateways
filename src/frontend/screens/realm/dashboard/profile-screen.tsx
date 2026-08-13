@@ -26,12 +26,12 @@ export function ProfileScreen() {
 
   return (
     <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
-      <h1 className="text-mc-gold text-base md:text-lg">PROFILE</h1>
+      <h1 className="text-mc-accent text-base md:text-lg">PROFILE</h1>
 
       <BlockPanel variant="panel" padded="lg" className="flex flex-wrap items-center gap-[calc(var(--mc-unit)*2)]">
         <PixelAvatar skinId={character.skinId} size={96} full />
-        <div className="min-w-[220px] flex-1">
-          <p className="font-pixel text-[14px] text-mc-emerald-light">{character.playerName}</p>
+        <div className="w-full min-w-0 flex-1 sm:min-w-[220px]">
+          <p className="font-pixel text-[14px] text-mc-success">{character.playerName}</p>
           <p className="mt-[calc(var(--mc-unit)*0.5)] text-[16px] text-mc-text-dim">
             {college?.name ?? "—"}
             {department ? ` · ${department.name}` : ""}
@@ -63,7 +63,7 @@ export function ProfileScreen() {
               <li key={e.id}>
                 <BlockPanel variant="slot" padded="sm" className="flex flex-wrap justify-between gap-[var(--mc-unit)]">
                   <span className="text-[15px]">{e.reason}</span>
-                  <span className="text-[15px] text-mc-emerald-light tabular-nums">+{e.amount} XP</span>
+                  <span className="text-[15px] text-mc-success tabular-nums">+{e.amount} XP</span>
                 </BlockPanel>
               </li>
             ))}
@@ -78,7 +78,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <BlockPanel variant="panel" padded="md" className="text-center">
       <p className="font-pixel text-[9px] uppercase text-mc-text-dim">{label}</p>
-      <p className="mt-[calc(var(--mc-unit)*0.5)] font-pixel text-[16px] text-mc-gold-light">{value}</p>
+      <p className="mt-[calc(var(--mc-unit)*0.5)] font-pixel text-[16px] text-mc-accent-strong">{value}</p>
     </BlockPanel>
   );
 }

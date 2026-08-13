@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { LoadingBlocks } from "@/frontend/components/mc";
 import type { SkinId } from "@/backend/data/types";
+import type { PlayerPose } from "./player-controller";
 
 /**
  * Public entry point for the 3D village.
@@ -80,9 +81,18 @@ export function useVoxelSupport(): VoxelSupport {
 export function VoxelWorldView({
   skinId,
   className,
+  onPose,
 }: {
   skinId: SkinId;
   className?: string;
+  /**
+   * Reports where the player is standing, ~8×/second.
+   *
+   * The canvas unmounts when the user switches to the Map or List view, so the
+   * position has to live above this component or it is lost the moment you go
+   * to look at the map — which is exactly when you want it.
+   */
+  onPose?: (pose: PlayerPose) => void;
 }) {
-  return <VillageScene skinId={skinId} className={className} />;
+  return <VillageScene skinId={skinId} className={className} onPose={onPose} />;
 }

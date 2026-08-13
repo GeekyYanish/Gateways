@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { repo } from "@/backend/data";
-import { DataError } from "@/backend/data/types";
+import { DataError, type Profile } from "@/backend/data/types";
 import { clearAll } from "@/backend/data/local/store";
 
 /**
@@ -19,6 +19,42 @@ interface Result {
   name: string;
   pass: boolean;
   detail: string;
+}
+
+/** A complete participant record — what `register()` now requires. */
+const PARTICIPANT_DETAILS = {
+  fullName: "Ridge Seven",
+  phone: "9876543210",
+  gender: "male",
+  dateOfBirth: "2005-04-12",
+  category: "participant",
+  tshirtSize: "M",
+  emergencyName: "Guardian Seven",
+  emergencyPhone: "9876500000",
+  dietaryPref: "veg",
+} satisfies Partial<Profile>;
+
+/**
+ * A throwaway user complete enough to hold a seat.
+ *
+ * Capacity tests need real users now, not bare ids — `register()` reads the
+ * profile and character, so a synthetic string would simply be refused. Note
+ * this SWITCHES the active session (signUp signs you in), so callers must
+ * restore theirs afterwards.
+ */
+async function makeParticipant(n: number, collegeId: string | null): Promise<string> {
+  const s = await repo.auth.signUp(`synthetic${n}@parallax.test`, "hunter2!");
+  await repo.characters.create(s.userId, {
+    playerName: `Synth_${n}`,
+    // A real college id, because `isParticipantComplete()` requires one — the
+    // console's participant record has no meaning without it.
+    collegeId,
+    departmentId: null,
+    yearOfStudy: 2,
+    skinId: "prospector",
+  });
+  await repo.profiles.update(s.userId, PARTICIPANT_DETAILS);
+  return s.userId;
 }
 
 async function runSuite(): Promise<Result[]> {
@@ -115,21 +151,89 @@ async function runSuite(): Promise<Result[]> {
   check("seeded events exist", events.length > 0, `${events.length} events`);
 
   const target = events[0];
-  const reg = await repo.registrations.register(target.id, userId);
-  check("registration confirmed", reg.status === "confirmed", reg.status);
 
+  // Registration is gated on a complete participant record — the console
+  // cannot render one without these fields, so a seat is not held for a
+  // half-filled form. See BACKEND-API-CONTRACT.md §1.
   try {
     await repo.registrations.register(target.id, userId);
-    check("double registration rejected", false, "no error thrown");
+    check("registration without participant details rejected", false, "no error thrown");
   } catch (e) {
     check(
-      "double registration rejected",
-      e instanceof DataError && e.code === "ALREADY_REGISTERED",
+      "registration without participant details rejected",
+      e instanceof DataError && e.code === "VALIDATION_FAILED",
       (e as DataError).code,
     );
   }
 
+  await repo.profiles.update(userId, PARTICIPANT_DETAILS);
+
+  // Register BEFORE paying: the seat is held immediately, but stays `pending`
+  // until the entry fee clears.
+  const reg = await repo.registrations.register(target.id, userId);
+  check("registration held pending payment", reg.status === "pending", reg.status);
+
+  // Against the LEDGER, not totalXp: registering also unlocks achievements,
+  // which pay their own XP. Only registration-sourced grants are in question.
+  const regXp = async (id: string) =>
+    (await repo.xp.ledger(id))
+      .filter((e) => e.sourceType === "registration")
+      .reduce((s, e) => s + e.amount, 0);
+
+  check("no registration XP for an unpaid seat", (await regXp(userId)) === 0, `${await regXp(userId)} xp`);
+
+  // Unique (eventId, userId): the same pair returns the existing row rather
+  // than creating a second one, matching the DB constraint.
+  const again = await repo.registrations.register(target.id, userId);
+  check(
+    "re-registering returns the same row",
+    again.id === reg.id,
+    `${again.id} vs ${reg.id}`,
+  );
+
+  // --- payment confirms the seat ------------------------------------------
+  const receipt = await repo.paymentReceipts.submit({
+    registrationId: reg.id,
+    eventId: target.id,
+    userId,
+    fileData: "data:application/pdf;base64,JVBERi0x",
+    fileName: "receipt.pdf",
+    fileSizeBytes: 8,
+  });
+
+  try {
+    await repo.paymentReceipts.submit({
+      registrationId: reg.id,
+      eventId: target.id,
+      userId,
+      fileData: "data:application/pdf;base64,JVBERi0x",
+      fileName: "again.pdf",
+      fileSizeBytes: 8,
+    });
+    check("second live receipt rejected", false, "no error thrown");
+  } catch (e) {
+    check(
+      "second live receipt rejected",
+      e instanceof DataError && e.code === "RECEIPT_ALREADY_SUBMITTED",
+      (e as DataError).code,
+    );
+  }
+
+  await repo.paymentReceipts.review(receipt.id, "verified", "admin-test");
+  const settled = await repo.registrations.get(target.id, userId);
+  check(
+    "verifying the receipt confirms the seat",
+    settled?.status === "confirmed",
+    `${settled?.status}`,
+  );
+
   // --- XP idempotency (the critical guarantee) ----------------------------
+  check(
+    "confirming the seat awards registration XP exactly once",
+    (await regXp(userId)) === 10,
+    `${await regXp(userId)} xp`,
+  );
+
   const afterReg = await repo.characters.getByUser(userId);
   const xpAfterReg = afterReg?.totalXp ?? 0;
 
@@ -221,39 +325,58 @@ async function runSuite(): Promise<Result[]> {
 
   if (limited?.capacity != null) {
     const cap = limited.capacity;
-    // Fill EVERY seat — a partial fill would confirm rather than waitlist and
-    // the assertion would be vacuous.
-    const alreadyConfirmed = (await repo.events.stats(limited.id)).confirmedCount;
-    for (let i = alreadyConfirmed; i < cap; i++) {
-      await repo.registrations.register(limited.id, `synthetic-user-${i}`);
+    const collegeId = colleges[0]?.id ?? null;
+
+    // Fill EVERY seat — a partial fill would take a seat rather than waitlist
+    // and the assertion would be vacuous. These are unpaid `pending` seats,
+    // which is the point: a held seat is held whether or not it is paid for,
+    // so capacity must count it.
+    const startingHeld = cap - ((await repo.events.stats(limited.id)).seatsLeft ?? cap);
+    for (let i = startingHeld; i < cap; i++) {
+      await repo.registrations.register(limited.id, await makeParticipant(i, collegeId));
     }
     const full = await repo.events.stats(limited.id);
     check(
-      "event fills to exactly capacity",
-      full.confirmedCount === cap && full.seatsLeft === 0,
-      `confirmed=${full.confirmedCount}/${cap}, seatsLeft=${full.seatsLeft}`,
+      "unpaid seats still consume capacity",
+      full.seatsLeft === 0,
+      `seatsLeft=${full.seatsLeft} at capacity ${cap}`,
     );
 
-    const overflow = await repo.registrations.register(limited.id, "overflow-user");
+    const overflowUser = await makeParticipant(cap, collegeId);
+    const overflow = await repo.registrations.register(limited.id, overflowUser);
     check(
       "over-capacity registration waitlists",
       overflow.status === "waitlisted",
-      `status=${overflow.status} at ${full.confirmedCount}/${cap}`,
+      `status=${overflow.status} at capacity ${cap}`,
     );
 
-    // Cancelling a confirmed seat must promote the waitlisted user.
-    const confirmedReg = (await repo.registrations.listForEvent(limited.id)).find(
-      (r) => r.status === "confirmed",
+    // Cancelling a held seat must promote the waitlisted user — but only as
+    // far as `pending`, because they have not paid either.
+    const heldReg = (await repo.registrations.listForEvent(limited.id)).find(
+      (r) => r.status === "pending",
     );
-    if (confirmedReg) {
-      await repo.registrations.cancel(confirmedReg.id);
-      const promoted = await repo.registrations.get(limited.id, "overflow-user");
+    if (heldReg) {
+      await repo.registrations.cancel(heldReg.id);
+      const promoted = await repo.registrations.get(limited.id, overflowUser);
       check(
         "cancelling a seat promotes from the waitlist",
-        promoted?.status === "confirmed",
-        `overflow-user is now ${promoted?.status}`,
+        promoted?.status === "pending",
+        `overflow user is now ${promoted?.status}`,
+      );
+
+      const promotedXp = (await repo.xp.ledger(overflowUser))
+        .filter((e) => e.sourceType === "registration")
+        .reduce((s, e) => s + e.amount, 0);
+      check(
+        "promotion without payment awards no registration XP",
+        promotedXp === 0,
+        `${promotedXp} xp`,
       );
     }
+
+    // signUp switched the session to the last synthetic user; put the suite's
+    // own user back before anything downstream reads it.
+    await repo.auth.signIn(email, "hunter2!");
   } else {
     check("capacity test skipped (no capped event seeded)", true, "n/a");
   }
@@ -381,10 +504,10 @@ export function DataTest() {
 
   return (
     <main className="mx-auto w-full max-w-3xl p-8 flex flex-col gap-4">
-      <h1 className="text-mc-portal-light text-xl">DATA LAYER TESTS</h1>
+      <h1 className="text-mc-eyebrow text-xl">DATA LAYER TESTS</h1>
 
       {error ? (
-        <p className="text-mc-redstone-light" data-testid="suite-error">
+        <p className="text-mc-danger" data-testid="suite-error">
           Suite threw: {error}
         </p>
       ) : null}
@@ -395,14 +518,14 @@ export function DataTest() {
         <>
           <p
             data-testid="summary"
-            className={allPass ? "text-mc-emerald-light" : "text-mc-redstone-light"}
+            className={allPass ? "text-mc-success" : "text-mc-danger"}
           >
             {passed} / {total} passed
           </p>
           <ul className="flex flex-col gap-1">
             {results.map((r) => (
               <li key={r.name} className="flex gap-2 text-[16px]">
-                <span className={r.pass ? "text-mc-emerald-light" : "text-mc-redstone-light"}>
+                <span className={r.pass ? "text-mc-success" : "text-mc-danger"}>
                   {r.pass ? "PASS" : "FAIL"}
                 </span>
                 <span>{r.name}</span>

@@ -9,11 +9,10 @@ import {
   useState,
 } from "react";
 import { BlockButton } from "@/frontend/components/mc";
-import { MAP_H, MAP_W } from "@/frontend/lib/world/village-map-art";
 import { cn } from "@/frontend/lib/utils";
 
-// Min is well below 1 because "fit a 2048×1152 map into a phone viewport"
-// legitimately needs ~0.18.
+// Min is well below 1 because "fit a ~3000px-wide map into a phone viewport"
+// legitimately needs ~0.15.
 const MIN_SCALE = 0.15;
 const MAX_SCALE = 2.5;
 /** Pixels moved per arrow-key press, before scale. */
@@ -56,13 +55,24 @@ export const WorldViewport = forwardRef<
     className?: string;
     /** Rendered beneath the children, inside the transformed surface. */
     map?: React.ReactNode;
+    /**
+     * Map size in pixels.
+     *
+     * Props rather than module constants, because the map has more than one
+     * projection and they are very different shapes. As imports they were baked
+     * into this component's callbacks and into a `[]`-dep fit effect, so
+     * switching projection kept the previous mode's scale and clamp — the map
+     * did not error, it just silently framed the wrong thing.
+     */
+    mapW: number;
+    mapH: number;
     /** Reports the live scale so markers can counter-scale. */
     onScaleChange?: (scale: number) => void;
     /** Clicking empty terrain — used to clear the selection. */
     onBackgroundClick?: () => void;
   }
 >(function WorldViewport(
-  { children, className, map, onScaleChange, onBackgroundClick },
+  { children, className, map, mapW, mapH, onScaleChange, onBackgroundClick },
   ref,
 ) {
   const surface = useRef<HTMLDivElement>(null);
@@ -100,14 +110,14 @@ export const WorldViewport = forwardRef<
     (o: { x: number; y: number }, s: number) => {
       const el = surface.current;
       if (!el) return o;
-      const maxX = Math.max(0, (MAP_W * s - el.clientWidth) / 2);
-      const maxY = Math.max(0, (MAP_H * s - el.clientHeight) / 2);
+      const maxX = Math.max(0, (mapW * s - el.clientWidth) / 2);
+      const maxY = Math.max(0, (mapH * s - el.clientHeight) / 2);
       return {
         x: Math.min(maxX, Math.max(-maxX, o.x)),
         y: Math.min(maxY, Math.max(-maxY, o.y)),
       };
     },
-    [],
+    [mapW, mapH],
   );
 
   // Re-clamp after a zoom: zooming out shrinks the allowed pan range, so an
@@ -126,11 +136,15 @@ export const WorldViewport = forwardRef<
     onScaleChange?.(scale);
   }, [scale, onScaleChange]);
 
+  /** Last map size the fit ran against, so a projection change can re-frame. */
+  const fittedTo = useRef("");
+
   /**
-   * Fit the whole map into the viewport on mount and on resize.
+   * Fit the whole map into the viewport on mount, on resize, and whenever the
+   * map itself changes shape.
    *
-   * Without this the map renders at 1:1 (2048px wide) and the outer markers sit
-   * off-screen, so several locations are simply unreachable until the user
+   * Without this the map renders at 1:1 (~3000px wide) and the outer markers
+   * sit off-screen, so several locations are simply unreachable until the user
    * discovers they can drag. Measured with a ResizeObserver rather than a
    * one-shot read so it stays correct when the pane or window changes.
    */
@@ -142,27 +156,38 @@ export const WorldViewport = forwardRef<
       const { clientWidth: vw, clientHeight: vh } = el;
       if (!vw || !vh) return;
       // 0.94 leaves a small margin so edge markers are not flush to the bezel.
-      const contain = Math.min(vw / MAP_W, vh / MAP_H) * 0.94;
-      const cover = Math.max(vw / MAP_W, vh / MAP_H) * 0.94;
+      const contain = Math.min(vw / mapW, vh / mapH) * 0.94;
+      const cover = Math.max(vw / mapW, vh / mapH) * 0.94;
       /**
-       * Contain by default — seeing the whole village at once is the point of a
+       * Contain by default — seeing the whole place at once is the point of a
        * map. But on a narrow portrait viewport containing a 1.6:1 map means
-       * fitting it to the width, which shrinks the island to a third of the
+       * fitting it to the width, which shrinks the plan to a third of the
        * screen and strands it in a field of empty background. Below a
        * legibility floor, cover instead and let the user pan; the offset clamp
        * keeps the frame full either way.
        */
       const next = contain < 0.3 ? Math.min(cover, 0.55) : contain;
       fitScale.current = clampScale(next);
-      // Only snap the view when the user has not zoomed away from the fit.
-      setScale((current) => (current === 0 ? fitScale.current : current));
+
+      /**
+       * Re-frame when the MAP changed shape, not when the window did.
+       *
+       * The two projections have very different aspect ratios, so a scale that
+       * framed one leaves the other half off-screen. On a plain resize the
+       * user's own zoom is still theirs to keep.
+       */
+      const dims = `${mapW}x${mapH}`;
+      const reshaped = fittedTo.current !== dims;
+      fittedTo.current = dims;
+      if (reshaped) setOffset({ x: 0, y: 0 });
+      setScale((current) => (current === 0 || reshaped ? fitScale.current : current));
     };
 
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [mapW, mapH]);
 
   const reset = useCallback(() => {
     setAnimating(true);
@@ -184,8 +209,8 @@ export const WorldViewport = forwardRef<
         setOffset(
           clampOffset(
             {
-              x: -((xPct / 100) * MAP_W - MAP_W / 2) * s,
-              y: -((yPct / 100) * MAP_H - MAP_H / 2) * s,
+              x: -((xPct / 100) * mapW - mapW / 2) * s,
+              y: -((yPct / 100) * mapH - mapH / 2) * s,
             },
             s,
           ),
@@ -194,7 +219,7 @@ export const WorldViewport = forwardRef<
       });
       setAnimating(true);
     },
-    [clampOffset],
+    [clampOffset, mapW, mapH],
   );
 
   useImperativeHandle(ref, () => ({ focusOn, reset }), [focusOn, reset]);
@@ -340,8 +365,8 @@ export const WorldViewport = forwardRef<
         <div
           className="absolute left-1/2 top-1/2 origin-center"
           style={{
-            width: MAP_W,
-            height: MAP_H,
+            width: mapW,
+            height: mapH,
             transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${scale || 0.2})`,
             // Only ease for programmatic moves. Easing a drag makes the map lag
             // behind the finger; easing a pinch makes it feel like syrup.

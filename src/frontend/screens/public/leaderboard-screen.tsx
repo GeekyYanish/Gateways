@@ -3,8 +3,8 @@
 import { BackLink, BlockPanel, LoadingBlocks, PixelAvatar } from "@/frontend/components/mc";
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
-import { repo } from "@/backend/data";
 import { cn } from "@/frontend/lib/utils";
+import { repo } from "@/backend/data";
 
 /**
  * Leaderboard. Ranked by XP desc with created-at as a deterministic tiebreak,
@@ -15,11 +15,11 @@ export function LeaderboardScreen() {
   const { data: rows, loading } = useAsync(() => repo.leaderboard.top(50), []);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--mc-unit)] p-[var(--mc-unit)]">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--mc-unit)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*1.5)] md:p-[calc(var(--mc-unit)*2)]">
       <BackLink href="/" label="Home" />
 
       <header>
-        <h1 className="text-mc-gold text-base md:text-lg">LEADERBOARD CASTLE</h1>
+        <h1 className="text-mc-accent text-base md:text-lg">LEADERBOARD CASTLE</h1>
         <p className="mt-[calc(var(--mc-unit)*0.5)] text-mc-text-dim">
           Earn XP by registering for events and checking in.
         </p>
@@ -69,7 +69,7 @@ export function LeaderboardScreen() {
                       isMe && "bg-mc-portal/20",
                     )}
                   >
-                    <td className="p-[calc(var(--mc-unit)*0.5)] font-pixel text-[11px] text-mc-gold-light tabular-nums">
+                    <td className="p-[calc(var(--mc-unit)*0.5)] font-pixel text-[11px] text-mc-accent-strong tabular-nums">
                       {r.rank}
                     </td>
                     <td className="p-[calc(var(--mc-unit)*0.5)]">
@@ -79,7 +79,7 @@ export function LeaderboardScreen() {
                           <span className="block truncate text-[16px]">
                             {r.playerName}
                             {isMe ? (
-                              <span className="ml-1 text-[13px] text-mc-portal-light">
+                              <span className="ml-1 text-[13px] text-mc-eyebrow">
                                 (you)
                               </span>
                             ) : null}
@@ -98,7 +98,7 @@ export function LeaderboardScreen() {
                     <td className="p-[calc(var(--mc-unit)*0.5)] text-right text-[16px] tabular-nums">
                       {r.level}
                     </td>
-                    <td className="p-[calc(var(--mc-unit)*0.5)] text-right text-[16px] text-mc-emerald-light tabular-nums">
+                    <td className="p-[calc(var(--mc-unit)*0.5)] text-right text-[16px] text-mc-success tabular-nums">
                       {r.totalXp}
                     </td>
                   </tr>

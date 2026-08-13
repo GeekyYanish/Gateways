@@ -23,7 +23,7 @@ export function AchievementsScreen() {
     <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
       <AchievementModal />
       <header>
-        <h1 className="text-mc-gold text-base md:text-lg">ACHIEVEMENTS</h1>
+        <h1 className="text-mc-accent text-base md:text-lg">ACHIEVEMENTS</h1>
         <p className="mt-[calc(var(--mc-unit)*0.5)] text-mc-text-dim">
           {unlocked.size} of {all?.length ?? 0} unlocked.
         </p>

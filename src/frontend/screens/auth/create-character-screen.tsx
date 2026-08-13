@@ -134,7 +134,7 @@ export function CreateCharacterScreen() {
     <BlockPanel variant="panel" padded="lg" className="w-full max-w-[720px] animate-block-in">
       <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
         <header className="text-center">
-          <h1 className="text-mc-portal-light text-lg md:text-xl">CREATE YOUR ADVENTURER</h1>
+          <h1 className="text-mc-eyebrow text-lg md:text-xl">CREATE YOUR ADVENTURER</h1>
           <p className="mt-[calc(var(--mc-unit)*0.75)] text-mc-text-dim">
             This is how the realm will know you.
           </p>
@@ -213,7 +213,7 @@ export function CreateCharacterScreen() {
                 padded="sm"
                 role="alert"
                 aria-live="assertive"
-                className="border-mc-redstone text-mc-redstone-light text-[16px]"
+                className="border-mc-redstone text-mc-danger text-[16px]"
               >
                 {formError}
               </BlockPanel>

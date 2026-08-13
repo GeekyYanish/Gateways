@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { gsap, useGSAP } from "@/frontend/lib/animation/gsap-init";
 import { getScene, type Scene } from "@/frontend/lib/assets/scenes";
+import { useTheme } from "@/frontend/lib/theme/use-theme";
 import { ParallaxLayer, type ParallaxLayerHandle } from "./parallax-layer";
 import { cn } from "@/frontend/lib/utils";
 
@@ -270,19 +271,39 @@ export function AnimatedBackground({
 /**
  * Biome illustration in a bounded box (event cards, category headers) rather
  * than full-bleed. Same scene data, lighter motion.
+ *
+ * `lightScene` swaps to a second scene key under the light theme, for scenes
+ * that are lit rather than merely coloured — a night workshop does not become a
+ * day workshop by tinting it, it needs its own gradient, palette and blend
+ * modes (see `circuit-lab` / `circuit-lab-day` in scenes.ts). Omit it and the
+ * one scene is used in both themes, which is right for anything whose backdrop
+ * is fixed art.
  */
 export function BiomeScene({
   scene,
+  lightScene,
   className,
   children,
 }: {
   scene: string;
+  /** Scene key to use instead of `scene` when the light theme is active. */
+  lightScene?: string;
   className?: string;
   children?: React.ReactNode;
 }) {
+  // `useTheme` resolves "dark" on the first client pass and corrects in an
+  // effect, so a light-theme visitor gets one frame of the dark scene. That is
+  // why the nav swaps its crest in CSS instead — but the nav is above the fold
+  // and this is not: every current caller sits well down the page, so the
+  // correction lands long before the element is on screen. If a `lightScene`
+  // is ever wanted above the fold, render both and swap with the
+  // `theme-only-dark` / `theme-only-light` classes in globals.css.
+  const { resolved } = useTheme();
+  const key = lightScene && resolved === "light" ? lightScene : scene;
+
   return (
     <AnimatedBackground
-      scene={scene}
+      scene={key}
       intensity={0.45}
       // `flex` (not the default block) so a child with h-full actually fills
       // the box — otherwise content anchored to the bottom floats at the top.

@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["three", "gsap", "framer-motion", "lucide-react"],
   },
+  // mysql2 resolves native/optional deps at runtime and must not be bundled.
+  serverExternalPackages: ["mysql2"],
   compress: true,
 };
 

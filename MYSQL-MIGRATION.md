@@ -251,6 +251,25 @@ CREATE TABLE profiles (
   email      VARCHAR(320) NOT NULL,
   full_name  VARCHAR(160) NULL,
   phone      VARCHAR(32) NULL,
+  -- Participant fields, required by the registration console's intake record
+  -- (BACKEND-API-CONTRACT.md §1) and collected by the registration form.
+  --
+  -- All NULL-able even though the console types them as required: an account
+  -- exists from sign-up, and these are not asked for until the visitor
+  -- registers for something. Completeness is an application check at
+  -- registration time (`isParticipantComplete`), not a column constraint —
+  -- NOT NULL here would make sign-up impossible.
+  --
+  -- ENUMs rather than lookup tables: these are closed wire-contract sets shared
+  -- with another codebase, not editable reference data. A new value is a
+  -- coordinated change in both repos, which is exactly what ALTER forces.
+  gender        ENUM('male','female','other') NULL,
+  date_of_birth DATE NULL,
+  category      ENUM('participant','delegate','accompanist','faculty','volunteer','guest') NULL,
+  tshirt_size   ENUM('XS','S','M','L','XL','XXL') NULL,
+  emergency_name  VARCHAR(160) NULL,
+  emergency_phone VARCHAR(32) NULL,
+  dietary_pref  ENUM('veg','non_veg','vegan','jain') NULL,
   is_banned  BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),

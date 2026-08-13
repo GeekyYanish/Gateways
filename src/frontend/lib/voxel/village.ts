@@ -1,429 +1,476 @@
 import { WORLD_LOCATIONS } from "@/frontend/lib/world/world-locations";
-import { VoxelWorld, makeRng, smoothNoise, type WorldAnchor } from "./world";
+import {
+  COURTYARD,
+  DOOR_H,
+  DOOR_W,
+  ENTRANCE_X,
+  FURNITURE,
+  GRID_X,
+  GRID_Z,
+  PLAN_MAX,
+  RING,
+  ROOMS,
+  WALL_H,
+  gridCentre,
+  gridRect,
+  gv,
+  gx,
+  gz,
+  type RoomSpec,
+  type Wall,
+} from "@/frontend/lib/world/floor-plan";
+import { VoxelWorld, makeRng, type WorldAnchor } from "./world";
+import type { BlockType } from "./blocks";
 
 /**
- * Procedural village generator.
+ * Builds our building as voxels.
  *
- * Builds an ORIGINAL voxel village — none of these structures copy Minecraft
- * builds or textures; they are generic blocky architecture (huts, a library
- * hall, an arena, a castle) in our own palette.
+ * This is not a procedural village any more — it is the floor plan in
+ * `@/frontend/lib/world/floor-plan.ts` extruded into blocks: a corridor ring
+ * around an open courtyard, with classrooms A–G, the Staff Room and the
+ * sitting area / café hanging off it. The plan file owns every dimension; this
+ * file owns only how those dimensions become blocks.
  *
- * Seeded, so the village is byte-identical on every load. That matters for more
- * than determinism: the anchor positions below are what the UI links to, so a
- * village that shuffled would move the buildings out from under the labels.
+ * The realm's NAMES are still original fiction (Hackathon Mine, Wardens' Hall)
+ * and the architecture is generic blocky construction — nothing here copies
+ * Minecraft builds or textures.
  *
- * Buildings are placed at the SAME percentage coordinates as the 2D map's
- * signposts (`WORLD_LOCATIONS`), so the 3D and 2D views describe one place.
+ * Seeded, so the world is byte-identical on every load. Only the scatter
+ * decoration is random at all; the building itself is fully determined.
+ *
+ * **No ceilings.** Rooms are open-top boxes, which is what lets the 2D map read
+ * as a floor plan from above. Conditional ceilings arrive with the interiors
+ * pass, together with an indoor camera.
  */
 
 /**
- * Village grid edge length. Exported because the 2D isometric map derives its
- * canvas size from it — a diamond of SIZE×SIZE tiles has to fit exactly, and
- * hardcoding 72 in two files is how the two views drift apart.
+ * Village grid dimensions. Exported because the 2D map derives its canvas size
+ * from them — hardcoding them in two files is how the two views drift apart.
+ * Both come from the floor plan's own extent, so they cannot disagree with it.
  */
-export const VILLAGE_SIZE = 72;
-const SIZE = VILLAGE_SIZE;
+export const VILLAGE_SIZE = GRID_X;
+export const VILLAGE_SIZE_Z = GRID_Z;
+
 const SEED = 20260726;
-const SEA_LEVEL = 4;
+
+/**
+ * The single floor level; everything stands on `GROUND + 1`.
+ *
+ * One layer, not a crust. On flat ground a deeper slab is pure cost: the
+ * buried blocks are culled by `visibleBlocks()`, but the BOTTOM face of the
+ * lowest layer is still emitted whatever its depth, so extra layers buy
+ * nothing. (That bottom face is itself culled at y = 0 by the renderer — see
+ * `faceVisible` in `voxel-terrain.tsx`.)
+ */
+const GROUND = 0;
+
+const WALL_V = gv(WALL_H);
+const DOOR_WV = gv(DOOR_W);
+const DOOR_HV = gv(DOOR_H);
+/** Height of the parapet between the corridor and the courtyard. */
+const PARAPET_V = 2;
 
 export interface VillageResult {
   world: VoxelWorld;
   anchors: WorldAnchor[];
-  /** Where the player spawns — the square, facing the portal. */
+  /** Where the player spawns — outside the main doors, facing the building. */
   spawn: { x: number; y: number; z: number };
-  /** Portal landmark position, for the camera's initial framing. */
-  portal: { x: number; y: number; z: number };
+  /**
+   * Camera yaw at spawn, radians, in the controller's convention
+   * (forward = `(sin yaw, cos yaw)`).
+   *
+   * Not a detail: the old village spawned you in a square with buildings on
+   * every side, so any yaw framed something. This world is a single building
+   * entirely to the north of the spawn, and the default yaw of 0 put the camera
+   * north of the player looking south — at an empty field, with the whole
+   * building behind the camera. It also meant W walked away from the doors.
+   */
+  spawnYaw: number;
 }
 
-/** Percentage coords (0–100) from the 2D map → world grid coords. */
-function pctToWorld(xPct: number, zPct: number): { x: number; z: number } {
+interface GridRect {
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+}
+
+/** The grid line a named wall of a rect sits on, and the axis it runs along. */
+function wallRun(wall: Wall, g: GridRect) {
+  const horizontal = wall === "n" || wall === "s";
   return {
-    x: Math.round((xPct / 100) * (SIZE - 16)) + 8,
-    z: Math.round((zPct / 100) * (SIZE - 16)) + 8,
+    horizontal,
+    fixed: wall === "n" ? g.z0 : wall === "s" ? g.z1 : wall === "w" ? g.x0 : g.x1,
+    from: horizontal ? g.x0 : g.z0,
+    to: horizontal ? g.x1 : g.z1,
   };
+}
+
+/** Centred span of `width` cells along a run. */
+function centredSpan(from: number, to: number, width: number) {
+  const start = Math.floor((from + to) / 2) - Math.floor(width / 2);
+  return { start, end: start + width - 1 };
 }
 
 export function buildVillage(): VillageResult {
   const rng = makeRng(SEED);
-  const noise = smoothNoise(rng, SIZE);
-  const world = new VoxelWorld(SIZE);
+  const world = new VoxelWorld(GRID_X, GRID_Z);
 
-  // ---- terrain -----------------------------------------------------------
-  for (let x = 0; x < SIZE; x++) {
-    for (let z = 0; z < SIZE; z++) {
-      // Gentle rolling height, plus a bowl shape so the village sits in a
-      // valley and the edges rise — that framing keeps the camera enclosed
-      // without needing invisible walls.
-      const dx = (x - SIZE / 2) / (SIZE / 2);
-      const dz = (z - SIZE / 2) / (SIZE / 2);
-      const bowl = Math.min(1, (dx * dx + dz * dz) * 1.15);
-      const h = Math.round(SEA_LEVEL + noise(x, z) * 3 + bowl * 7);
+  const ring = gridRect(RING);
+  const court = gridRect(COURTYARD);
 
-      /**
-       * Only generate a CRUST, not a solid column to bedrock.
-       *
-       * Filling every column from y=0 produced 71k blocks for a 72² world, of
-       * which the overwhelming majority were buried stone that no camera angle
-       * can ever reach. Four blocks of crust looks identical from any position
-       * the player can occupy, and cuts total block count by roughly 60% —
-       * which is memory, culling time, and instance-buffer size all at once.
-       *
-       * The floor is kept solid so a player can never fall through a seam where
-       * neighbouring columns differ in height.
-       */
-      const floor = Math.max(0, h - 3);
-      for (let y = floor; y <= h; y++) {
-        const depth = h - y;
-        world.set(
-          x, y, z,
-          depth === 0 ? "grass" : depth < 3 ? "dirt" : "stone",
-        );
+  // ---- floor -------------------------------------------------------------
+  // One flat slab over the whole grid: grass by default, then overridden where
+  // the building stands. There is no terrain height at all — a real floor plan
+  // has one level, and rolling ground under it would only fight the geometry.
+  for (let x = 0; x < GRID_X; x++) {
+    for (let z = 0; z < GRID_Z; z++) world.set(x, GROUND, z, "grass");
+  }
+
+  /**
+   * Two-tone tiling on a 2×2 grid.
+   *
+   * Ambient occlusion gives a room its corners, but the middle of a 6,000-block
+   * floor is untouched by it — as one flat colour it reads as a void with walls
+   * around it, and you lose all sense of how big the space is or how fast you
+   * are walking. A checker is the cheapest possible fix: no extra blocks, no
+   * extra draw call, and it doubles as a scale reference.
+   */
+  const tileRect = (g: GridRect, a: BlockType = "floorTile", b: BlockType = "floorTileAlt") => {
+    for (let x = g.x0; x <= g.x1; x++) {
+      for (let z = g.z0; z <= g.z1; z++) {
+        world.set(x, GROUND, z, ((x >> 1) + (z >> 1)) % 2 === 0 ? a : b);
       }
+    }
+  };
 
-      // A small lake in one corner, for water and reflection interest.
-      if (h <= SEA_LEVEL && dx < -0.35 && dz > 0.2) {
-        for (let y = h + 1; y <= SEA_LEVEL; y++) world.set(x, y, z, "water");
-        world.set(x, h, z, "sand");
-      }
+  const ACCENT_CARPET: Record<string, BlockType> = {
+    red: "carpet",
+    blue: "carpetBlue",
+    green: "carpetGreen",
+    gold: "carpetGold",
+    purple: "carpetPurple",
+  };
+
+  tileRect(ring);
+  // The courtyard is paved, not sandy: it is the biggest single surface in the
+  // world, and one flat tone across 2,600 blocks reads as a void the building
+  // happens to surround.
+  tileRect(court, "paving", "pavingAlt");
+  for (const room of ROOMS) {
+    const g = gridRect(room);
+    tileRect(g);
+    // Carpet inset one voxel from the walls, so a tiled border still shows and
+    // the room reads as furnished rather than painted.
+    if (room.accent) {
+      world.fill(
+        g.x0 + 2, GROUND, g.z0 + 2,
+        g.x1 - 2, GROUND, g.z1 - 2,
+        ACCENT_CARPET[room.accent],
+      );
     }
   }
 
-  // ---- resolve building sites from the shared 2D coordinates -------------
-  const sites = new Map<string, { x: number; z: number; y: number }>();
-  for (const loc of WORLD_LOCATIONS) {
-    const { x, z } = pctToWorld(loc.x, loc.y);
-    sites.set(loc.key, { x, z, y: world.groundAt(x, z) });
+  /**
+   * Openings: columns where a wall must be left air, and how far up.
+   *
+   * Collected BEFORE any wall is built, because a room's doorway usually
+   * pierces a wall the room does not own — the classrooms' doors go through the
+   * corridor ring's outer wall, which is emitted by a different loop. Punching
+   * afterwards is not an option (`VoxelWorld` has no delete), and building the
+   * ring in segments around every room would put the door positions in two
+   * places at once. One shared map keeps the two loops honest.
+   */
+  const openings = new Map<string, number>();
+  const openColumn = (x: number, z: number, height: number) => {
+    const k = `${x},${z}`;
+    openings.set(k, Math.max(openings.get(k) ?? 0, height));
+  };
+  const openingAt = (x: number, z: number) => openings.get(`${x},${z}`) ?? 0;
+
+  const markOpening = (wall: Wall, g: GridRect, width: number, height: number) => {
+    const run = wallRun(wall, g);
+    const span = width >= run.to - run.from ? { start: run.from, end: run.to } : centredSpan(run.from, run.to, width);
+    for (let a = span.start; a <= span.end; a++) {
+      openColumn(run.horizontal ? a : run.fixed, run.horizontal ? run.fixed : a, height);
+    }
+  };
+
+  for (const room of ROOMS) {
+    const g = gridRect(room);
+    if (room.door) markOpening(room.door, g, DOOR_WV, DOOR_HV);
+    for (const wall of room.open ?? []) markOpening(wall, g, Infinity, WALL_V);
+  }
+  // Four archways through the courtyard parapet, so the square is reachable
+  // from every arm of the corridor rather than only where a room happens to be.
+  for (const wall of ["n", "s", "e", "w"] as const) {
+    markOpening(wall, court, 12, PARAPET_V);
   }
 
-  const anchors: WorldAnchor[] = [];
-  const addAnchor = (
-    key: string,
-    pos: { x: number; y: number; z: number },
-    radius: number,
-    labelHeight: number,
+  // ---- walls -------------------------------------------------------------
+
+  /**
+   * Emit one wall of a rect, honouring `openings`.
+   *
+   * `window` puts a glass band at eye height, `board` a dark panel — both skip
+   * the wall's end cells so corners stay solid, which is what stops a room
+   * reading as a floating frame from inside.
+   */
+  const emitWall = (
+    wall: Wall,
+    g: GridRect,
+    o: { type: BlockType; height?: number; window?: boolean; board?: boolean },
   ) => {
+    const run = wallRun(wall, g);
+    const height = o.height ?? WALL_V;
+
+    for (let a = run.from; a <= run.to; a++) {
+      const x = run.horizontal ? a : run.fixed;
+      const z = run.horizontal ? run.fixed : a;
+      const open = openingAt(x, z);
+      const nearEnd = a <= run.from + 1 || a >= run.to - 1;
+
+      for (let y = GROUND + 1; y <= GROUND + height; y++) {
+        if (y <= GROUND + open) continue;
+        const band = y - GROUND;
+        const isWindow = Boolean(o.window) && !nearEnd && band >= 3 && band <= 4;
+        const isBoard = Boolean(o.board) && !nearEnd && band >= 2 && band <= 4;
+        // Skirting. A wall running straight into the floor in the same tone
+        // has no visible base, so rooms looked like flat-shaded boxes; one
+        // darker course at the bottom is what gives them a footing.
+        const isTrim = band === 1 && !isWindow && !isBoard;
+        world.set(
+          x, y, z,
+          isWindow ? "glass" : isBoard ? "board" : isTrim ? "trim" : o.type,
+        );
+      }
+    }
+  };
+
+  // Corridor ring: solid outer wall all the way round, low parapet inside so
+  // the courtyard stays visible from the corridor and from the map.
+  for (const wall of ["n", "s", "e", "w"] as const) {
+    emitWall(wall, ring, { type: "wallPaint" });
+    emitWall(wall, court, { type: "cobble", height: PARAPET_V });
+  }
+
+  // Rooms. Each shares one wall with the ring, which is already standing — the
+  // shared line simply gets written twice with the same result.
+  for (const room of ROOMS) {
+    const g = gridRect(room);
+    const open = new Set(room.open ?? []);
+    const windows = new Set(room.windows ?? []);
+    // The board goes on whichever wall is neither the door, a window, nor open.
+    const boardWall = (["n", "s", "e", "w"] as const).find(
+      (w) => w !== room.door && !open.has(w) && !windows.has(w),
+    );
+
+    for (const wall of ["n", "s", "e", "w"] as const) {
+      if (open.has(wall)) continue;
+      emitWall(wall, g, {
+        type: "wallPaint",
+        window: windows.has(wall),
+        board: room.kind === "classroom" && wall === boardWall,
+      });
+    }
+  }
+
+  // ---- furniture ---------------------------------------------------------
+  for (const f of FURNITURE) {
+    const g = gridRect(f);
+    const type: BlockType = f.kind === "counter" ? "plank" : "desk";
+    world.fill(g.x0, GROUND + 1, g.z0, g.x1, GROUND + gv(f.h), g.z1, type);
+  }
+
+  // Lanterns along the corridor's inner edge, on the parapet.
+  for (let x = court.x0 + 6; x <= court.x1 - 6; x += 14) {
+    world.set(x, GROUND + PARAPET_V + 1, court.z0, "lantern");
+    world.set(x, GROUND + PARAPET_V + 1, court.z1, "lantern");
+  }
+
+  // ---- the courtyard fountain, the one piece of village left --------------
+  {
+    const c = gridCentre(COURTYARD);
+    world.box(c.x - 4, GROUND + 1, c.z - 4, c.x + 4, GROUND + 1, c.z + 4, "cobble");
+    world.fill(c.x - 3, GROUND + 1, c.z - 3, c.x + 3, GROUND + 1, c.z + 3, "water");
+    world.fill(c.x, GROUND + 1, c.z, c.x, GROUND + 4, c.z, "cobble");
+    world.set(c.x, GROUND + 5, c.z, "gold");
+  }
+
+  // ---- the portal you arrive through -------------------------------------
+  const entranceX = gx(ENTRANCE_X);
+  const portalPos = { x: entranceX, y: GROUND + 1, z: gz(PLAN_MAX.z + 6) };
+  {
+    const { x: px, z: pz } = portalPos;
+    const y = GROUND;
+    world.fill(px - 3, y, pz - 2, px + 3, y, pz + 2, "obsidian");
+    world.fill(px - 3, y + 1, pz, px + 3, y + 1, pz, "obsidian");
+    world.fill(px - 3, y + 8, pz, px + 3, y + 8, pz, "obsidian");
+    world.fill(px - 3, y + 1, pz, px - 3, y + 8, pz, "obsidian");
+    world.fill(px + 3, y + 1, pz, px + 3, y + 8, pz, "obsidian");
+    world.fill(px - 2, y + 2, pz, px + 2, y + 7, pz, "portal");
+  }
+
+  // ---- a path from the portal to the main doors --------------------------
+  for (let z = gz(PLAN_MAX.z); z <= portalPos.z; z++) {
+    world.fill(entranceX - 2, GROUND, z, entranceX + 2, GROUND, z, "path");
+  }
+  // Lantern posts down both sides of the approach, so the walk in is lit and
+  // the doors are findable from anywhere on the apron.
+  for (let z = gz(PLAN_MAX.z) + 3; z < portalPos.z; z += 6) {
+    for (const ox of [-3, 3]) {
+      world.fill(entranceX + ox, GROUND + 1, z, entranceX + ox, GROUND + 3, z, "log");
+      world.set(entranceX + ox, GROUND + 4, z, "lantern");
+    }
+  }
+
+  // ---- courtyard planters, breaking up the open square --------------------
+  for (const [cx, cz] of [
+    [court.x0 + 8, court.z0 + 6],
+    [court.x1 - 8, court.z0 + 6],
+    [court.x0 + 8, court.z1 - 6],
+    [court.x1 - 8, court.z1 - 6],
+  ]) {
+    world.box(cx - 2, GROUND + 1, cz - 2, cx + 2, GROUND + 1, cz + 2, "cobble");
+    world.fill(cx - 1, GROUND + 1, cz - 1, cx + 1, GROUND + 2, cz + 1, "hedge");
+    world.set(cx, GROUND + 3, cz, "flower");
+  }
+
+  // ---- scatter decoration on the apron ------------------------------------
+  /**
+   * Kept at the ORIGINAL block dimensions, not scaled to the new voxel size.
+   *
+   * At 0.5 m per voxel, doubling a tree's linear size octuples its block count:
+   * the canopy alone goes from ~75 blocks to ~600, and forty of them would add
+   * more geometry than the entire building. Left as-is they read as waist-high
+   * shrubs and boulders bordering the grounds, which is what an apron wants
+   * anyway. The count is capped for the same reason.
+   */
+  const onApron = (x: number, z: number) =>
+    x < ring.x0 - 2 || x > ring.x1 + 2 || z < ring.z0 - 2 || z > ring.z1 + 2;
+
+  for (let i = 0; i < 120; i++) {
+    const x = 2 + Math.floor(rng() * (GRID_X - 4));
+    const z = 2 + Math.floor(rng() * (GRID_Z - 4));
+    if (!onApron(x, z)) continue;
+    if (world.get(x, GROUND, z) !== "grass") continue;
+    if (world.isSolidAt(x, GROUND + 1, z)) continue;
+
+    const roll = rng();
+    if (roll < 0.24) {
+      world.set(x, GROUND + 1, z, "cobble");
+    } else if (roll < 0.44) {
+      // Flower clumps, the one spot of warm colour on a lot of green.
+      world.set(x, GROUND + 1, z, "flower");
+      if (rng() < 0.5) world.set(x + 1, GROUND + 1, z, "flower");
+    } else if (roll < 0.75) {
+      // Hedges, in short runs rather than single cubes — a lone bush reads as
+      // debris, a run of three reads as planting.
+      const len = 2 + Math.floor(rng() * 3);
+      const horiz = rng() < 0.5;
+      for (let i = 0; i < len; i++) {
+        const hx = x + (horiz ? i : 0);
+        const hz = z + (horiz ? 0 : i);
+        if (world.get(hx, GROUND, hz) !== "grass") break;
+        world.fill(hx, GROUND + 1, hz, hx, GROUND + 2, hz, "hedge");
+      }
+    } else {
+      const h = 3 + Math.round(rng() * 2);
+      for (let y = 1; y <= h; y++) world.set(x, GROUND + y, z, "log");
+      for (let dx = -1; dx <= 1; dx++)
+        for (let dz = -1; dz <= 1; dz++) world.set(x + dx, GROUND + h + 1, z + dz, "leaf");
+      world.set(x, GROUND + h + 2, z, "leaf");
+    }
+  }
+
+  // ---- anchors ------------------------------------------------------------
+  const anchors: WorldAnchor[] = [];
+  const addAnchor = (key: string, rect: { x: number; z: number; w: number; d: number }) => {
     const loc = WORLD_LOCATIONS.find((l) => l.key === key);
     if (!loc) return;
+    const c = gridCentre(rect);
+    const g = gridRect(rect);
+    // Half the SHORT side, so a long room like the sitting area does not claim
+    // proximity halfway across the courtyard.
+    const radius = Math.round(Math.min(g.x1 - g.x0, g.z1 - g.z0) / 2) + 2;
     anchors.push({
       key,
       label: loc.label,
       href: loc.href,
-      x: pos.x,
-      y: pos.y,
-      z: pos.z,
+      x: c.x,
+      y: GROUND + 1,
+      z: c.z,
       radius,
-      labelHeight,
+      labelHeight: WALL_V + 4,
     });
   };
 
-  /**
-   * Natural ground height per column, captured BEFORE anything is built.
-   *
-   * This snapshot is the whole point. `world.groundAt()` returns the highest
-   * SOLID block, which after construction includes roofs and towers. Flattening
-   * against that made each building treat its neighbour's roof as "ground":
-   * the castle sat within flatten range of the library roof, raised its entire
-   * 17×17 footprint to roof height, and produced a dirt mesa with towers on top
-   * that filled half the camera view. Flattening against natural terrain only
-   * keeps every building on the actual landscape.
-   */
-  const naturalHeight = new Map<string, number>();
-  for (let x = 0; x < SIZE; x++) {
-    for (let z = 0; z < SIZE; z++) {
-      naturalHeight.set(`${x},${z}`, world.groundAt(x, z));
-    }
+  for (const room of ROOMS) {
+    if (room.key) addAnchor(room.key, room);
   }
-  const naturalAt = (x: number, z: number) => naturalHeight.get(`${x},${z}`) ?? -1;
-
-  /** Level a footprint to its natural terrain, so buildings sit flush on ground. */
-  const flatten = (cx: number, cz: number, r: number): number => {
-    let maxH = 0;
-    for (let x = cx - r; x <= cx + r; x++)
-      for (let z = cz - r; z <= cz + r; z++) maxH = Math.max(maxH, naturalAt(x, z));
-
-    for (let x = cx - r; x <= cx + r; x++) {
-      for (let z = cz - r; z <= cz + r; z++) {
-        const g = naturalAt(x, z);
-        if (g < 0) continue;
-        for (let y = g + 1; y <= maxH; y++) world.set(x, y, z, "dirt");
-        world.set(x, maxH, z, "grass");
-        // Keep the snapshot consistent so later flattens see the new ground.
-        naturalHeight.set(`${x},${z}`, maxH);
-      }
-    }
-    return maxH;
-  };
-
-  // ---- Village Square: fountain plaza, the hub ---------------------------
-  {
-    const s = sites.get("village-square")!;
-    const y = flatten(s.x, s.z, 7);
-    world.fill(s.x - 6, y, s.z - 6, s.x + 6, y, s.z + 6, "path");
-    // Fountain: stone rim, water centre, gold spout.
-    world.box(s.x - 2, y + 1, s.z - 2, s.x + 2, y + 1, s.z + 2, "cobble");
-    world.fill(s.x - 1, y + 1, s.z - 1, s.x + 1, y + 1, s.z + 1, "water");
-    world.fill(s.x, y + 1, s.z, s.x, y + 3, s.z, "cobble");
-    world.set(s.x, y + 4, s.z, "gold");
-    // Lantern posts at the corners.
-    for (const [ox, oz] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) {
-      world.fill(s.x + ox, y + 1, s.z + oz, s.x + ox, y + 3, s.z + oz, "log");
-      world.set(s.x + ox, y + 4, s.z + oz, "lantern");
-    }
-    addAnchor("village-square", { x: s.x, y: y + 1, z: s.z }, 7, 6);
-    sites.set("village-square", { ...s, y });
-  }
-
-  // ---- Hackathon Mine: hillside cave mouth with rails --------------------
-  {
-    const s = sites.get("hackathon-mine")!;
-    const y = flatten(s.x, s.z, 6);
-    // Raise a hill behind, then cut a tunnel entrance into it.
-    for (let x = s.x - 5; x <= s.x + 5; x++) {
-      for (let z = s.z - 5; z <= s.z + 5; z++) {
-        const d = Math.hypot(x - s.x, z - s.z + 3);
-        const hh = Math.max(0, Math.round(7 - d * 1.1));
-        for (let h = 1; h <= hh; h++) world.set(x, y + h, z, "stone");
-      }
-    }
-    // Tunnel + timber frame.
-    world.fill(s.x - 1, y + 1, s.z - 6, s.x + 1, y + 3, s.z + 2, "path");
-    for (const ox of [-2, 2]) world.fill(s.x + ox, y + 1, s.z - 1, s.x + ox, y + 4, s.z - 1, "log");
-    world.fill(s.x - 2, y + 4, s.z - 1, s.x + 2, y + 4, s.z - 1, "log");
-    // Emerald seams in the rock face.
-    for (let i = 0; i < 12; i++) {
-      const ex = s.x + Math.round((rng() - 0.5) * 8);
-      const ez = s.z + Math.round(rng() * 4) - 4;
-      const ey = y + 1 + Math.round(rng() * 4);
-      if (world.isSolidAt(ex, ey, ez)) world.set(ex, ey, ez, "emerald");
-    }
-    // Minecart rails leading out.
-    for (let z = s.z - 6; z <= s.z + 6; z++) {
-      world.set(s.x - 1, y + 1, z, "log");
-      world.set(s.x + 1, y + 1, z, "log");
-    }
-    addAnchor("hackathon-mine", { x: s.x, y: y + 1, z: s.z - 2 }, 6, 8);
-  }
-
-  // ---- Photography Forest: dense woodland ---------------------------------
-  {
-    const s = sites.get("photography-forest")!;
-    const y = flatten(s.x, s.z, 3);
-    const tree = (tx: number, tz: number, height: number) => {
-      const g = world.groundAt(tx, tz);
-      if (g < 0) return;
-      /**
-       * Only plant on open ground.
-       *
-       * Trunks are solid, so planting raises the column's height map. Without
-       * this guard a second tree rolled onto the same column started from the
-       * FIRST tree's canopy and stacked — repeatedly, until the forest grew
-       * 40-block pillars of logs that towered over the village and blacked out
-       * half the camera view. Requiring bare grass makes planting idempotent.
-       */
-      if (world.get(tx, g, tz) !== "grass") return;
-      for (let h = 1; h <= height; h++) world.set(tx, g + h, tz, "log");
-      // Blocky canopy: a stepped cube cluster, not a sphere.
-      const top = g + height;
-      for (let dx = -2; dx <= 2; dx++)
-        for (let dz = -2; dz <= 2; dz++)
-          for (let dy = 0; dy <= 2; dy++) {
-            const spread = Math.abs(dx) + Math.abs(dz) + dy;
-            if (spread <= 3 + (dy === 0 ? 1 : 0)) world.set(tx + dx, top + dy, tz + dz, "leaf");
-          }
-      world.set(tx, top + 3, tz, "leaf");
-    };
-
-    for (let i = 0; i < 26; i++) {
-      const a = rng() * Math.PI * 2;
-      const r = 2 + rng() * 9;
-      tree(
-        Math.round(s.x + Math.cos(a) * r),
-        Math.round(s.z + Math.sin(a) * r),
-        4 + Math.round(rng() * 3),
-      );
-    }
-    // A small clearing with a camera tripod cairn so the site reads as a place.
-    world.fill(s.x - 1, y + 1, s.z - 1, s.x + 1, y + 1, s.z + 1, "path");
-    world.fill(s.x, y + 1, s.z, s.x, y + 2, s.z, "cobble");
-    world.set(s.x, y + 3, s.z, "sapphire");
-    addAnchor("photography-forest", { x: s.x, y: y + 1, z: s.z }, 6, 7);
-  }
-
-  // ---- Design Workshop: timber hut with a pitched roof -------------------
-  {
-    const s = sites.get("design-workshop")!;
-    const y = flatten(s.x, s.z, 5);
-    world.box(s.x - 4, y + 1, s.z - 3, s.x + 4, y + 4, s.z + 3, "plank");
-    // Corner posts read as structure.
-    for (const [ox, oz] of [[-4, -3], [4, -3], [-4, 3], [4, 3]])
-      world.fill(s.x + ox, y + 1, s.z + oz, s.x + ox, y + 4, s.z + oz, "log");
-    // Pitched roof.
-    for (let i = 0; i <= 4; i++) {
-      world.fill(s.x - 4 + i, y + 5 + i, s.z - 3, s.x + 4 - i, y + 5 + i, s.z + 3, "roofDark");
-    }
-    // Door and windows.
-    world.fill(s.x, y + 1, s.z - 3, s.x, y + 2, s.z - 3, "path");
-    for (const ox of [-2, 2]) world.fill(s.x + ox, y + 2, s.z - 3, s.x + ox, y + 3, s.z - 3, "glass");
-    world.set(s.x - 5, y + 4, s.z - 3, "lantern");
-    addAnchor("design-workshop", { x: s.x, y: y + 1, z: s.z }, 6, 11);
-  }
-
-  // ---- Quiz Library: tall stone hall --------------------------------------
-  {
-    const s = sites.get("quiz-library")!;
-    const y = flatten(s.x, s.z, 6);
-    world.box(s.x - 5, y + 1, s.z - 4, s.x + 5, y + 8, s.z + 4, "cobble");
-    // Tall glass windows down both long sides.
-    for (let z = s.z - 2; z <= s.z + 2; z += 2) {
-      world.fill(s.x - 5, y + 3, z, s.x - 5, y + 6, z, "glass");
-      world.fill(s.x + 5, y + 3, z, s.x + 5, y + 6, z, "glass");
-    }
-    world.fill(s.x, y + 1, s.z - 4, s.x, y + 3, s.z - 4, "path");
-    // Flat roof with a sapphire beacon.
-    world.fill(s.x - 5, y + 9, s.z - 4, s.x + 5, y + 9, s.z + 4, "stone");
-    world.fill(s.x, y + 10, s.z, s.x, y + 12, s.z, "cobble");
-    world.set(s.x, y + 13, s.z, "sapphire");
-    addAnchor("quiz-library", { x: s.x, y: y + 1, z: s.z }, 7, 15);
-  }
-
-  // ---- Gaming Arena: open colosseum ---------------------------------------
-  {
-    const s = sites.get("gaming-arena")!;
-    const y = flatten(s.x, s.z, 9);
-    // Ring of tiered seating.
-    for (let x = s.x - 8; x <= s.x + 8; x++) {
-      for (let z = s.z - 8; z <= s.z + 8; z++) {
-        const d = Math.hypot(x - s.x, z - s.z);
-        if (d > 5.5 && d <= 8.5) {
-          const tier = Math.round(d - 5.5);
-          for (let h = 1; h <= tier + 1; h++) world.set(x, y + h, z, "cobble");
-        } else if (d <= 5.5) {
-          world.set(x, y, z, "sand");
-        }
-      }
-    }
-    // Banner posts around the rim.
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2;
-      const bx = Math.round(s.x + Math.cos(a) * 9);
-      const bz = Math.round(s.z + Math.sin(a) * 9);
-      world.fill(bx, y + 1, bz, bx, y + 5, bz, "log");
-      world.fill(bx, y + 4, bz, bx, y + 5, bz, "roofRed");
-    }
-    addAnchor("gaming-arena", { x: s.x, y: y + 1, z: s.z }, 9, 8);
-  }
-
-  // ---- Leaderboard Castle: keep with towers -------------------------------
-  {
-    const s = sites.get("leaderboard-castle")!;
-    const y = flatten(s.x, s.z, 8);
-    world.box(s.x - 6, y + 1, s.z - 5, s.x + 6, y + 9, s.z + 5, "stone");
-    // Crenellations along the front wall.
-    for (let x = s.x - 6; x <= s.x + 6; x += 2) {
-      world.set(x, y + 10, s.z - 5, "stone");
-      world.set(x, y + 10, s.z + 5, "stone");
-    }
-    // Four corner towers, each capped in gold.
-    for (const [ox, oz] of [[-6, -5], [6, -5], [-6, 5], [6, 5]]) {
-      const tx = s.x + ox;
-      const tz = s.z + oz;
-      world.box(tx - 1, y + 1, tz - 1, tx + 1, y + 13, tz + 1, "cobble");
-      world.fill(tx - 1, y + 14, tz - 1, tx + 1, y + 14, tz + 1, "roofRed");
-      world.set(tx, y + 15, tz, "gold");
-    }
-    // Gate.
-    world.fill(s.x - 1, y + 1, s.z - 5, s.x + 1, y + 4, s.z - 5, "path");
-    addAnchor("leaderboard-castle", { x: s.x, y: y + 1, z: s.z - 6 }, 8, 17);
-  }
-
-  // ---- The portal, the landmark you arrive through ------------------------
-  const square = sites.get("village-square")!;
-  const portalPos = { x: square.x, y: square.y + 1, z: square.z - 11 };
-  {
-    const py = flatten(portalPos.x, portalPos.z, 3);
-    portalPos.y = py;
-    // Obsidian frame, 4 wide × 5 tall, with the energy plane inside.
-    world.fill(portalPos.x - 2, py + 1, portalPos.z, portalPos.x + 2, py + 1, portalPos.z, "obsidian");
-    world.fill(portalPos.x - 2, py + 6, portalPos.z, portalPos.x + 2, py + 6, portalPos.z, "obsidian");
-    world.fill(portalPos.x - 2, py + 1, portalPos.z, portalPos.x - 2, py + 6, portalPos.z, "obsidian");
-    world.fill(portalPos.x + 2, py + 1, portalPos.z, portalPos.x + 2, py + 6, portalPos.z, "obsidian");
-    world.fill(portalPos.x - 1, py + 2, portalPos.z, portalPos.x + 1, py + 5, portalPos.z, "portal");
-    // Plinth.
-    world.fill(portalPos.x - 3, py, portalPos.z - 2, portalPos.x + 3, py, portalPos.z + 2, "obsidian");
-  }
-
-  // ---- Paths radiating from the square to each building -------------------
-  for (const anchor of anchors) {
-    if (anchor.key === "village-square") continue;
-    let cx = square.x;
-    let cz = square.z;
-    let guard = 0;
-    // Simple L-walk; good enough and reads as a deliberate track.
-    while ((cx !== anchor.x || cz !== anchor.z) && guard++ < 400) {
-      if (cx !== anchor.x) cx += Math.sign(anchor.x - cx);
-      else if (cz !== anchor.z) cz += Math.sign(anchor.z - cz);
-
-      const g = world.groundAt(cx, cz);
-      if (g >= 0 && world.get(cx, g, cz) === "grass") {
-        world.set(cx, g, cz, "path");
-        // Widen so paths are visible from the camera height.
-        for (const [ox, oz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const nx = cx + ox;
-          const nz = cz + oz;
-          const ng = world.groundAt(nx, nz);
-          if (ng === g && world.get(nx, ng, nz) === "grass") world.set(nx, ng, nz, "path");
-        }
-      }
-    }
-  }
-
-  // ---- Scatter decoration on leftover grass -------------------------------
-  for (let i = 0; i < 90; i++) {
-    const x = 3 + Math.floor(rng() * (SIZE - 6));
-    const z = 3 + Math.floor(rng() * (SIZE - 6));
-    const g = world.groundAt(x, z);
-    if (g < 0 || world.get(x, g, z) !== "grass") continue;
-
-    const roll = rng();
-    if (roll < 0.5) {
-      // Boulder.
-      world.set(x, g + 1, z, "cobble");
-    } else if (roll < 0.8) {
-      // Lone shrub.
-      world.set(x, g + 1, z, "leaf");
-    } else {
-      // Small tree.
-      const h = 3 + Math.round(rng() * 2);
-      for (let y = 1; y <= h; y++) world.set(x, g + y, z, "log");
-      for (let dx = -1; dx <= 1; dx++)
-        for (let dz = -1; dz <= 1; dz++) world.set(x + dx, g + h + 1, z + dz, "leaf");
-      world.set(x, g + h + 2, z, "leaf");
-    }
-  }
+  addAnchor("village-square", COURTYARD);
 
   /**
-   * Find a genuinely clear spawn by spiralling out from the square.
+   * Spawn in the courtyard, south of the fountain, facing the north wing.
    *
-   * A hardcoded offset is not safe: the plaza has a fountain in the middle and
-   * lantern posts at its corners, and spawning inside one puts the player's
-   * head in a block with the camera trapped behind it.
+   * Outside the main doors reads better on paper, but the third-person camera
+   * needs ~16 voxels of clear space BEHIND the player, and out there that space
+   * is exactly where the portal stands — so the camera collided with it and
+   * pulled in to arm's length, filling the screen with the character and
+   * hiding the building. The courtyard is 68 × 38 with only a 2-voxel parapet,
+   * so the boom has room and the opening shot shows the building wrapped
+   * around you. It is also the hub the Village Square anchor describes.
+   *
+   * Still a spiral search rather than a fixed offset: the fountain is in the
+   * middle, and spawning inside it puts the player's head in a block.
    */
+  const courtCentre = gridCentre(COURTYARD);
+  const spawnSeed = { x: courtCentre.x, z: courtCentre.z + 12 };
   const spawn = (() => {
-    for (let r = 2; r < 14; r++) {
+    for (let r = 1; r < 24; r++) {
       for (let a = 0; a < 16; a++) {
         const ang = (a / 16) * Math.PI * 2;
-        const sx = Math.round(square.x + Math.cos(ang) * r);
-        const sz = Math.round(square.z + Math.sin(ang) * r);
+        const sx = Math.round(spawnSeed.x + Math.cos(ang) * r);
+        const sz = Math.round(spawnSeed.z + Math.sin(ang) * r);
+        if (sx < 1 || sz < 1 || sx > GRID_X - 2 || sz > GRID_Z - 2) continue;
         const g = world.groundAt(sx, sz);
         if (g < 0) continue;
-        // Need two blocks of headroom for the player capsule.
-        if (world.isSolidAt(sx, g + 1, sz) || world.isSolidAt(sx, g + 2, sz)) continue;
-        return { x: sx, y: g + 1, z: sz };
+        // Enough headroom for the player capsule at the new voxel scale.
+        let clear = true;
+        for (let dy = 1; dy <= 4; dy++) {
+          if (world.isSolidAt(sx, g + dy, sz)) clear = false;
+        }
+        if (clear) return { x: sx, y: g + 1, z: sz };
       }
     }
-    return { x: square.x, y: square.y + 1, z: square.z + 6 };
+    return { x: spawnSeed.x, y: GROUND + 1, z: spawnSeed.z };
   })();
 
+  // Look north across the fountain to the classroom wing. `forward =
+  // (sin yaw, cos yaw)`, so this is atan2 of spawn → target in (x, z) order.
+  const spawnYaw = Math.atan2(courtCentre.x - spawn.x, court.z0 - spawn.z);
 
-  return { world, anchors, spawn, portal: portalPos };
+  return { world, anchors, spawn, spawnYaw };
 }
+
+/**
+ * The world, built once and shared.
+ *
+ * `buildVillage()` is pure and seeded, so a second call produces an identical
+ * ~19k-block world at full cost. The 2D map, the projection maths and the
+ * screen's "you are here" fallback all need it, and before this they each
+ * rebuilt it — switching map projection regenerated the entire world before
+ * drawing a pixel.
+ *
+ * The 3D scene deliberately does NOT use this: it holds its own instance for
+ * the lifetime of the canvas, and sharing one across a mount/unmount would keep
+ * the whole grid alive after the user leaves the 3D view.
+ */
+let cached: VillageResult | null = null;
+export function getVillage(): VillageResult {
+  cached ??= buildVillage();
+  return cached;
+}
+
+/** Re-exported so callers can reason about the plan without a second import. */
+export type { RoomSpec };

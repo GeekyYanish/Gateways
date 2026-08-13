@@ -14,3 +14,4 @@ export { XpBar } from "./xp-bar";
 export { Signpost } from "./signpost";
 export { LoadingBlocks, LoadingScreen } from "./loading-blocks";
 export { BadgeSlot } from "./badge-slot";
+export { ThemeToggle } from "./theme-toggle";

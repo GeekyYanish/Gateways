@@ -81,9 +81,9 @@ React Three Fiber, loaded via dynamic import in `voxel-world.tsx` so no other ro
 - Village generation is **seeded** (`SEED` in `src/frontend/lib/voxel/village.ts`) — buildings must stay put because UI labels anchor to their positions, shared with the 2D map via `src/frontend/lib/world/world-locations.ts`.
 - `/world` offers 3D · Map · List as equal views; List is the screen-reader and keyboard path. Never make 3D the only route to a feature, and never override an explicit user choice.
 
-### Originality constraint
+### Refenrential constraint
 
-Minecraft-*inspired* aesthetic only. No Mojang textures, skins, mob designs, or terminology. Character archetypes (`prospector`, `botanist`, `sentinel`, `voidwalker`, `artificer`) and all scene briefs are original — keep new assets and naming original too.
+Minecraft-*inspired* aesthetic only. Take inspirations and references from Mojang textures, skins, mob designs, scenes and other resources in the internet. For Termnilogies use original name eg. Character archetypes (`prospector`, `botanist`, `sentinel`, `voidwalker`, `artificer`) and nkeep new naming original too.
 
 ## Verifying animations
 

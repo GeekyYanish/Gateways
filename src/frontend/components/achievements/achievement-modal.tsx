@@ -145,7 +145,7 @@ export function AchievementModal() {
         </div>
 
         <div className="min-w-0">
-          <p className="font-pixel text-[12px] text-mc-gold-light">{current.name}</p>
+          <p className="font-pixel text-[12px] text-mc-accent-strong">{current.name}</p>
           <p className="mt-[calc(var(--mc-unit)*0.5)] text-mc-text-dim">
             {current.description}
           </p>
@@ -154,7 +154,7 @@ export function AchievementModal() {
               {current.flavorText}
             </p>
           ) : null}
-          <p className="mt-[var(--mc-unit)] font-pixel text-[10px] uppercase text-mc-emerald-light">
+          <p className="mt-[var(--mc-unit)] font-pixel text-[10px] uppercase text-mc-success">
             {current.rarity}
             {current.xpReward > 0 ? ` · +${current.xpReward} XP` : ""}
           </p>

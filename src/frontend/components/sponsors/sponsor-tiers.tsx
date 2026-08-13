@@ -22,10 +22,15 @@ import { cn } from "@/frontend/lib/utils";
 
 const TIERS = ["diamond", "gold", "iron", "stone"] as const;
 
+/* Borders name a MATERIAL, the text names a MEANING — the split globals.css
+   describes. Iron's name used to be `text-mc-stone-light`, and #9d9d9d is a
+   block colour: fine as an edge, but 2.4:1 as type on a pale panel. The two
+   neutral tiers stay distinguishable through ink weight (full vs dim) instead
+   of through a grey that only survives on a dark ground. */
 const TIER_STYLE: Record<string, string> = {
-  diamond: "border-mc-diamond text-mc-diamond-light",
-  gold: "border-mc-gold text-mc-gold-light",
-  iron: "border-mc-stone text-mc-stone-light",
+  diamond: "border-mc-diamond text-mc-info",
+  gold: "border-mc-gold text-mc-accent-strong",
+  iron: "border-mc-stone text-mc-text",
   stone: "border-mc-border text-mc-text-dim",
 };
 
@@ -71,7 +76,7 @@ export function SponsorTiers({ className }: { className?: string }) {
                         href={s.websiteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-[var(--mc-unit)] inline-block text-[15px] text-mc-portal-light underline"
+                        className="mt-[var(--mc-unit)] inline-block text-[15px] text-mc-eyebrow underline"
                       >
                         Visit site
                       </a>

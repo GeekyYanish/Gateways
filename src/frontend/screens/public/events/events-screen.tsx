@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { BackLink, BlockInput, BlockPanel, LoadingBlocks, BlockButton } from "@/frontend/components/mc";
 import { BiomeScene } from "@/frontend/components/scene";
-import { PaymentUploadModal } from "@/frontend/components/registration/payment-upload-modal";
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
 import { repo } from "@/backend/data";
@@ -23,7 +22,6 @@ export function EventsScreen() {
   const [search, setSearch] = useState("");
   const { session } = useSession();
   const userId = session?.userId;
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const { data: categories } = useAsync(() => repo.reference.categories(), []);
   const { data: events, loading } = useAsync(
@@ -35,10 +33,17 @@ export function EventsScreen() {
       }),
     [categorySlug, search],
   );
-  const { data: userReceipt, reload: reloadReceipt } = useAsync(
-    async () => (userId ? repo.paymentReceipts.getByUser(userId) : null),
-    [userId]
-  );
+  // Seats taken but not yet paid for. Payment is a per-event step now, so this
+  // screen no longer takes money — it only points at the events that owe some,
+  // which is the one thing a student cannot see from a list of every event.
+  const { data: unpaid } = useAsync(async () => {
+    if (!userId) return null;
+    const regs = await repo.registrations.listForUser(userId);
+    const pending = regs.filter((r) => r.status === "pending");
+    if (pending.length === 0) return null;
+    const first = await repo.events.getById(pending[0].eventId);
+    return { count: pending.length, slug: first?.slug ?? null };
+  }, [userId]);
 
   const activeCategory = categories?.find((c) => c.slug === categorySlug);
   // Category slugs double as scene keys, so filtering to a category shows its
@@ -46,7 +51,7 @@ export function EventsScreen() {
   const bannerScene = activeCategory?.slug ?? "portal-approach";
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-[calc(var(--mc-unit)*1.5)] p-[var(--mc-unit)]">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-[calc(var(--mc-unit)*1.5)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*1.5)] md:p-[calc(var(--mc-unit)*2)]">
       <BackLink
         href={
           categorySlug
@@ -61,7 +66,7 @@ export function EventsScreen() {
       >
         <header className="mt-auto flex flex-col p-[calc(var(--mc-unit)*1.5)]">
           <h1
-            className="text-mc-gold text-base md:text-lg"
+            className="text-mc-accent text-base md:text-lg"
             style={{ textShadow: "3px 3px 0 rgba(0,0,0,0.7)" }}
           >
             {activeCategory ? activeCategory.name.toUpperCase() : "ALL EVENTS"}
@@ -77,46 +82,24 @@ export function EventsScreen() {
         </header>
       </BiomeScene>
 
-      {userId && (
-        <PaymentUploadModal
-          open={paymentModalOpen}
-          onOpenChange={setPaymentModalOpen}
-          eventId="gateways-entry"
-          registrationId="gateways-entry"
-          onSuccess={() => reloadReceipt()}
-        />
-      )}
-
-      {(!userReceipt || userReceipt.status !== "verified") && (
-        <BlockPanel variant="slot" className="border-l-4 border-mc-gold p-[var(--mc-unit)] flex flex-col sm:flex-row gap-[var(--mc-unit)] items-start sm:items-center justify-between">
-          <div>
-            <p className="text-[14px]">
-              Want to register? Make the one time payment and register for your fav events you want.
-            </p>
-            {userReceipt?.status === "pending" && (
-              <p className="text-[10px] text-mc-emerald-light mt-[calc(var(--mc-unit)*0.5)] uppercase font-pixel">
-                Payment verification pending
-              </p>
-            )}
-            {userReceipt?.status === "rejected" && (
-              <p className="text-[10px] text-mc-redstone-light mt-[calc(var(--mc-unit)*0.5)] uppercase font-pixel">
-                Payment rejected
-              </p>
-            )}
-          </div>
-          {!userId ? (
-            <Link href="/login?next=/events" className="no-underline shrink-0">
-              <BlockButton variant="gold" size="sm">Make Payment</BlockButton>
-            </Link>
-          ) : userReceipt?.status === "pending" ? null : (
-            <div className="shrink-0">
-              <BlockButton variant={userReceipt?.status === "rejected" ? "emerald" : "gold"} size="sm" onClick={() => setPaymentModalOpen(true)}>
-                {userReceipt?.status === "rejected" ? "Re-upload Receipt" : "Make Payment"}
-              </BlockButton>
-            </div>
-          )}
+      {unpaid?.slug ? (
+        <BlockPanel
+          variant="slot"
+          className="flex flex-col items-start justify-between gap-[var(--mc-unit)] border-l-4 border-mc-gold p-[var(--mc-unit)] sm:flex-row sm:items-center"
+        >
+          <p className="text-[14px]">
+            {unpaid.count === 1
+              ? "You have 1 seat held awaiting the entry fee."
+              : `You have ${unpaid.count} seats held awaiting the entry fee.`}{" "}
+            One payment confirms all of them.
+          </p>
+          <Link href={`/events/${unpaid.slug}`} className="shrink-0 no-underline">
+            <BlockButton variant="gold" size="sm">
+              Pay entry fee
+            </BlockButton>
+          </Link>
         </BlockPanel>
-      )}
+      ) : null}
 
       <BlockInput
         label="Search"
@@ -158,7 +141,7 @@ export function EventsScreen() {
                   padded="md"
                   className="h-full transition-[filter,transform] duration-100 hover:brightness-115 hover:-translate-y-[2px]"
                 >
-                  <p className="font-pixel text-[11px] text-mc-emerald-light">{e.title}</p>
+                  <p className="font-pixel text-[11px] text-mc-success">{e.title}</p>
                   {e.tagline ? (
                     <p className="mt-[calc(var(--mc-unit)*0.5)] text-[15px] text-mc-text-dim">
                       {e.tagline}
@@ -180,7 +163,7 @@ export function EventsScreen() {
                     </div>
                     <div>
                       <dt className="sr-only">Reward</dt>
-                      <dd className="text-mc-gold-light">+{e.xpReward} XP</dd>
+                      <dd className="text-mc-accent-strong">+{e.xpReward} XP</dd>
                     </div>
                   </dl>
                 </BlockPanel>
@@ -207,7 +190,7 @@ function CategoryChip({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "inline-flex min-h-[36px] items-center px-[var(--mc-unit)] no-underline",
+        "inline-flex min-h-[44px] min-w-11 items-center justify-center px-[var(--mc-unit)] no-underline",
         "font-pixel text-[9px] uppercase tracking-wide",
         active
           ? "bg-mc-portal text-white [--bevel-light:var(--color-mc-portal-light)] [--bevel-dark:var(--color-mc-portal-dark)] bevel"

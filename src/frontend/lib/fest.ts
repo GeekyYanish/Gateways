@@ -101,26 +101,35 @@ export const FEST = {
     accommodationNote: "+ GST, per person per day",
   },
 
-  /** TODO — the real Google Form and brochure links. */
   links: {
-    register: "#register",
+    /**
+     * Registration is on this site now, not an external form: pick an event,
+     * fill your participant details, then pay. `/events` is the entry point
+     * because a registration is always FOR something — there is no fest-wide
+     * "register" step to land on.
+     */
+    register: "/events",
+    /** TODO — the real brochure link. */
     brochure: "#",
   },
 
   /**
    * The registration walkthrough, rendered as a numbered recipe.
-   * Mirrors the 2025 flow: everything happens in an external form.
-   * TODO — confirm the steps still match the 2026 form.
+   *
+   * Registration happens on this site and comes BEFORE payment — the seat is
+   * held the moment you register, and verifying the receipt confirms it. These
+   * steps are the visitor-facing statement of that order, so they must stay in
+   * step with the branch ladder in `event-detail-screen.tsx`.
    */
   registerSteps: [
-    "Browse the events and pick the ones you want.",
-    "Read each event's rules, team size and timing.",
-    "Open the registration form and enter your college.",
-    "Fill in your own participant details.",
-    "Add your teammates for any team event.",
-    `Pay the flat ${inr(REGISTRATION_FEE_INR)} entry fee for as many events as you like.`,
-    "Upload the payment screenshot or receipt (image or PDF).",
-    "Submit — you will receive a confirmation on the registered email.",
+    "Sign in and create your character.",
+    "Browse the events and open the one you want.",
+    "Read its rules, team size and timing, then hit Register.",
+    "Fill in your participant details — asked once, reused for every event.",
+    "Your seat is held straight away, pending payment.",
+    `Pay the flat ${inr(REGISTRATION_FEE_INR)} entry fee — it covers every event you enter.`,
+    "Upload the payment receipt (PDF) from any of your held events.",
+    "Once we verify it, every seat you are holding is confirmed.",
   ],
 
   /** TODO — replace with the 2026 organising team. */

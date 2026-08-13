@@ -34,6 +34,12 @@ export interface AssetSpec {
   /** Intrinsic height at 1x, in pixels. */
   h: number;
   kind: AssetKind;
+  /**
+   * Sampling mode for large rendered artwork. Pixel assets default to
+   * nearest-neighbour; antialiased 3D renders opt into normal browser
+   * resampling so their edges stay clean when scaled down responsively.
+   */
+  rendering?: "pixelated" | "smooth";
   /** Short note shown inside the placeholder to guide the artist. */
   note?: string;
 }
@@ -41,6 +47,15 @@ export interface AssetSpec {
 const spec = <T extends Record<string, AssetSpec>>(t: T) => t;
 
 export const ART = {
+  /** Supplied high-resolution character renders used only on the homepage. */
+  home: spec({
+    bowOne: { src: "/art/Bow_1.png", w: 935, h: 1681, kind: "sprite", rendering: "smooth" },
+    bowTwo: { src: "/art/Bow_2.png", w: 941, h: 1672, kind: "sprite", rendering: "smooth" },
+    girl: { src: "/art/Girl_1.png", w: 941, h: 1672, kind: "sprite", rendering: "smooth" },
+    pickaxe: { src: "/art/Pickaxe_1.png", w: 1122, h: 1402, kind: "sprite", rendering: "smooth" },
+    creeper: { src: "/art/creeper.png", w: 304, h: 657, kind: "sprite", rendering: "smooth" },
+  }),
+
   portal: spec({
     frame: { src: "/art/portal/portal-frame.png", w: 320, h: 400, kind: "sprite", note: "obsidian frame" },
     swirl: { src: "/art/portal/portal-swirl.png", w: 256, h: 320, kind: "sprite", note: "inner swirl" },
@@ -101,6 +116,41 @@ export const ART = {
   }),
 
   /**
+   * Original voxel creatures that wander the page — NOT Mojang mobs. Nothing
+   * here may be a creeper, an enderman or any other Mojang design, and none of
+   * the names may be theirs either. Design briefs live in ART-ASSETS.md.
+   *
+   * All face RIGHT at rest. The decor helpers flip with `scale-x-[-1]` to face a
+   * sprite the other way, so a left-facing source would come out mirrored.
+   */
+  mobs: spec({
+    glowmite: { src: "/art/mobs/glowmite.png", w: 32, h: 32, kind: "sprite", note: "lantern bug" },
+    stonewarden: { src: "/art/mobs/stonewarden.png", w: 48, h: 64, kind: "sprite", note: "mossy golem" },
+    driftling: { src: "/art/mobs/driftling.png", w: 32, h: 48, kind: "sprite", note: "air wisp" },
+    burrower: { src: "/art/mobs/burrower.png", w: 32, h: 32, kind: "sprite", note: "tunneller" },
+    pipfowl: { src: "/art/mobs/pipfowl.png", w: 32, h: 32, kind: "sprite", note: "pixel bird" },
+  }),
+
+  /**
+   * Scenery props used purely as page decoration.
+   *
+   * Distinct from `items` on purpose: an item is something a player can hold and
+   * that appears in the hotbar and inventory at 32×32, while these are set
+   * dressing at whatever size the scene wants. Where the two would overlap
+   * (chest, crafting table, map, compass, trophy) reuse `ART.items` rather than
+   * adding a second entry — one asset, one path.
+   */
+  decor: spec({
+    torch: { src: "/art/decor/torch.png", w: 16, h: 48, kind: "sprite", note: "lit" },
+    lantern: { src: "/art/decor/lantern.png", w: 16, h: 32, kind: "sprite", note: "hanging" },
+    sapling: { src: "/art/decor/sapling.png", w: 32, h: 32, kind: "sprite" },
+    oreVein: { src: "/art/decor/ore-vein.png", w: 32, h: 32, kind: "sprite", note: "glowing" },
+    signBoard: { src: "/art/decor/sign-board.png", w: 48, h: 32, kind: "sprite", note: "blank" },
+    flowerPot: { src: "/art/decor/flower-pot.png", w: 16, h: 24, kind: "sprite" },
+    fence: { src: "/art/decor/fence.png", w: 32, h: 32, kind: "tile", note: "tileable" },
+  }),
+
+  /**
    * The homepage's digital-twin comparison: the same object photographed and
    * then rebuilt out of blocks, side by side. Both halves are declared at the
    * SAME intrinsic size on purpose — the whole point of the section is that the
@@ -132,10 +182,16 @@ export const ART = {
    * - `gatewaysCrestAperture` is not artwork at all — it is the crest's filled
    *   silhouette, used only as a CSS mask so the splash can zoom into the logo
    *   and reveal the page through it. Never render it directly.
+   * - `gatewaysCrestBlack` is the same crest solid black, for the light theme's
+   *   pale surfaces. Same rendering rules as `gatewaysCrest`, and the two are
+   *   deliberately identical in size so swapping one for the other cannot shift
+   *   the layout. Pick between them with the `theme-only-*` classes in
+   *   globals.css, never in JS — see the note there.
    */
   brand: spec({
     christUniversity: { src: "/art/brand/christ-university.png", w: 1795, h: 608, kind: "sprite", note: "CHRIST wordmark, white" },
     gatewaysCrest: { src: "/art/brand/Gateways_Pixel.png", w: 1254, h: 1254, kind: "sprite", note: "Gateways crest, gold" },
+    gatewaysCrestBlack: { src: "/art/brand/gateways_black.png", w: 1254, h: 1254, kind: "sprite", note: "Gateways crest, black — light theme" },
     gatewaysCrestPixel: { src: "/art/brand/gateways-crest-pixel.png", w: 152, h: 152, kind: "sprite", note: "crest, pixel art" },
     gatewaysCrestAperture: { src: "/art/brand/gateways-crest-aperture.png", w: 152, h: 152, kind: "sprite", note: "crest silhouette, CSS mask" },
   }),
@@ -159,6 +215,8 @@ export function badgeAsset(code: string): AssetSpec {
 export type BlockName = keyof typeof ART.blocks;
 export type SkinId = keyof typeof ART.skins;
 export type ItemName = keyof typeof ART.items;
+export type MobName = keyof typeof ART.mobs;
+export type DecorName = keyof typeof ART.decor;
 
 export const SKIN_IDS = Object.keys(ART.skins) as SkinId[];
 

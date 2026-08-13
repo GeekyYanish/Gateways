@@ -83,7 +83,9 @@ function Marker({
           onSelect(anchor);
         }}
       >
-        <boxGeometry args={[0.55, 0.55, 0.55]} />
+        {/* Sized in voxels, and a voxel is 0.5 m — so these are twice the
+            numbers the 1 m-per-voxel village used, for the same apparent size. */}
+        <boxGeometry args={[1.1, 1.1, 1.1]} />
         <meshLambertMaterial
           color={highlighted ? "#ffd166" : "#c964ff"}
           emissive={highlighted ? "#ffd166" : "#a02ce0"}
@@ -94,7 +96,7 @@ function Marker({
       {/* Beam of light down to the building, so the marker is locatable from
           across the map. */}
       <mesh position={[anchor.x, anchor.y + anchor.labelHeight / 2 - 1, anchor.z]}>
-        <cylinderGeometry args={[0.07, 0.07, anchor.labelHeight, 6]} />
+        <cylinderGeometry args={[0.14, 0.14, anchor.labelHeight, 6]} />
         <meshBasicMaterial
           color={highlighted ? "#ffd166" : "#a02ce0"}
           transparent
@@ -106,9 +108,12 @@ function Marker({
       <Html
         position={[anchor.x, anchor.y + anchor.labelHeight, anchor.z]}
         center
-        // Lower distanceFactor = smaller on screen. At 22 a label filled a
-        // third of the viewport when the player stood next to the building.
-        distanceFactor={9}
+        // Lower distanceFactor = smaller on screen; drei scales the element by
+        // distanceFactor / distance, so this is "the distance at which the
+        // label renders 1:1". The camera boom is 16, and a label at 1:1 when
+        // you are standing under it fills a third of the viewport — which is
+        // exactly what 18 did. Keep it well below the boom length.
+        distanceFactor={10}
         occlude
         // Wrapper must not swallow pointer events for the whole scene.
         style={{ pointerEvents: "none" }}

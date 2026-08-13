@@ -1,5 +1,6 @@
 import {
   DataError,
+  isParticipantComplete,
   type Achievement,
   type Announcement,
   type Attendance,
@@ -490,13 +491,23 @@ class LocalEvents implements EventRepository {
       (a) => a.eventId === eventId,
     ).length;
 
+    // `confirmedCount` stays literally the confirmed rows — it is a reported
+    // figure and the console shows it as such. `seatsLeft` is a different
+    // question: availability. It must subtract PENDING seats too, or the page
+    // advertises room that `register()` will immediately waitlist, since a
+    // registration now holds its seat from the moment it is made rather than
+    // from the moment it is paid for.
+    const held = regs.filter(
+      (r) => r.status === "confirmed" || r.status === "pending",
+    ).length;
+
     return {
       eventId,
       confirmedCount: confirmed,
       waitlistCount: waitlist,
       checkedInCount: checkedIn,
       capacity: event?.capacity ?? null,
-      seatsLeft: event?.capacity == null ? null : Math.max(0, event.capacity - confirmed),
+      seatsLeft: event?.capacity == null ? null : Math.max(0, event.capacity - held),
     };
   }
 
@@ -551,11 +562,21 @@ class LocalRegistrations implements RegistrationRepository {
 
     const all = readList<Registration>("registrations");
 
-    // Enforce one-time payment pass verification
-    const receipts = readList<PaymentReceipt>("paymentReceipts");
-    const hasVerifiedPayment = receipts.some((r) => r.userId === userId && r.status === "verified");
-    if (!hasVerifiedPayment) {
-      throw new DataError("PAYMENT_NOT_VERIFIED", "You must pay the one-time registration fee and be verified before registering for events.");
+    // Registration now comes BEFORE payment: you sign up for the event, then
+    // pay, and verifying the receipt is what confirms the seat. What is gated
+    // here instead is participant detail — an incomplete record cannot be sent
+    // to the console as a Participant, so there is no point holding a seat for
+    // it. VALIDATION_FAILED rather than a new code because
+    // BACKEND-API-CONTRACT.md §3 requires codes the console also knows.
+    const profile =
+      readList<Profile>("profiles").find((p) => p.id === userId) ?? null;
+    const character =
+      readList<Character>("characters").find((c) => c.userId === userId) ?? null;
+    if (!isParticipantComplete(profile, character)) {
+      throw new DataError(
+        "VALIDATION_FAILED",
+        "Complete your participant details before registering.",
+      );
     }
 
     // Unique (eventId, userId). Reactivates a previously cancelled registration
@@ -572,10 +593,21 @@ class LocalRegistrations implements RegistrationRepository {
       throw new DataError("REGISTRATION_CLOSED", "Registration has closed for this event.");
     }
 
-    const confirmed = all.filter(
-      (r) => r.eventId === eventId && r.status === "confirmed",
+    // A seat is held by anything not yet cancelled, so `pending` (registered,
+    // not yet paid) counts against capacity alongside `confirmed`. Counting
+    // only confirmed rows would oversell the event to everyone mid-payment.
+    const held = all.filter(
+      (r) =>
+        r.eventId === eventId &&
+        r.id !== existing?.id &&
+        (r.status === "confirmed" || r.status === "pending"),
     ).length;
-    const full = event.capacity != null && confirmed >= event.capacity;
+    const full = event.capacity != null && held >= event.capacity;
+
+    const receipts = readList<PaymentReceipt>("paymentReceipts");
+    const paid = receipts.some(
+      (r) => r.userId === userId && r.status === "verified",
+    );
 
     const record: Registration = {
       id: existing?.id ?? uid("reg"),
@@ -584,7 +616,17 @@ class LocalRegistrations implements RegistrationRepository {
       teamId: teamId ?? null,
       // Over capacity waitlists rather than hard-failing, so the UI can show a
       // useful state instead of an error.
-      status: full ? "waitlisted" : event.requiresApproval ? "pending" : "confirmed",
+      //
+      // Otherwise `pending` until the entry fee clears. This is the whole
+      // register-then-pay inversion in one expression: a seat is reserved
+      // immediately, and `paymentReceipts.review()` is what promotes it. A
+      // student who has ALREADY paid (this is their second event) is confirmed
+      // straight away — the fee is one-time and covers everything.
+      status: full
+        ? "waitlisted"
+        : !paid || event.requiresApproval
+          ? "pending"
+          : "confirmed",
       registeredAt: nowIso(),
       cancelledAt: null,
     };
@@ -629,16 +671,27 @@ class LocalRegistrations implements RegistrationRepository {
       .sort((a, b) => a.registeredAt.localeCompare(b.registeredAt))[0];
 
     if (waitlisted) {
+      // Promotion lands on the same rung the seat would have had if it were
+      // taken directly: `confirmed` only for someone who has already paid,
+      // otherwise `pending` with the fee still owed. Promoting an unpaid
+      // waitlister straight to confirmed would hand out a free seat, and the
+      // XP with it.
+      const receipts = readList<PaymentReceipt>("paymentReceipts");
+      const paid = receipts.some(
+        (r) => r.userId === waitlisted.userId && r.status === "verified",
+      );
       const j = all.indexOf(waitlisted);
-      all[j] = { ...waitlisted, status: "confirmed" };
+      all[j] = { ...waitlisted, status: paid ? "confirmed" : "pending" };
       write("registrations", all);
-      await this.#xp.award({
-        userId: waitlisted.userId,
-        amount: 10,
-        reason: "Promoted from waitlist",
-        sourceType: "registration",
-        sourceId: waitlisted.eventId,
-      });
+      if (paid) {
+        await this.#xp.award({
+          userId: waitlisted.userId,
+          amount: 10,
+          reason: "Promoted from waitlist",
+          sourceType: "registration",
+          sourceId: waitlisted.eventId,
+        });
+      }
     }
   }
 }
@@ -995,11 +1048,30 @@ class LocalPaymentReceipts implements PaymentReceiptRepository {
   }): Promise<PaymentReceipt> {
     ready();
     const all = readList<PaymentReceipt>("paymentReceipts");
-    if (input.registrationId !== "gateways-entry" && all.some((r) => r.registrationId === input.registrationId)) {
-      throw new DataError("RECEIPT_ALREADY_SUBMITTED", "A receipt has already been submitted for this registration.");
-    }
-    if (input.registrationId === "gateways-entry" && all.some((r) => r.userId === input.userId && (r.status === "pending" || r.status === "verified"))) {
-      throw new DataError("RECEIPT_ALREADY_SUBMITTED", "You have already submitted a one-time entry fee receipt.");
+
+    // One live receipt per USER, not per registration — the entry fee is a
+    // single flat payment that covers every event, so a second upload while one
+    // is already in flight is a duplicate, not a new payment.
+    //
+    // This replaces the old `"gateways-entry"` sentinel, which was a fake
+    // registration id used because no real registration existed at payment
+    // time. Registration now happens first, so `registrationId` is a genuine
+    // row — which is what MYSQL-MIGRATION.md's payment_receipts FK and its
+    // UNIQUE(registration_id) require, and the sentinel could never satisfy.
+    //
+    // A REJECTED receipt is deliberately not counted: being told to re-upload
+    // and then being refused the upload is a dead end.
+    if (
+      all.some(
+        (r) =>
+          r.userId === input.userId &&
+          (r.status === "pending" || r.status === "verified"),
+      )
+    ) {
+      throw new DataError(
+        "RECEIPT_ALREADY_SUBMITTED",
+        "You have already submitted a receipt for the one-time entry fee.",
+      );
     }
     const receipt: PaymentReceipt = {
       id: uid("rcpt"),
@@ -1063,22 +1135,43 @@ class LocalPaymentReceipts implements PaymentReceiptRepository {
     receipt.reviewNote = note ?? null;
     write("paymentReceipts", receipts);
 
-    const regs = readList<Registration>("registrations");
-    const regIdx = regs.findIndex((r) => r.id === receipt.registrationId);
-    if (regIdx !== -1) {
-      regs[regIdx] = { ...regs[regIdx], status: decision === "verified" ? "confirmed" : "rejected" };
-      write("registrations", regs);
-      
-      if (decision === "verified") {
-        const events = readList<FestEvent>("events");
-        const ev = events.find((e) => e.id === receipt.eventId);
-        await this.#xp.award({
-          userId: receipt.userId,
-          amount: 10,
-          reason: `Registered for ${ev?.title ?? "event"}`,
-          sourceType: "registration",
-          sourceId: receipt.eventId,
-        });
+    // Verifying settles EVERY pending registration this user holds, not just
+    // the one the receipt was filed against. The fee is one flat payment for
+    // the whole fest, which is the same relationship the console models as
+    // `Payment.registrationIds: string[]` — one payment, many registrations.
+    //
+    // Rejection leaves them `pending` rather than marking them `rejected`: the
+    // student is being asked to re-upload, and a rejected registration would
+    // give them nothing to come back to. The seat stays held meanwhile.
+    if (decision === "verified") {
+      const regs = readList<Registration>("registrations");
+      const events = readList<FestEvent>("events");
+      const settled = regs.filter(
+        (r) => r.userId === receipt.userId && r.status === "pending",
+      );
+
+      if (settled.length > 0) {
+        write(
+          "registrations",
+          regs.map((r) =>
+            r.userId === receipt.userId && r.status === "pending"
+              ? { ...r, status: "confirmed" as const }
+              : r,
+          ),
+        );
+
+        // Per event, and idempotent on (userId, 'registration', eventId) — so
+        // re-verifying, or a second receipt later, cannot pay XP twice.
+        for (const reg of settled) {
+          const ev = events.find((e) => e.id === reg.eventId);
+          await this.#xp.award({
+            userId: receipt.userId,
+            amount: 10,
+            reason: `Registered for ${ev?.title ?? "event"}`,
+            sourceType: "registration",
+            sourceId: reg.eventId,
+          });
+        }
         await this.#achievements.evaluate(receipt.userId);
       }
     }
@@ -1098,7 +1191,7 @@ class LocalPaymentReceipts implements PaymentReceiptRepository {
       `  Body: Hello ${userProfile?.fullName ?? "Player"},\n` +
       `        Your payment receipt for ${eventName} has been ${decision}.\n` +
       (note ? `        Note from registration team: ${note}\n` : "") +
-      `        ${decision === "verified" ? "You are now confirmed for the event! +10 XP awarded." : "Please check your dashboard or contact committeeheads@gateways.in if you face any issues."}\n`
+      `        ${decision === "verified" ? "Your entry fee is confirmed — every event you have registered for is now booked." : "Your registrations are still held. Re-upload your receipt from the event page, or contact committeeheads@gateways.in."}\n`
     );
     
     return receipt;

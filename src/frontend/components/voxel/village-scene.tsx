@@ -8,8 +8,8 @@ import { useRouter } from "next/navigation";
 import { buildVillage } from "@/frontend/lib/voxel/village";
 import type { WorldAnchor } from "@/frontend/lib/voxel/world";
 import type { SkinId } from "@/backend/data/types";
-import { VoxelTerrain } from "./voxel-terrain";
-import { PlayerController, type InputState } from "./player-controller";
+import { VoxelTerrain, type TerrainStats } from "./voxel-terrain";
+import { PlayerController, type InputState, type PlayerPose } from "./player-controller";
 import { BuildingMarkers } from "./building-markers";
 import { TouchControls } from "./touch-controls";
 import { cn } from "@/frontend/lib/utils";
@@ -25,9 +25,9 @@ import { cn } from "@/frontend/lib/utils";
 /**
  * Sun with a shadow frustum centred on the village.
  *
- * A bare <directionalLight> aims at the world ORIGIN, but this village spans
- * 0–72 on both axes. The shadow camera therefore covered only the half of the
- * map nearest the origin and everything past its edge rendered fully shadowed —
+ * A bare <directionalLight> aims at the world ORIGIN, but this world spans
+ * ~126 × 104. The shadow camera therefore covered only the half of the map
+ * nearest the origin and everything past its edge rendered fully shadowed —
  * a hard vertical line straight down the middle of the screen.
  *
  * Giving the light an explicit target at the village centre fixes it. The
@@ -59,19 +59,20 @@ function SunLight({ center }: { center: [number, number, number] }) {
         // mine hill threw shadows a third of the map long, which read as a
         // rendering fault rather than as lighting. ~73° keeps shadows short
         // enough to describe form without swallowing the village.
-        position={[center[0] + 26, 118, center[2] + 18]}
-        intensity={1.05}
-        color="#fff4e2"
+        position={[center[0] + 45, 200, center[2] + 32]}
+        intensity={1.5}
+        color="#fff2dc"
         castShadow
-        // 1024 across a frustum sized to the village footprint. A 2048 map over
-        // a wider frustum gave the same texel density at four times the cost.
+        // Frustum sized to the building's footprint (~126 voxels across), so
+        // the half-extent is ~63 plus margin. A wider frustum at the same map
+        // size would only thin the texel density.
         shadow-mapSize={[shadowSize, shadowSize]}
-        shadow-camera-left={-58}
-        shadow-camera-right={58}
-        shadow-camera-top={58}
-        shadow-camera-bottom={-58}
+        shadow-camera-left={-80}
+        shadow-camera-right={80}
+        shadow-camera-top={80}
+        shadow-camera-bottom={-80}
         shadow-camera-near={1}
-        shadow-camera-far={220}
+        shadow-camera-far={380}
         shadow-bias={-0.0004}
         // normalBias offsets the shadow lookup ALONG THE SURFACE NORMAL. With a
         // 1024 map spread over the village a texel covers ~0.11 world units, and
@@ -88,16 +89,26 @@ function SunLight({ center }: { center: [number, number, number] }) {
 export function VillageScene({
   skinId,
   className,
+  onPose,
 }: {
   skinId: SkinId;
   className?: string;
+  /** Lifts the player's position out of the canvas, so the 2D map can show it. */
+  onPose?: (pose: PlayerPose) => void;
 }) {
   const router = useRouter();
 
   // Village generation is deterministic and pure — build it once, never rebuild.
   const village = useMemo(() => buildVillage(), []);
 
-  const input = useRef<InputState>({ forward: 0, right: 0, yaw: 0, pitch: 0.55 });
+  // Yaw comes from the generator, which is the only thing that knows where the
+  // building is relative to the spawn. See `VillageResult.spawnYaw`.
+  const input = useRef<InputState>({
+    forward: 0,
+    right: 0,
+    yaw: village.spawnYaw,
+    pitch: 0.55,
+  });
 
   // Jump latch, owned here because this component handles both the key and the
   // on-screen button. The controller drains it once per frame.
@@ -112,6 +123,7 @@ export function VillageScene({
   }, []);
   const [nearAnchor, setNearAnchor] = useState<WorldAnchor | null>(null);
   const [hint, setHint] = useState(true);
+  const [stats, setStats] = useState<TerrainStats | null>(null);
 
   const surfaceRef = useRef<HTMLDivElement>(null);
 
@@ -234,7 +246,7 @@ export function VillageScene({
         // Clamp DPR: a 3× retina phone would otherwise render 9× the pixels of
         // a 1× display for no visible gain on a blocky scene.
         dpr={[1, 1.75]}
-        camera={{ fov: 58, near: 0.1, far: 250 }}
+        camera={{ fov: 58, near: 0.1, far: 420 }}
         // Explicitly opt out of the default alpha buffer; the sky always covers.
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         // R3F's container does not inherit a flex-derived parent height — it
@@ -244,21 +256,31 @@ export function VillageScene({
         style={{ position: "absolute", inset: 0 }}
       >
         <color attach="background" args={["#87b8e8"]} />
-        <fog attach="fog" args={["#a8c8e8", 45, 130]} />
+        {/* Near/far in voxels. Doubled with the voxel scale, then widened so the
+            far corner of a 126×104 plan is still legible rather than fogged out.
+            The colour matches the sky at the horizon — a fog tinted differently
+            from what it fades into puts a visible band across the distance. */}
+        <fog attach="fog" args={["#cfe1f2", 85, 260]} />
 
         <Sky sunPosition={[60, 40, 30]} turbidity={5} rayleigh={1.4} />
 
         {/* Warm key light with shadows, cool ambient fill — the two-light setup
-            that makes untextured cubes read as solid form. */}
-        {/* Ambient is deliberately high. Flat-shaded voxels have no texture detail
-            to carry a dark area, so an unlit face reads as a rendering fault
-            rather than as shade. This keeps shadowed geometry legible. */}
-        <ambientLight intensity={1.25} color="#cfe0f5" />
-        {/* Cool bounce from below, so ground-facing surfaces are not pure black. */}
-        <hemisphereLight args={["#bcd8f5", "#4a4030", 0.45]} />
-        <SunLight center={[village.world.size / 2, 0, village.world.size / 2]} />
+            that makes untextured cubes read as solid form.
 
-        <VoxelTerrain world={village.world} />
+            Ambient used to be 1.25, on the reasoning that flat-shaded voxels
+            have no texture detail to carry a dark area, so an unlit face reads
+            as a rendering fault. That was true before the mesh builder baked
+            ambient occlusion: with AO supplying contact shadows in every corner
+            and doorway, this much fill washed the whole scene into one flat
+            tone. Lowering it and pushing the sun up is what gives the building
+            depth — the shading now comes from geometry rather than from
+            everything being lit to the same value. */}
+        <ambientLight intensity={0.62} color="#cfe0f5" />
+        {/* Cool bounce from below, so ground-facing surfaces are not pure black. */}
+        <hemisphereLight args={["#c6dcf7", "#5a4c38", 0.62]} />
+        <SunLight center={[village.world.size / 2, 0, village.world.sizeZ / 2]} />
+
+        <VoxelTerrain world={village.world} onStats={setStats} />
 
         <PlayerController
           world={village.world}
@@ -267,6 +289,7 @@ export function VillageScene({
           input={input}
           anchors={village.anchors}
           onNearAnchor={setNearAnchor}
+          onPose={onPose}
           consumeJump={consumeJump}
         />
 
@@ -305,13 +328,20 @@ export function VillageScene({
         onJump={requestJump}
       />
 
-      {/* Dev-only geometry budget readout. */}
+      {/* Dev-only geometry budget readout.
+          Shows the numbers that actually decide whether this scene is
+          affordable: total blocks, the visible subset after culling, and the
+          resulting vertex count. VOXEL-3D.md records the measured working
+          point to compare against. */}
       {process.env.NODE_ENV !== "production" ? (
         <p
           data-testid="voxel-stats"
           className="pointer-events-none absolute bottom-1 right-2 font-mono text-[11px] text-white/45"
         >
           {village.world.blockCount} blocks
+          {stats
+            ? ` · ${stats.blocks} visible · ${(stats.faces * 4).toLocaleString()} verts`
+            : ""}
         </p>
       ) : null}
     </div>

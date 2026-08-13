@@ -17,7 +17,7 @@ export function SponsorsScreen() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-[calc(var(--mc-unit)*1.5)] p-[calc(var(--mc-unit)*2)]">
       <BackLink href="/" label="Home" />
-      <h1 className="text-mc-gold text-base md:text-lg">SPONSORS</h1>
+      <h1 className="text-mc-accent text-base md:text-lg">SPONSORS</h1>
       <SponsorTiers />
     </div>
   );

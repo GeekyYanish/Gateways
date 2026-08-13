@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { BlockPanel, LoadingBlocks } from "@/frontend/components/mc";
 import { useAsync } from "@/frontend/hooks/use-async";
-import { repo } from "@/backend/data";
 import { cn } from "@/frontend/lib/utils";
+import { repo } from "@/backend/data";
 
 /**
  * Fest schedule, grouped by day.
@@ -46,7 +46,7 @@ export function ScheduleList({ className }: { className?: string }) {
     <div className={cn("flex flex-col gap-[calc(var(--mc-unit)*1.5)]", className)}>
       {[...byDay.entries()].map(([day, daySlots]) => (
         <section key={day}>
-          <h3 className="font-pixel text-[11px] uppercase text-mc-portal-light">{day}</h3>
+          <h3 className="font-pixel text-[11px] uppercase text-mc-eyebrow">{day}</h3>
           <ol className="mt-[var(--mc-unit)] flex flex-col gap-[calc(var(--mc-unit)*0.5)]">
             {daySlots.map((s) => {
               const event = events?.find((e) => e.id === s.eventId);
@@ -59,7 +59,7 @@ export function ScheduleList({ className }: { className?: string }) {
                   >
                     <time
                       dateTime={s.startsAt}
-                      className="font-pixel text-[10px] tabular-nums text-mc-gold-light"
+                      className="font-pixel text-[10px] tabular-nums text-mc-accent-strong"
                     >
                       {new Date(s.startsAt).toLocaleTimeString(undefined, {
                         hour: "2-digit",
@@ -70,7 +70,7 @@ export function ScheduleList({ className }: { className?: string }) {
                       {event ? (
                         <Link
                           href={`/events/${event.slug}`}
-                          className="text-mc-text no-underline hover:text-mc-portal-light"
+                          className="text-mc-text no-underline hover:text-mc-eyebrow"
                         >
                           {s.title}
                         </Link>

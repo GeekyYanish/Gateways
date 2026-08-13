@@ -288,7 +288,7 @@ export function TravellingScreen() {
   const shown = Math.round(progress);
 
   return (
-    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-mc-void">
+    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-mc-obsidian-dark">
       <canvas
         ref={canvasRef}
         aria-hidden
@@ -298,9 +298,9 @@ export function TravellingScreen() {
       {/* Anchored near the bottom, as in the reference — centring it would put
           the panel over the vanishing point, which is the whole image. */}
       <div className="absolute bottom-[10%] z-10 w-full max-w-[420px] px-[calc(var(--mc-unit)*2)]">
-        <div className="border-[length:var(--mc-bevel)] border-mc-border bg-mc-void/80 p-[calc(var(--mc-unit)*1.5)]">
+        <div className="border-[length:var(--mc-bevel)] border-mc-obsidian-light bg-mc-obsidian/80 p-[calc(var(--mc-unit)*1.5)]">
           <div className="flex items-baseline justify-between gap-[var(--mc-unit)]">
-            <p className="font-pixel text-[10px] uppercase tracking-[0.08em] text-mc-text md:text-[11px]">
+            <p className="font-pixel text-[10px] uppercase tracking-[0.08em] text-white md:text-[11px]">
               Traveling to Parallax
             </p>
             <span className="font-pixel text-[11px] text-mc-portal-light tabular-nums">
@@ -314,7 +314,7 @@ export function TravellingScreen() {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label="Loading the realm"
-            className="mt-[var(--mc-unit)] h-[calc(var(--mc-unit)*1.25)] w-full overflow-hidden bg-mc-slot bevel-inset"
+            className="mt-[var(--mc-unit)] h-[calc(var(--mc-unit)*1.25)] w-full overflow-hidden bg-mc-obsidian-dark bevel-inset"
           >
             <div
               className="h-full origin-left bg-mc-portal-light transition-transform duration-150 ease-out"

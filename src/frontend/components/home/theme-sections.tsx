@@ -1,15 +1,16 @@
 "use client";
 
-import { BlockButton, BlockPanel } from "@/frontend/components/mc";
+import { BlockButton, BlockPanel, PixelImage } from "@/frontend/components/mc";
 import { BiomeScene } from "@/frontend/components/scene";
+import { AboutCharacterDecor, TorchPair } from "@/frontend/components/decor";
+import { ART } from "@/frontend/lib/assets/manifest";
 import { usePortalTransition } from "@/frontend/components/portal/portal-transition-overlay";
 import { FEST, inr } from "@/frontend/lib/fest";
 import { HomeSection } from "./home-section";
 import { TwinCompare } from "./twin-compare";
 
 /**
- * Sections 4–7: who we are, what the theme is, why it is called Parallax, and
- * why the whole site is made of blocks.
+ * Sections 4–6: who we are, what the theme is, and why it is called Parallax.
  *
  * All body copy is VT323 (the document default), never Press Start 2P. The
  * Digital Twins paragraph is 60-odd words; in a pixel display face it would be
@@ -17,26 +18,17 @@ import { TwinCompare } from "./twin-compare";
  * a preference.
  */
 
-const VOXEL_CARDS = [
-  {
-    title: "Voxel = volume pixel",
-    body: "A 3D building block for rendered worlds and simulations.",
-  },
-  {
-    title: "Why it fits",
-    body: "A world visibly assembling is a twin being rendered.",
-  },
-  {
-    title: "Why it's practical",
-    body: "Cardboard and foam blocks. Geometric signs. Pixel banners.",
-  },
-] as const;
-
 export function AboutSection() {
   return (
     <HomeSection
       id="about"
       eyebrow="The fest"
+      decor={
+        <>
+          <TorchPair />
+          <AboutCharacterDecor />
+        </>
+      }
       title={FEST.edition}
       lead={
         <>
@@ -47,12 +39,27 @@ export function AboutSection() {
         </>
       }
     >
-      <dl className="grid grid-cols-2 gap-[var(--mc-unit)] md:grid-cols-4">
+      <div
+        aria-hidden
+        className="pointer-events-none mb-[var(--mc-unit)] flex h-[170px] items-end justify-center xl:hidden"
+      >
+        <PixelImage
+          asset={ART.home.girl}
+          label="girl"
+          alt=""
+          className="h-full w-auto"
+          style={{ filter: "drop-shadow(0 10px 8px rgba(0,0,0,0.36))" }}
+        />
+      </div>
+      <div
+        aria-label="Festival highlights"
+        className="grid grid-cols-2 gap-[var(--mc-unit)] md:grid-cols-4"
+      >
         <Stat label="Years running" value={`${FEST.yearsRunning}+`} />
         <Stat label="Prize pool" value={inr(FEST.money.prizePoolInr)} />
         <Stat label="Entry" value={inr(FEST.money.registrationFeeInr)} />
         <Stat label="Days" value="2" />
-      </dl>
+      </div>
     </HomeSection>
   );
 }
@@ -64,15 +71,13 @@ function Stat({ label, value }: { label: string; value: string }) {
       padded="md"
       className="flex flex-col items-center gap-[calc(var(--mc-unit)*0.5)] text-center"
     >
-      {/* dd before dt in the DOM would break the pairing; the visual order is
-          achieved with flex-col-reverse instead of reordering the markup. */}
-      <div className="flex flex-col-reverse items-center gap-[calc(var(--mc-unit)*0.5)]">
-        <dt className="font-pixel text-[7px] uppercase tracking-[0.14em] text-mc-text-dim md:text-[8px]">
+      <div className="flex flex-col items-center gap-[calc(var(--mc-unit)*0.5)]">
+        <p className="order-2 font-pixel text-[7px] uppercase tracking-[0.14em] text-mc-text-dim md:text-[8px]">
           {label}
-        </dt>
-        <dd className="font-pixel text-[13px] text-mc-gold md:text-[16px]">
+        </p>
+        <p className="order-1 font-pixel text-[13px] text-mc-accent md:text-[16px]">
           {value}
-        </dd>
+        </p>
       </div>
     </BlockPanel>
   );
@@ -80,14 +85,56 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export function DigitalTwinsSection() {
   return (
-    <HomeSection id="theme" eyebrow="This year's subject" title="Digital Twins">
+    <HomeSection
+      id="theme"
+      eyebrow="This year's subject"
+      title="Digital Twins"
+    >
+      {/* The night workshop is the dark theme's; `circuit-lab-day` is the same
+          room with the shutters open. A tint would not have done it — the
+          conduits layer glows via `screen`, which composites to nothing on a
+          pale wall, so the day variant re-blends it as well as re-colouring. */}
       <BiomeScene
         scene="circuit-lab"
-        className="min-h-[220px] border-[length:var(--mc-bevel)] border-mc-border bevel-inset"
+        lightScene="circuit-lab-day"
+        className="relative min-h-[650px] overflow-hidden border-[length:var(--mc-bevel)] border-mc-border bevel-inset md:min-h-[430px]"
       >
-        <div className="mt-auto w-full bg-black/55 p-[calc(var(--mc-unit)*2)]">
+        <PixelImage
+          asset={ART.home.bowOne}
+          label="bow character one"
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute left-[-14px] top-[calc(var(--mc-unit)*1.5)] z-0 h-[230px] w-auto scale-x-[-1] md:bottom-0 md:top-auto md:h-[390px]"
+          style={{ filter: "drop-shadow(8px 10px 8px rgba(0,0,0,0.45))" }}
+        />
+        <PixelImage
+          asset={ART.home.bowTwo}
+          label="bow character two"
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute right-[-14px] top-[calc(var(--mc-unit)*1.5)] z-0 h-[230px] w-auto md:bottom-0 md:top-auto md:h-[390px]"
+          style={{ filter: "drop-shadow(-8px 10px 8px rgba(0,0,0,0.45))" }}
+        />
+        {/* THEMED, and that is a reversal worth explaining.
+
+            This was a fixed black wash with white text, on the rule that the
+            caption sits on scene art whose backdrop never changes — so themed
+            tokens would have darkened it against a constant. That rule was
+            right for as long as it held. It stopped holding the moment the card
+            gained `lightScene`: the backdrop is now a night workshop OR a day
+            one, and a hard black slab that disappeared into the first reads as a
+            hole punched in the second.
+
+            So it goes back to the semantic layer, which is what that layer is
+            for — `panel` and `text` flip together, and `info` is the one accent
+            that already has a light-theme value solved for cream (a deep teal,
+            where dark uses diamond). What must never come back is the ORIGINAL
+            bug: `bg-mc-slot/95` with a hardcoded `text-white`, one token themed
+            and the other not, which is how white on sand happened. Both sides of
+            a contrast pair are themed here, or neither is. */}
+        <div className="relative z-10 mx-[var(--mc-unit)] mb-[var(--mc-unit)] mt-auto bg-mc-panel/85 p-[calc(var(--mc-unit)*1.5)] bevel-inset md:mx-auto md:mb-[calc(var(--mc-unit)*2)] md:w-[68%] md:p-[calc(var(--mc-unit)*2)]">
           <p className="mx-auto max-w-[74ch] text-[17px] leading-relaxed text-mc-text md:text-[20px]">
-            <strong className="text-mc-diamond-light">Digital Twins</strong>{" "}
+            <strong className="text-mc-info">Digital Twins</strong>{" "}
             represent the convergence of AI, IoT, cloud computing, and
             simulation by creating intelligent virtual replicas of real-world
             systems. These digital counterparts continuously learn from live
@@ -118,12 +165,15 @@ export function ParallaxSection() {
     >
       <TwinCompare />
 
-      <p className="mt-[calc(var(--mc-unit)*3)] text-center font-pixel text-[10px] uppercase leading-loose tracking-[0.14em] text-mc-portal-pale md:text-[13px]">
+      {/* Sits directly on the PAGE, unlike the portal-pale lines elsewhere in
+          this file which sit on art or on a black scrim — so it reads its
+          violet from the semantic token rather than the material one. */}
+      <p className="mt-[calc(var(--mc-unit)*3)] text-center font-pixel text-[10px] uppercase leading-loose tracking-[0.14em] text-mc-eyebrow md:text-[13px]">
         One reality.
         <br />
         Two vantage points.
         <br />
-        <span className="text-mc-gold">Better decisions.</span>
+        <span className="text-mc-accent">Better decisions.</span>
       </p>
 
       {/*
@@ -152,35 +202,6 @@ export function ParallaxSection() {
           Build your character and explore the realm.
         </p>
       </div>
-    </HomeSection>
-  );
-}
-
-export function VoxelLanguageSection() {
-  return (
-    <HomeSection
-      eyebrow="Visual language"
-      title="Voxel Design"
-      lead="Everything you see here — the buttons, the panels, the village — is built from blocks, because a world assembling itself out of blocks is the clearest picture of a twin being rendered."
-    >
-      <ul className="grid gap-[var(--mc-unit)] md:grid-cols-3">
-        {VOXEL_CARDS.map((card) => (
-          <li key={card.title}>
-            <BlockPanel
-              variant="panel"
-              padded="lg"
-              className="flex h-full flex-col gap-[var(--mc-unit)]"
-            >
-              <h3 className="text-[11px] uppercase text-mc-emerald-light md:text-[13px]">
-                {card.title}
-              </h3>
-              <p className="text-[17px] leading-relaxed text-mc-text-dim md:text-[19px]">
-                {card.body}
-              </p>
-            </BlockPanel>
-          </li>
-        ))}
-      </ul>
     </HomeSection>
   );
 }

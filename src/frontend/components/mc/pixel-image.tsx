@@ -110,7 +110,11 @@ export function PixelImage({
       height={asset.h}
       draggable={false}
       onError={() => setFailedSrc(asset.src)}
-      className={cn("pixelated select-none", className)}
+      className={cn(
+        asset.rendering !== "smooth" && "pixelated",
+        "select-none",
+        className,
+      )}
       style={{
         ...(scale
           ? { width: asset.w * scale, height: asset.h * scale }

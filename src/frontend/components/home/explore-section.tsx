@@ -1,8 +1,14 @@
 "use client";
 
-import { BlockButton, BlockPanel, ItemIcon } from "@/frontend/components/mc";
-import type { ItemName } from "@/frontend/lib/assets/manifest";
+import {
+  BlockButton,
+  BlockPanel,
+  ItemIcon,
+  PixelImage,
+} from "@/frontend/components/mc";
+import { ART, type ItemName } from "@/frontend/lib/assets/manifest";
 import { HomeSection } from "./home-section";
+import { ExploreCharacterDecor } from "@/frontend/components/decor";
 
 /**
  * The events + schedule gateway.
@@ -38,8 +44,21 @@ export function ExploreSection({
       id="events"
       eyebrow="What's on"
       title="Enter a Domain"
+      decor={<ExploreCharacterDecor />}
       lead="Technical and non-technical events across two days. Pick as many as you like — one entry fee covers all of them."
     >
+      <div
+        aria-hidden
+        className="pointer-events-none mb-[var(--mc-unit)] flex h-[170px] items-end justify-center xl:hidden"
+      >
+        <PixelImage
+          asset={ART.home.pickaxe}
+          label="pickaxe character"
+          alt=""
+          className="h-full w-auto"
+          style={{ filter: "drop-shadow(0 10px 8px rgba(0,0,0,0.36))" }}
+        />
+      </div>
       <ul className="grid gap-[var(--mc-unit)] md:grid-cols-3">
         {FEATURED.map((f) => (
           <li key={f.name}>
@@ -54,10 +73,15 @@ export function ExploreSection({
                 className="flex h-full flex-col items-start gap-[var(--mc-unit)] transition-[filter] duration-75 hover:brightness-125"
               >
                 <ItemIcon item={f.item} size={40} />
-                <h3 className="text-[11px] uppercase text-mc-portal-pale md:text-[13px]">
+                {/* eyebrow, not portal-pale. This card's `portal` variant
+                    carries its identity in the BORDER — its surface is the
+                    themed panel, so #e8dcfb type on it disappears the moment
+                    that panel is a light one. mc-eyebrow is the same violet
+                    expressed as a meaning, and it darkens with the theme. */}
+                <h3 className="text-[11px] uppercase text-mc-eyebrow md:text-[13px]">
                   {f.name}
                 </h3>
-                <p className="font-pixel text-[8px] uppercase tracking-[0.12em] text-mc-gold">
+                <p className="font-pixel text-[8px] uppercase tracking-[0.12em] text-mc-accent">
                   {f.domain}
                 </p>
               </BlockPanel>

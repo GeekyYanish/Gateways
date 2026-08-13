@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { gsap, prefersReducedMotion, useGSAP } from "@/frontend/lib/animation/gsap-init";
 import { markSplashSeen, shouldPlaySplash } from "@/frontend/lib/animation/splash-store";
 import {
@@ -8,6 +8,8 @@ import {
   SPLASH_MASK,
 } from "@/frontend/lib/animation/splash-mask";
 import { ART } from "@/frontend/lib/assets/manifest";
+import { ParallaxLayer } from "@/frontend/components/scene";
+import { getScene } from "@/frontend/lib/assets/scenes";
 
 /**
  * The crest assembles itself out of flying blocks, then reveals the site.
@@ -35,6 +37,12 @@ import { ART } from "@/frontend/lib/assets/manifest";
  * literal reading of "build it out of pixels", but it puts ~750KB of markup in
  * every page's HTML; flying 4x4 chunks looks the same and costs a twelfth of that.
  *
+ * WHAT IT STANDS IN FRONT OF: the hero's own landscape, thrown far out of focus,
+ * rather than a flat fill. The splash then reads as being staged in the world the
+ * site opens onto, and the final zoom becomes a focus pull into it instead of a
+ * cut between two unrelated surfaces. It is the same `overworld-panorama` scene
+ * data the hero uses — not a copy of it — so retuning the hero retunes this.
+ *
  * IT IS AN OVERLAY, NOT A GATE. The app renders and hydrates underneath, so the
  * homepage's LCP is untouched — the splash only covers it. Everything below is
  * about making sure that cover always lifts:
@@ -60,12 +68,39 @@ const CELLS: ReadonlyArray<{ col: number; row: number }> = SPLASH_MASK.flatMap(
     [...line].flatMap((char, col) => (char === "#" ? [{ col, row }] : [])),
 );
 
+/**
+ * The hero's scene, read from the same registry `HeroSection` reads. Looked up at
+ * module scope because it is a static table lookup, not per-render work.
+ */
+const HERO_SCENE = getScene("overworld-panorama");
+
 export function PixelSplash() {
   const root = useRef<HTMLDivElement>(null);
   const backdrop = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
   const [done, setDone] = useState(false);
+
+  /**
+   * The blurred backdrop is mounted a frame AFTER first paint, never on the
+   * server.
+   *
+   * Its layers are generated pixel art inlined as data URIs — ~100KB of them —
+   * and this component lives in the ROOT layout, so server-rendering them would
+   * add that weight to the HTML of every route in the app, including every route
+   * where the splash is hidden before first paint and never seen. Deferring to a
+   * frame callback also puts the work after `useGSAP`'s layout effect, so on a
+   * repeat load the component has already unmounted itself and the art is never
+   * generated at all.
+   *
+   * The cost is one frame of flat `--void` before the landscape appears, which
+   * `.splash-scene`'s fade turns into the intended opening beat rather than a pop.
+   */
+  const [sceneReady, setSceneReady] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setSceneReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   // The timeline, the failsafe and the skip handler can all race to finish.
   // Whoever gets there first wins; the rest become no-ops.
@@ -241,8 +276,35 @@ export function PixelSplash() {
     >
       {/* The void itself, and the layer the crest-shaped hole is punched through.
           It carries the background instead of the root so the reveal has
-          something to cut into. */}
+          something to cut into. Everything below is a CHILD of it, so the
+          aperture cuts through the whole stack in one go. */}
       <div ref={backdrop} className="splash-backdrop">
+        {/* The hero's landscape, out of focus. No `AnimatedBackground` wrapper:
+            that would attach a pointer listener, a resize listener and a set of
+            infinite drift tweens to a picture that is blurred past the point
+            where any of it could be seen. The layers are rendered directly, with
+            no `handleRef`, which is what makes them inert. */}
+        {sceneReady && HERO_SCENE && (
+          <div className="splash-scene pointer-events-none" aria-hidden>
+            <div
+              className="absolute inset-0"
+              style={{ background: HERO_SCENE.baseGradient }}
+            />
+            {HERO_SCENE.layers.map((layer) => (
+              <ParallaxLayer
+                key={layer.key}
+                layer={layer}
+                sceneKey={HERO_SCENE.key}
+                palette={HERO_SCENE.palette}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Mixes toward --void, so one rule serves both themes: near-black over
+            the landscape in dark, sky over it in light. */}
+        <div className="splash-veil pointer-events-none absolute inset-0" />
+
         {/* Faint block grid, so the void reads as buildable space. Inside the
             backdrop so the aperture cuts through it too. */}
         <div className="splash-grid pointer-events-none absolute inset-0" />

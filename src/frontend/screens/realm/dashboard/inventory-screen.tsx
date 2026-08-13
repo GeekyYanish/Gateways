@@ -39,7 +39,7 @@ export function InventoryScreen() {
       <AchievementModal />
 
       <section>
-        <h1 className="text-mc-gold text-base md:text-lg">INVENTORY</h1>
+        <h1 className="text-mc-accent text-base md:text-lg">INVENTORY</h1>
         <h2 className="mt-[calc(var(--mc-unit)*1.5)] font-pixel text-[11px] uppercase text-mc-text-dim">
           Registered Events
         </h2>
@@ -52,7 +52,7 @@ export function InventoryScreen() {
           <BlockPanel variant="slot" className="mt-[var(--mc-unit)] text-center">
             <p className="text-mc-text-dim">
               Your inventory is empty.{" "}
-              <Link href="/events" className="text-mc-portal-light underline">
+              <Link href="/events" className="text-mc-eyebrow underline">
                 Browse events
               </Link>{" "}
               to get started.
@@ -77,7 +77,7 @@ export function InventoryScreen() {
                   }}
                 >
                   <BlockPanel variant="panel" padded="md" className="h-full">
-                    <p className="font-pixel text-[11px] text-mc-emerald-light">
+                    <p className="font-pixel text-[11px] text-mc-success">
                       {event.title}
                     </p>
                     <p className="mt-[calc(var(--mc-unit)*0.5)] text-[15px] text-mc-text-dim">
@@ -91,7 +91,7 @@ export function InventoryScreen() {
                     </p>
                     <Link
                       href={`/events/${event.slug}`}
-                      className="mt-[var(--mc-unit)] inline-block text-[15px] text-mc-portal-light underline"
+                      className="mt-[calc(var(--mc-unit)*0.5)] inline-flex min-h-11 items-center text-[15px] text-mc-eyebrow underline"
                     >
                       View
                     </Link>
@@ -145,10 +145,10 @@ export function InventoryScreen() {
 
 function StatusPill({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    confirmed: "text-mc-emerald-light",
-    waitlisted: "text-mc-gold-light",
-    pending: "text-mc-diamond-light",
-    rejected: "text-mc-redstone-light",
+    confirmed: "text-mc-success",
+    waitlisted: "text-mc-accent-strong",
+    pending: "text-mc-info",
+    rejected: "text-mc-danger",
   };
   return (
     <span className={styles[status] ?? "text-mc-text-dim"}>

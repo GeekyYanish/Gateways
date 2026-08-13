@@ -181,6 +181,40 @@ because a checkerboard placeholder as the site's hero looks broken.
 `pickaxe` `camera` `book` `sword` `compass` `trophy` `crafting-table` `chest`
 `map` `warp-orb`
 
+### Creatures — original designs
+
+The page's wildlife. Same originality rule as the archetypes, and it bites
+hardest here: **none of these may be a Mojang mob**, in silhouette or in name.
+No creeper, no enderman, no zombie, no skeleton, no slime. If a design starts
+looking like one, change it.
+
+Every sprite faces **right** at rest. The decor helpers mirror with CSS to face
+one the other way, so a left-facing source arrives back-to-front.
+
+| Id | Size | Design brief |
+|---|---|---|
+| `glowmite` | 32×32 | Palm-sized beetle with a lantern abdomen. Warm amber glow, dark chitin. |
+| `stonewarden` | 48×64 | Squat mossy golem, cut-stone plates, green seams. Slow and friendly. |
+| `driftling` | 32×48 | A wisp of banded air with two dot eyes. Pale cyan, semi-transparent. |
+| `burrower` | 32×32 | Round tunneller, spade paws, soil on its snout. Earth browns. |
+| `pipfowl` | 32×32 | Small ground bird, oversized beak, teal plumage. |
+
+### Decor props — alpha
+
+Set dressing only. Anything a player can *hold* belongs in **Items** instead —
+reuse `chest`, `crafting-table`, `map`, `compass` and `trophy` from there rather
+than redrawing them here.
+
+| Path | Size | Notes |
+|---|---|---|
+| `decor/torch.png` | 16×48 | Lit, warm cast at the head |
+| `decor/lantern.png` | 16×32 | Hanging, with a ring at the top |
+| `decor/sapling.png` | 32×32 | |
+| `decor/ore-vein.png` | 32×32 | Glowing seam in stone |
+| `decor/sign-board.png` | 48×32 | Blank — text is drawn in HTML over it |
+| `decor/flower-pot.png` | 16×24 | |
+| `decor/fence.png` | 32×32 | **Tileable horizontally** |
+
 ### Badges — 64×64, alpha
 
 `badges/<code>.png` where `<code>` is the achievement's `code` field, e.g.

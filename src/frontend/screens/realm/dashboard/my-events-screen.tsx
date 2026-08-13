@@ -33,7 +33,7 @@ export function MyEventsScreen() {
 
   return (
     <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
-      <h1 className="text-mc-gold text-base md:text-lg">MY EVENTS</h1>
+      <h1 className="text-mc-accent text-base md:text-lg">MY EVENTS</h1>
 
       {loading ? (
         <BlockPanel variant="slot"><LoadingBlocks label="Loading" /></BlockPanel>
@@ -41,7 +41,7 @@ export function MyEventsScreen() {
         <BlockPanel variant="slot" className="text-center">
           <p className="text-mc-text-dim">
             Nothing registered yet.{" "}
-            <Link href="/events" className="text-mc-portal-light underline">Browse events</Link>
+            <Link href="/events" className="text-mc-eyebrow underline">Browse events</Link>
           </p>
         </BlockPanel>
       ) : (
@@ -74,7 +74,7 @@ function Group({
             <li key={reg.id}>
               <Link href={`/events/${event!.slug}`} className="block no-underline">
                 <BlockPanel variant="panel" padded="md" className="hover:brightness-115">
-                  <p className="font-pixel text-[11px] text-mc-emerald-light">{event!.title}</p>
+                  <p className="font-pixel text-[11px] text-mc-success">{event!.title}</p>
                   <p className="mt-[calc(var(--mc-unit)*0.5)] text-[15px] text-mc-text-dim">
                     {new Date(event!.startsAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
                   </p>

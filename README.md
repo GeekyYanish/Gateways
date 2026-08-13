@@ -1,8 +1,8 @@
 # Parallax
 
 A voxel-styled college fest portal. Blocky pixel-art UI, an animated portal entry
-sequence with layered parallax scenes, a **walkable 3D voxel village**, and a
-working event/character system.
+sequence with layered parallax scenes, a **walkable 3D voxel model of our
+building**, and a working event/character system.
 
 Minecraft-*inspired* in aesthetic only — every asset, name and texture is
 original. See [Art](#art--all-external-all-original).
@@ -116,23 +116,38 @@ in each scene's own palette with atmospheric depth, so parallax is visible and
 tunable pre-art. The landing portal draws a CSS obsidian frame rather than a
 checkerboard, because a placeholder as the site's hero looks broken.
 
-### 3D voxel village
+### 3D voxel world
 
-`/world` renders a walkable Minecraft-*style* village with React Three Fiber —
-seven buildings, a controllable cube character, WASD movement with collision, and
-click-to-navigate markers wired to the same event categories as the 2D map.
-All geometry is generated in code; there are no models or textures.
+`/world` renders **our actual floor plan** with React Three Fiber — the corridor
+ring around the courtyard, classrooms A–G, the staff room and the café — with a
+controllable cube character, WASD movement with collision, doorways you can walk
+through, and click-to-navigate markers wired to the same event categories as the
+2D map. All geometry is generated in code; there are no models or textures.
 
-Full detail, including the performance work and the five bugs worth remembering,
-is in [VOXEL-3D.md](VOXEL-3D.md). The headline: rendering blocks as instanced
-cubes ran at **4fps**; emitting only the faces that touch air cut vertices from
-367k to 91k and took it to **19fps under software rasterization** (real GPUs are
-far faster). Three.js loads only on the 3D view, so no other route pays for it.
+The layout is real; the naming is fiction. Classroom C is the Hackathon Mine,
+the staff room is the Wardens' Hall, the courtyard is the Village Square. One
+voxel is 0.5 m, so desks and doorways read at the right size.
 
-`/world` offers **3D · Map · List** as equal views. 3D auto-selects on capable
-desktops; reduced-motion users get Map with an explanation, phones get List, and
-List remains the screen-reader and keyboard path. An explicit choice is never
-overridden.
+Every dimension lives in `src/frontend/lib/world/floor-plan.ts`, in metres. The
+3D view, the 2D map and the marker positions are all derived from it, so moving
+a wall moves it everywhere at once.
+
+Full detail, including the performance work and the bugs worth remembering, is
+in [VOXEL-3D.md](VOXEL-3D.md). The headline: rendering blocks as instanced cubes
+ran at **4fps**; emitting only the faces that touch air cut vertices from 367k
+to 91k and took it to **19fps under software rasterization** (real GPUs are far
+faster). Three.js loads only on the 3D view, so no other route pays for it.
+
+`/world` offers **3D · Map · List** as equal views. The map draws in either
+**plan or isometric** projection and **rotates in 90° steps**, so no wing of the
+building stays hidden behind the isometric angle. Both projections show a live
+**"YOU" marker** with your facing direction, carried over from wherever you
+walked to in 3D — the canvas unmounts when you switch views, so the position is
+held above it and falls back to the spawn point before your first 3D session.
+
+3D auto-selects on capable desktops; reduced-motion users get Map with an
+explanation, phones get List, and List remains the screen-reader and keyboard
+path. An explicit choice is never overridden.
 
 ### Animated backgrounds and parallax
 

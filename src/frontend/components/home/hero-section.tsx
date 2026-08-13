@@ -99,10 +99,11 @@ export function HeroSection() {
           {FEST.shortEdition}
         </p>
 
-        <h1 className="text-center text-[30px] leading-none sm:text-[46px] lg:text-[64px] 2xl:text-[78px]">
-          {/* Per-letter spans for the stagger. aria-label carries the whole word
-              so screen readers do not read it letter by letter. */}
-          <span aria-label={TITLE} className="inline-flex flex-wrap justify-center">
+        <h1 className="text-center text-[clamp(20px,8vw,30px)] leading-none sm:text-[46px] lg:text-[64px] 2xl:text-[78px]">
+          {/* Per-letter spans are decorative; the visually hidden copy keeps
+              the heading readable as one word for assistive technology. */}
+          <span className="sr-only">{TITLE}</span>
+          <span aria-hidden className="inline-flex flex-wrap justify-center">
             {TITLE.split("").map((ch, i) =>
               ch === " " ? (
                 // A styled space would pick up the emboss for no reason; give

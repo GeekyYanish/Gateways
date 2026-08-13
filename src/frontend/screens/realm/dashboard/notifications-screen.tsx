@@ -6,10 +6,10 @@ import { repo } from "@/backend/data";
 import type { AnnouncementSeverity } from "@/backend/data/types";
 
 const SEVERITY_COLOR: Record<AnnouncementSeverity, string> = {
-  info: "text-mc-diamond-light",
-  success: "text-mc-emerald-light",
-  warning: "text-mc-gold-light",
-  critical: "text-mc-redstone-light",
+  info: "text-mc-info",
+  success: "text-mc-success",
+  warning: "text-mc-accent-strong",
+  critical: "text-mc-danger",
 };
 
 /**
@@ -21,7 +21,7 @@ export function NotificationsScreen() {
 
   return (
     <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
-      <h1 className="text-mc-gold text-base md:text-lg">NOTIFICATIONS</h1>
+      <h1 className="text-mc-accent text-base md:text-lg">NOTIFICATIONS</h1>
 
       {loading ? (
         <BlockPanel variant="slot"><LoadingBlocks label="Loading" /></BlockPanel>

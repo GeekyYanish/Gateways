@@ -34,8 +34,15 @@ export interface SceneLayer extends AssetSpec {
   drift?: number;
   /** Gentle opacity pulse period in seconds. 0 = none. */
   pulse?: number;
-  /** CSS blend mode for glow/mist overlays. */
-  blend?: "normal" | "screen" | "overlay" | "soft-light";
+  /**
+   * CSS blend mode for glow/mist overlays.
+   *
+   * `multiply` is the daylight counterpart to `screen` and exists for the light
+   * variants of lit scenes: `screen` only lightens, so a glow layer composites
+   * to nothing on a pale ground and silently disappears. See
+   * `circuit-lab` / `circuit-lab-day`.
+   */
+  blend?: "normal" | "screen" | "multiply" | "overlay" | "soft-light";
   /** Layer opacity 0–1. */
   opacity?: number;
   /**
@@ -455,6 +462,41 @@ export const SCENES: Record<string, Scene> = {
     layers: [
       layer("machines", "far", 0.1, {}),
       layer("conduits", "mid", 0.26, { blend: "screen", pulse: 2.5, opacity: 0.75 }),
+      layer("bench", "fore", 0.48, { h: 320 }),
+    ],
+  }),
+
+  /**
+   * The same workshop with the shutters open — the light theme's Digital Twins
+   * card (`BiomeScene`'s `lightScene`).
+   *
+   * Same three layers at the same depths, so the parallax is identical and the
+   * two variants cannot drift apart structurally. Only the light changes.
+   *
+   * THE BLEND IS THE REAL EDIT, not the palette. `conduits` is `screen` in the
+   * night version, which is how the conduit runs glow — but screen only ever
+   * lightens, so on a pale wall it composites to nothing and the layer silently
+   * disappears. `multiply` is its daylight opposite: the same runs read as
+   * TRACES on a lit surface rather than light of their own. That is the same
+   * "emissive at night, pigment at noon" rule the light theme's material
+   * relight follows (see the light block in globals.css).
+   */
+  "circuit-lab-day": buildScene({
+    key: "circuit-lab-day",
+    name: "Circuit Lab (day)",
+    brief:
+      "The same workshop under daylight: pale slate walls and machinery lit " +
+      "from outside, conduit lines reading as inert traces rather than glow.",
+    baseGradient: "linear-gradient(180deg, #e8f0f2 0%, #cddde2 100%)",
+    /* The edge colour needs CHROMA, not just lightness. `sceneLayerPlaceholder`
+       derives the near layers by darkening this by 35–50%, so a near-white edge
+       (#dbe6ea) bottoms out at neutral #8e9698 and the foreground bench lands as
+       a slab of dead grey. #9dc3d2 carries enough teal to survive the same
+       darkening as slate (#667f89) — the room stays the colour it is named. */
+    palette: ["#cfe4ec", "#9dc3d2"],
+    layers: [
+      layer("machines", "far", 0.1, {}),
+      layer("conduits", "mid", 0.26, { blend: "multiply", pulse: 2.5, opacity: 0.5 }),
       layer("bench", "fore", 0.48, { h: 320 }),
     ],
   }),

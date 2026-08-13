@@ -11,11 +11,11 @@ import { ScheduleList } from "@/frontend/components/schedule/schedule-list";
  */
 export function ScheduleScreen() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[calc(var(--mc-unit)*1.5)] p-[var(--mc-unit)]">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-[calc(var(--mc-unit)*1.5)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*1.5)] md:p-[calc(var(--mc-unit)*2)]">
       <BackLink href="/" label="Home" />
 
       <header>
-        <h1 className="text-mc-gold text-base md:text-lg">SCHEDULE</h1>
+        <h1 className="text-mc-accent text-base md:text-lg">SCHEDULE</h1>
         <p className="mt-[calc(var(--mc-unit)*0.5)] text-mc-text-dim">
           Times shown in your local timezone.
         </p>

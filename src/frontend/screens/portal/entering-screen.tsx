@@ -19,8 +19,7 @@ const DURATION_MS = 2600;
  * somewhere to live while the destination's code and data load. It zooms into
  * the portal, then routes onward based on auth state:
  *   signed out        → /login
- *   no character yet  → /create-character
- *   fully set up      → /travelling
+ *   signed in         → /travelling
  *
  * Under reduced motion it redirects immediately with no animation.
  */
@@ -32,7 +31,7 @@ export function EnteringScreen() {
   const [progress, setProgress] = useState(0);
 
   const destination =
-    status === "ready" ? "/travelling" : status === "needs-character" ? "/create-character" : "/login";
+    status === "ready" ? "/travelling" : "/login";
 
   // Warm the destination while the animation plays, so the push is instant.
   useEffect(() => {
@@ -104,7 +103,7 @@ export function EnteringScreen() {
         <div className="absolute bottom-[9%] z-20 flex w-full max-w-[380px] flex-col items-center gap-[calc(var(--mc-unit)*1.25)] px-[calc(var(--mc-unit)*2)]">
           <p
             role="status"
-            className="pixel-shadow font-pixel text-[10px] uppercase tracking-[0.16em] text-mc-text md:text-[11px]"
+            className="pixel-shadow font-pixel text-[10px] uppercase tracking-[0.16em] text-white md:text-[11px]"
           >
             Entering the realm…
           </p>
@@ -114,7 +113,7 @@ export function EnteringScreen() {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label="Entering the realm"
-            className="h-[calc(var(--mc-unit)*0.9)] w-full overflow-hidden bg-mc-slot bevel-inset"
+            className="h-[calc(var(--mc-unit)*0.9)] w-full overflow-hidden bg-mc-obsidian-dark bevel-inset"
           >
             <div
               className="h-full origin-left bg-mc-portal-light"

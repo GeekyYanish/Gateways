@@ -6,7 +6,6 @@ import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
 import { repo } from "@/backend/data";
 import { PaymentReceipt } from "@/backend/data/types";
-import { cn } from "@/frontend/lib/utils";
 
 export function PaymentVerificationScreen() {
   const { session } = useSession();
@@ -70,7 +69,7 @@ function ReceiptCard({
       await repo.paymentReceipts.review(receipt.id, 'verified', adminUserId);
       showToast({ title: "Receipt Verified", severity: "success" });
       onReviewed();
-    } catch (e) {
+    } catch {
       showToast({ title: "Error verifying receipt", severity: "critical" });
     } finally {
       setIsSubmitting(false);
@@ -85,7 +84,7 @@ function ReceiptCard({
       showToast({ title: "Receipt Rejected", severity: "warning" });
       setRejectModalOpen(false);
       onReviewed();
-    } catch (e) {
+    } catch {
       showToast({ title: "Error rejecting receipt", severity: "critical" });
     } finally {
       setIsSubmitting(false);
@@ -103,7 +102,7 @@ function ReceiptCard({
   return (
     <BlockPanel variant="panel" padded="md" className="flex flex-col md:flex-row md:items-center justify-between gap-[var(--mc-unit)]">
       <div className="flex flex-col gap-[calc(var(--mc-unit)*0.5)]">
-        <p className="font-pixel text-[12px] text-mc-emerald-light">
+        <p className="font-pixel text-[12px] text-mc-success">
           {event ? event.title : "Loading event..."}
         </p>
         <p className="text-[16px] text-mc-text-dim">
