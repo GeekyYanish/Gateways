@@ -458,11 +458,7 @@ export function LoginScreen() {
               <button
                 type="button"
                 className="cursor-pointer text-[16px] text-mc-eyebrow hover:text-mc-text hover:underline"
-                onClick={() =>
-                  setFormError(
-                    "Password reset needs a mail server — it arrives with the MySQL backend.",
-                  )
-                }
+                onClick={() => router.push("/forgot-password")}
               >
                 Forgot password?
               </button>

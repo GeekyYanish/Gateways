@@ -44,6 +44,11 @@ const HOP_BY_HOP = new Set([
   "content-length",
 ]);
 
+// Node's fetch transparently decompresses Brotli/gzip responses. Once the
+// decoded body is buffered below, forwarding the upstream encoding header
+// would make the browser try to decompress an already-decoded payload.
+const DECODED_BODY_HEADERS = new Set(["content-encoding", "content-length"]);
+
 function backendBase(): string | null {
   return process.env.REGISTRATION_API_URL?.replace(/\/$/, "") ?? null;
 }
@@ -174,7 +179,11 @@ async function forward(request: Request) {
   upstream.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
     // `set-cookie` is handled separately below — a plain copy collapses repeats.
-    if (lower !== "set-cookie" && !HOP_BY_HOP.has(lower)) {
+    if (
+      lower !== "set-cookie" &&
+      !HOP_BY_HOP.has(lower) &&
+      !DECODED_BODY_HEADERS.has(lower)
+    ) {
       responseHeaders.set(key, value);
     }
   });
@@ -204,7 +213,11 @@ async function forward(request: Request) {
 
   // 204/304 must not carry a body, and passing one through makes undici throw.
   const bodyless = upstream.status === 204 || upstream.status === 304;
-  return new NextResponse(bodyless ? null : upstream.body, {
+  // Buffer the response because Node fetch transparently decodes compressed
+  // upstream bodies. Relaying `upstream.body` with its original encoding
+  // metadata can produce an empty/corrupt response at the Vercel boundary.
+  const responseBody = bodyless ? null : await upstream.arrayBuffer();
+  return new NextResponse(responseBody, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: responseHeaders,

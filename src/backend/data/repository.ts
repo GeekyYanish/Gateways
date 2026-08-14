@@ -83,6 +83,8 @@ export interface AuthRepository {
   onAuthStateChange(cb: (session: Session | null) => void): Unsubscribe;
   /** Prototype-only helper for exercising organizer/admin views. */
   grantRole(userId: string, role: Role): Promise<void>;
+  requestPasswordReset?(email: string): Promise<void>;
+  resetPassword?(token: string, newPassword: string): Promise<void>;
   changePassword?(currentPassword: string, newPassword: string): Promise<Session>;
   createConsoleHandoff?(returnTo?: string): Promise<{ url: string; expiresAt: string }>;
 }

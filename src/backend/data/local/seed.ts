@@ -30,13 +30,19 @@ function iso(offsetMs: number): string {
 }
 
 const COLLEGES: College[] = [
-  { id: "col-sjc", name: "St. Joseph's College", shortName: "SJC", city: "Bengaluru", isActive: true },
-  { id: "col-cmr", name: "CMR Institute of Technology", shortName: "CMRIT", city: "Bengaluru", isActive: true },
+  // Kept in step with scripts/seed-reference.sql, which seeds the same list into
+  // the backend database. The app reads whichever data layer is active, so the
+  // two lists diverging would mean the dropdown changes depending on a flag.
+  { id: "col-christ", name: "CHRIST (Deemed to be University)", shortName: "CHRIST", city: "Bengaluru", isActive: true },
   { id: "col-rvce", name: "RV College of Engineering", shortName: "RVCE", city: "Bengaluru", isActive: true },
   { id: "col-pes", name: "PES University", shortName: "PES", city: "Bengaluru", isActive: true },
-  { id: "col-bms", name: "BMS College of Engineering", shortName: "BMSCE", city: "Bengaluru", isActive: true },
-  { id: "col-msr", name: "MS Ramaiah Institute of Technology", shortName: "MSRIT", city: "Bengaluru", isActive: true },
+  { id: "col-bmsce", name: "BMS College of Engineering", shortName: "BMSCE", city: "Bengaluru", isActive: true },
+  { id: "col-msrit", name: "MS Ramaiah Institute of Technology", shortName: "MSRIT", city: "Bengaluru", isActive: true },
+  { id: "col-dsce", name: "Dayananda Sagar College of Engineering", shortName: "DSCE", city: "Bengaluru", isActive: true },
   { id: "col-nmit", name: "Nitte Meenakshi Institute of Technology", shortName: "NMIT", city: "Bengaluru", isActive: true },
+  { id: "col-sjc", name: "St. Joseph's University", shortName: "SJU", city: "Bengaluru", isActive: true },
+  { id: "col-cmrit", name: "CMR Institute of Technology", shortName: "CMRIT", city: "Bengaluru", isActive: true },
+  { id: "col-nie", name: "The National Institute of Engineering", shortName: "NIE", city: "Bengaluru", isActive: true },
   { id: "col-other", name: "Other", shortName: "OTHER", city: null, isActive: true },
 ];
 
@@ -49,6 +55,7 @@ const DEPARTMENTS: Department[] = [
   { id: "dep-mech", collegeId: null, name: "Mechanical", shortName: "MECH" },
   { id: "dep-civil", collegeId: null, name: "Civil", shortName: "CIVIL" },
   { id: "dep-aiml", collegeId: null, name: "AI & Machine Learning", shortName: "AIML" },
+  { id: "dep-bca", collegeId: null, name: "Computer Applications (BCA/MCA)", shortName: "BCA" },
   { id: "dep-bba", collegeId: null, name: "Business Administration", shortName: "BBA" },
   { id: "dep-design", collegeId: null, name: "Design", shortName: "DSGN" },
   { id: "dep-other", collegeId: null, name: "Other", shortName: null },
