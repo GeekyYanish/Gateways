@@ -105,6 +105,20 @@ export class LocalAuth implements AuthRepository {
     );
   }
 
+  async requestPasswordReset(): Promise<void> {
+    throw new DataError(
+      "STORAGE_UNAVAILABLE",
+      "Password recovery is available when the portal is connected to the backend.",
+    );
+  }
+
+  async resetPassword(): Promise<void> {
+    throw new DataError(
+      "STORAGE_UNAVAILABLE",
+      "Password recovery is available when the portal is connected to the backend.",
+    );
+  }
+
   async signUp(email: string, password: string, username: string): Promise<Session> {
     const normalised = normaliseEmail(email);
     if (!normalised.includes("@")) {

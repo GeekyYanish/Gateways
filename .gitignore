@@ -79,3 +79,8 @@ deliverables/
 registration-console/
 BACKEND-API-CONTRACT.md
 poster_page.zip
+
+# Secrets must never be committed, including copies that lack the leading dot.
+# A stray src/backend/env holding AUTH_SECRET and DB_PASSWORD once slipped
+# through precisely this way — .gitignore only covered dotted names.
+**/env

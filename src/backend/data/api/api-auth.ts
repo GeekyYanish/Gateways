@@ -107,6 +107,22 @@ export class ApiAuth implements AuthRepository {
     }).catch(rethrow);
   }
 
+  async requestPasswordReset(email: string): Promise<void> {
+    await apiFetch<{ message: string }>("/auth/forgot-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email }),
+    }).catch(rethrow);
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    await apiFetch<{ message: string }>("/auth/reset-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    }).catch(rethrow);
+  }
+
   async signIn(email: string, password: string): Promise<Session> {
     const data = await apiFetch<{ user: ApiUser }>("/auth/signin", {
       method: "POST",
