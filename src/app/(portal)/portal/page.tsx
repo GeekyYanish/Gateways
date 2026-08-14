@@ -7,7 +7,7 @@ export const metadata = { title: "Parallax — Another World Awaits" };
  *
  * The homepage's "Start the Journey" lands here, and this is where the realm
  * actually begins: "Enter the Portal" fires the wipe into `/entering`, which
- * branches to login, character creation, or straight through to the world.
+ * branches to login or straight through to the world.
  *
  * It lives in the `(portal)` route group so it inherits that layout's
  * `PortalTransitionProvider` — which is what makes the transition work in BOTH

@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { BlockModal, BlockButton, showToast } from "@/frontend/components/mc";
+import { BlockModal, BlockButton, BlockInput, BlockSelect, showToast } from "@/frontend/components/mc";
+import { PaymentInstructions } from "@/frontend/components/registration/payment-instructions";
 import { useSession } from "@/frontend/components/auth/session-provider";
+import { useAsync } from "@/frontend/hooks/use-async";
 import { repo } from "@/backend/data";
+import { DataError } from "@/backend/data/types";
 import { cn } from "@/frontend/lib/utils";
 
 export interface PaymentUploadModalProps {
@@ -13,6 +16,9 @@ export interface PaymentUploadModalProps {
   registrationId: string;
   onSuccess: () => void;
 }
+
+/** The one-time pass is not tied to any individual event registration. */
+export const GATEWAYS_ENTRY_PAYMENT_ID = "gateways-entry";
 
 export function PaymentUploadModal({
   open,
@@ -25,7 +31,10 @@ export function PaymentUploadModal({
   const userId = session?.userId;
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"upi" | "neft" | "gateway">("upi");
+  const [transactionReference, setTransactionReference] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: paymentConfig } = useAsync(() => repo.paymentReceipts.getConfig(), []);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -81,7 +90,7 @@ export function PaymentUploadModal({
   };
 
   const handleSubmit = async () => {
-    if (!file || !userId) return;
+    if (!file || !userId || transactionReference.trim().length < 4) return;
 
     setIsSubmitting(true);
     try {
@@ -99,6 +108,8 @@ export function PaymentUploadModal({
         fileData: base64Data,
         fileName: file.name,
         fileSizeBytes: file.size,
+        paymentMethod,
+        transactionReference: transactionReference.trim(),
       });
 
       showToast({
@@ -109,10 +120,10 @@ export function PaymentUploadModal({
 
       onSuccess();
       onOpenChange(false);
-    } catch {
+    } catch (error) {
       showToast({
         title: "Upload Failed",
-        body: "There was an error submitting your receipt. Please try again.",
+        body: error instanceof DataError ? error.message : "There was an error submitting your receipt. Please try again.",
         severity: "critical",
       });
     } finally {
@@ -125,8 +136,8 @@ export function PaymentUploadModal({
       open={open}
       onOpenChange={onOpenChange}
       variant="portal"
-      title="Upload Payment Receipt"
-      description="Upload your payment receipt to complete registration"
+      title="Make Payment"
+      description="Pay the one-time Gateways pass and upload the receipt. Registration unlocks after verification."
       footer={
         <>
           <BlockButton variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
@@ -135,7 +146,7 @@ export function PaymentUploadModal({
           <BlockButton
             variant="emerald"
             onClick={handleSubmit}
-            disabled={!file || isSubmitting}
+            disabled={!file || transactionReference.trim().length < 4 || isSubmitting}
             loading={isSubmitting}
           >
             Submit Receipt
@@ -144,17 +155,29 @@ export function PaymentUploadModal({
       }
     >
       <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)] text-mc-text">
-        <div>
-          <h3 className="font-pixel text-[12px] uppercase text-mc-success mb-[var(--mc-unit)]">
-            Instructions
-          </h3>
-          <ol className="list-decimal list-inside space-y-[calc(var(--mc-unit)*0.5)] text-[16px]">
-            <li>Visit the payment portal at <a href="https://christuniversity.in/online-payment-portal" target="_blank" rel="noopener noreferrer" className="text-mc-eyebrow underline">https://christuniversity.in/online-payment-portal</a></li>
-            <li>Select &ldquo;Gateways&rdquo; from the event list</li>
-            <li>Complete the payment for the event</li>
-            <li>Download/print the payment receipt as PDF</li>
-            <li>Upload the receipt PDF below</li>
-          </ol>
+        <PaymentInstructions
+          amountInr={paymentConfig?.amountInr}
+          uploadStep="Upload the receipt PDF below, then wait for verification before registering"
+        />
+
+        <div className="grid gap-[var(--mc-unit)] sm:grid-cols-2">
+          <BlockSelect
+            label="Payment method"
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.target.value as "upi" | "neft" | "gateway")}
+          >
+            <option value="upi">UPI</option>
+            <option value="neft">NEFT / bank transfer</option>
+            <option value="gateway">Payment gateway</option>
+          </BlockSelect>
+          <BlockInput
+            label="UTR / transaction reference"
+            value={transactionReference}
+            onChange={(event) => setTransactionReference(event.target.value)}
+            placeholder="e.g. 123456789012"
+            autoComplete="off"
+            hint="Required and must match the receipt."
+          />
         </div>
 
         <div>

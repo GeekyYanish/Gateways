@@ -2,6 +2,7 @@ import type { Repository } from "./repository";
 import { createLocalRepository } from "./local/local-repository";
 import { createHttpRepository } from "./http/http-repository";
 import { hasApiBackend } from "./http/api-client";
+import { createApiRepository } from "./api/api-repository";
 
 /**
  * THE SINGLE SWAP POINT.
@@ -27,13 +28,42 @@ let instance: Repository | null = null;
  * Lazily constructed so importing this module has no side effects (the local
  * implementation touches localStorage, which does not exist during SSR).
  *
- * Picks HttpRepository when PARALLAX_API_BASE_URL is set, otherwise the fully
- * local mock, so dev and /dev/data-test are unaffected until the registration
- * backend is actually live.
+ * THREE implementations, picked in order:
+ *
+ *   1. `ApiRepository`   — the real Gateways backend, when it is configured.
+ *                          Serves auth and payment receipts; everything else
+ *                          delegates to local because the backend registers no
+ *                          route for it. See `./api/api-repository.ts`.
+ *   2. `HttpRepository`  — the DRAFT contract in
+ *                          registration-console/BACKEND-API-CONTRACT.md. A
+ *                          different API that nothing implements; kept only so
+ *                          the shape survives until someone builds it.
+ *   3. `LocalRepository` — fully local. Dev and /dev/data-test rely on this.
+ *
+ * The API implementation is chosen on `NEXT_PUBLIC_USE_API_BACKEND` rather than
+ * the proxy's own `REGISTRATION_API_URL`: that one is a server-side variable
+ * (deliberately, so the backend's address never reaches the browser), and this
+ * decision has to be made in client components too.
  */
 export function getRepo(): Repository {
-  if (!instance) instance = hasApiBackend() ? createHttpRepository() : createLocalRepository();
+  if (!instance) {
+    instance = isApiBackendEnabled()
+      ? createApiRepository()
+      : hasApiBackend()
+        ? createHttpRepository()
+        : createLocalRepository();
+  }
   return instance;
+}
+
+/**
+ * True when the app should talk to the real Gateways backend.
+ *
+ * Named `is…` rather than `use…` deliberately: a plain predicate with a `use`
+ * prefix reads as a React hook and is linted as one.
+ */
+export function isApiBackendEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_USE_API_BACKEND === "true";
 }
 
 /** Convenience accessor. Prefer this in client components. */

@@ -41,7 +41,7 @@ export function inr(amount: number): string {
  */
 const HACKATHON_DATE_LABEL = "2 October 2026";
 const PRIZE_POOL_INR = 63_000;
-const REGISTRATION_FEE_INR = 150;
+const REGISTRATION_FEE_INR = 250;
 
 export const FEST = {
   /** Display name of this edition. */
@@ -103,10 +103,9 @@ export const FEST = {
 
   links: {
     /**
-     * Registration is on this site now, not an external form: pick an event,
-     * fill your participant details, then pay. `/events` is the entry point
-     * because a registration is always FOR something — there is no fest-wide
-     * "register" step to land on.
+     * Registration is on this site now, not an external form: pay the
+     * fest-wide pass first, then pick events and complete your participant
+     * details. `/events` is the entry point for both steps.
      */
     register: "/events",
     /** TODO — the real brochure link. */
@@ -116,20 +115,18 @@ export const FEST = {
   /**
    * The registration walkthrough, rendered as a numbered recipe.
    *
-   * Registration happens on this site and comes BEFORE payment — the seat is
-   * held the moment you register, and verifying the receipt confirms it. These
-   * steps are the visitor-facing statement of that order, so they must stay in
-   * step with the branch ladder in `event-detail-screen.tsx`.
+   * Payment happens before registration. These steps are the visitor-facing
+   * statement of that order, so they must stay in step with the branch ladder
+   * in `event-detail-screen.tsx`.
    */
   registerSteps: [
     "Sign in and create your character.",
+    `Pay the flat ${inr(REGISTRATION_FEE_INR)} entry fee — it covers every event you enter.`,
+    "Upload the payment receipt (PDF) and wait for verification.",
     "Browse the events and open the one you want.",
     "Read its rules, team size and timing, then hit Register.",
     "Fill in your participant details — asked once, reused for every event.",
-    "Your seat is held straight away, pending payment.",
-    `Pay the flat ${inr(REGISTRATION_FEE_INR)} entry fee — it covers every event you enter.`,
-    "Upload the payment receipt (PDF) from any of your held events.",
-    "Once we verify it, every seat you are holding is confirmed.",
+    "Once we verify the receipt, event registration is unlocked.",
   ],
 
   /** TODO — replace with the 2026 organising team. */

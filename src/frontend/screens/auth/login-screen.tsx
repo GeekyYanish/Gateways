@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { BlockButton, BlockCheckbox, BlockInput, BlockPanel } from "@/frontend/components/mc";
 import { useSession } from "@/frontend/components/auth/session-provider";
-import { repo } from "@/backend/data";
+import { repo, isApiBackendEnabled } from "@/backend/data";
 import { DataError } from "@/backend/data/types";
 import { cn } from "@/frontend/lib/utils";
 
@@ -31,12 +31,31 @@ function authSchema(mode: Mode) {
   return z
     .object({
       email: z.string().min(1, "Email is required.").email("Enter a valid email address."),
+      username: z.string(),
       password: z.string().min(1, "Password is required."),
       confirm: z.string(),
       remember: z.boolean(),
     })
     .superRefine((v, ctx) => {
       if (mode !== "signup") return;
+      // Mirrors the backend's SignupBodySchema. This is also the character's
+      // public name, so the server checks uniqueness when the form is sent.
+      if (!/^[A-Za-z0-9_]{3,16}$/.test(v.username.trim())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["username"],
+          message: "Use 3–16 letters, numbers, or underscores.",
+        });
+      }
+      // The backend hashes with bcrypt, which silently truncates past 72 bytes,
+      // so it rejects anything longer. Catching it here beats a 400.
+      if (v.password.length > 72) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["password"],
+          message: "Password must be 72 characters or fewer.",
+        });
+      }
       if (v.password.length < 6) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -56,15 +75,16 @@ function authSchema(mode: Mode) {
 
 interface FormValues {
   email: string;
+  /** Signup only. This becomes the unique character name. */
+  username: string;
   password: string;
   confirm: string;
   remember: boolean;
 }
 
 /**
- * Provider glyphs are ORIGINAL pixel marks in each service's familiar colours,
- * not their logo files — consistent with the rest of the art in this project,
- * and they scale with --mc-scale like everything else.
+ * The backend supports Google OAuth only. Keep the provider list explicit so a
+ * provider cannot quietly reappear in the UI without a matching backend flow.
  */
 const PROVIDERS = [
   {
@@ -79,37 +99,32 @@ const PROVIDERS = [
       </svg>
     ),
   },
-  {
-    id: "discord",
-    label: "Discord",
-    glyph: (
-      <svg viewBox="0 0 8 8" className="h-[18px] w-[18px]" shapeRendering="crispEdges" aria-hidden>
-        <path d="M2 1h4v1H2z M1 2h6v3H1z M0 3h1v2H0z M7 3h1v2H7z M1 5h2v1H1z M5 5h2v1H5z" fill="#5865f2" />
-        <path d="M2 3h1v1H2z M5 3h1v1H5z" fill="#0d0b16" />
-      </svg>
-    ),
-  },
-  {
-    id: "microsoft",
-    label: "Microsoft",
-    glyph: (
-      <svg viewBox="0 0 8 8" className="h-[18px] w-[18px]" shapeRendering="crispEdges" aria-hidden>
-        <path d="M0 0h3.5v3.5H0z" fill="#f25022" />
-        <path d="M4.5 0H8v3.5H4.5z" fill="#7fba00" />
-        <path d="M0 4.5h3.5V8H0z" fill="#00a4ef" />
-        <path d="M4.5 4.5H8V8H4.5z" fill="#ffb900" />
-      </svg>
-    ),
-  },
 ] as const;
 
 export function LoginScreen() {
   const router = useRouter();
   const params = useSearchParams();
   const { status, refresh } = useSession();
+  const consoleRedirecting = useRef(false);
+  const initialVerificationEmail =
+    params.get("google") === "verify" ? params.get("email") : null;
   const [mode, setMode] = useState<Mode>(params.get("mode") === "signup" ? "signup" : "login");
   const [formError, setFormError] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
+  /**
+   * Set once signup has created the account but not yet a session. Its presence
+   * IS the "awaiting code" state — a separate boolean could disagree with it,
+   * and the email is needed to verify anyway.
+   */
+  const [pendingEmail, setPendingEmail] = useState<string | null>(initialVerificationEmail);
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(
+    initialVerificationEmail
+      ? "Google sign-in is almost complete. Enter the code we sent to your email."
+      : null,
+  );
 
   const {
     register,
@@ -118,14 +133,46 @@ export function LoginScreen() {
     reset,
   } = useForm<FormValues>({
     resolver: zodResolver(authSchema(mode)),
-    defaultValues: { email: "", password: "", confirm: "", remember: true },
+    defaultValues: { email: "", username: "", password: "", confirm: "", remember: true },
   });
 
-  // Already signed in? Skip straight to wherever they were headed.
+  const requestedDestination = params.get("next") ?? "/travelling";
+
+  async function routeAuthenticatedUser() {
+    const live = await repo.auth.getSession();
+    if (!live) return;
+    if (live.mustChangePassword) {
+      router.replace(`/change-password?next=${encodeURIComponent(requestedDestination)}`);
+      return;
+    }
+    if (live.roles.some((role) => ["admin", "organizer", "scanner"].includes(role))) {
+      if (consoleRedirecting.current) return;
+      consoleRedirecting.current = true;
+      if (repo.auth.createConsoleHandoff) {
+        const handoff = await repo.auth.createConsoleHandoff("/");
+        window.location.assign(handoff.url);
+      } else {
+        router.replace("/travelling");
+      }
+      return;
+    }
+    router.replace(requestedDestination);
+  }
+
+  // Already signed in? Skip straight to wherever they were headed. Staff are
+  // handed to the console through the backend's one-time SSO code.
   useEffect(() => {
-    if (status === "needs-character") router.replace("/create-character");
-    else if (status === "ready") router.replace(params.get("next") ?? "/travelling");
-  }, [status, router, params]);
+    if (status === "needs-password") {
+      router.replace(`/change-password?next=${encodeURIComponent(requestedDestination)}`);
+    } else if (status === "staff") {
+      void routeAuthenticatedUser();
+    } else if (status === "ready") {
+      router.replace(requestedDestination);
+    }
+  // routeAuthenticatedUser deliberately reads the live backend session rather
+  // than the transient provider state during the sign-in transition.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, router, requestedDestination]);
 
   async function onSubmit(values: FormValues) {
     setFormError(null);
@@ -133,12 +180,29 @@ export function LoginScreen() {
       if (mode === "login") {
         await repo.auth.signIn(values.email, values.password);
       } else {
-        await repo.auth.signUp(values.email, values.password);
+        /**
+         * Signup may or may not sign you in, and the caller cannot assume.
+         *
+         * The API-backed repository returns `null` here: the backend creates
+         * the account, emails a six-digit code, and only issues a session at
+         * `verifyEmail`. The local repository has no mail step and returns a
+         * live session. Branching on the return value keeps both working
+         * without the screen needing to know which one it is talking to.
+         */
+        const session = await repo.auth.signUp(
+          values.email,
+          values.password,
+          values.username,
+        );
+        if (!session) {
+          setPendingEmail(values.email);
+          setCode("");
+          setVerificationNotice("We sent a new verification code to your email.");
+          return;
+        }
       }
       await refresh();
-      // The effect above handles the redirect once status settles, but pushing
-      // here makes the transition immediate rather than waiting a tick.
-      router.push("/create-character");
+      await routeAuthenticatedUser();
     } catch (e) {
       setFormError(
         e instanceof DataError ? e.message : "Something went wrong. Please try again.",
@@ -146,13 +210,47 @@ export function LoginScreen() {
     }
   }
 
+  /** Second half of signup: trade the emailed code for a session. */
+  async function onVerify() {
+    if (!pendingEmail) return;
+    setFormError(null);
+    setVerifying(true);
+    try {
+      await repo.auth.verifyEmail(pendingEmail, code);
+      await refresh();
+      await routeAuthenticatedUser();
+    } catch (e) {
+      setFormError(
+        e instanceof DataError ? e.message : "That code was not accepted.",
+      );
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function onResend() {
+    if (!pendingEmail) return;
+    setFormError(null);
+    setResending(true);
+    try {
+      await repo.auth.resendVerification(pendingEmail);
+      setVerificationNotice("A new verification code has been sent.");
+    } catch (e) {
+      setFormError(
+        e instanceof DataError ? e.message : "Could not resend the verification code.",
+      );
+    } finally {
+      setResending(false);
+    }
+  }
+
   async function onProvider(provider: (typeof PROVIDERS)[number]["id"]) {
     setFormError(null);
     setPendingProvider(provider);
     try {
-      await repo.auth.signInWithProvider(provider);
+      await repo.auth.signInWithProvider(provider, requestedDestination);
       await refresh();
-      router.push("/create-character");
+      await routeAuthenticatedUser();
     } catch (e) {
       setFormError(e instanceof DataError ? e.message : "Sign-in failed.");
     } finally {
@@ -163,10 +261,20 @@ export function LoginScreen() {
   function switchMode(next: Mode) {
     setMode(next);
     setFormError(null);
-    reset({ email: "", password: "", confirm: "", remember: true });
+    // Also clears any half-finished verification: switching tabs is the
+    // gesture for "start over", and leaving `pendingEmail` set would strand
+    // the user on a code prompt for an address they just navigated away from.
+    setPendingEmail(null);
+    setCode("");
+    setVerificationNotice(null);
+    reset({ email: "", username: "", password: "", confirm: "", remember: true });
   }
 
-  const heading = mode === "login" ? ["Welcome", "Adventurer"] : ["Join", "The Realm"];
+  const heading = pendingEmail
+    ? ["Check", "Your Inbox"]
+    : mode === "login"
+      ? ["Welcome", "Adventurer"]
+      : ["Join", "The Realm"];
 
   return (
     <div className="w-full max-w-[440px] animate-block-in">
@@ -181,14 +289,96 @@ export function LoginScreen() {
           ))}
         </h1>
         <p className="mt-[calc(var(--mc-unit)*1.25)] text-mc-text-dim">
-          {mode === "login"
-            ? "Sign in to continue your journey."
-            : "Create an account to enter the realm."}
+          {pendingEmail
+            ? `We sent a six-digit code to ${pendingEmail}.`
+            : mode === "login"
+              ? "Sign in to continue your journey."
+              : "Create an account to enter the realm."}
         </p>
       </header>
 
       <BlockPanel variant="card" padded="lg">
         <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
+        {pendingEmail ? (
+          /**
+           * Verification REPLACES the card rather than appending to it. The
+           * account already exists at this point — leaving the signup form on
+           * screen would invite a second submit that can only fail with
+           * EMAIL_TAKEN.
+           */
+          <div className="flex flex-col gap-[var(--mc-unit)]">
+            {verificationNotice ? (
+              <BlockPanel
+                variant="slot"
+                padded="sm"
+                role="status"
+                aria-live="polite"
+                className="border-mc-portal-light text-mc-text"
+              >
+                {verificationNotice}
+              </BlockPanel>
+            ) : null}
+            <BlockInput
+              label="Verification code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="000000"
+              maxLength={6}
+              value={code}
+              hint="Six digits, valid for 15 minutes."
+              // Digits only, so a pasted "123 456" or "code: 123456" still
+              // works instead of failing validation for a stray character.
+              onChange={(event) =>
+                setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+            />
+
+            {formError ? (
+              <BlockPanel
+                variant="slot"
+                padded="sm"
+                role="alert"
+                aria-live="assertive"
+                className="border-mc-redstone text-mc-danger text-[16px]"
+              >
+                {formError}
+              </BlockPanel>
+            ) : null}
+
+            <BlockButton
+              block
+              size="lg"
+              variant="portal"
+              onClick={onVerify}
+              disabled={code.length !== 6 || verifying}
+            >
+              {verifying ? "Verifying…" : "Verify & Enter"}
+            </BlockButton>
+
+            <button
+              type="button"
+              className="min-h-11 cursor-pointer text-[16px] text-mc-eyebrow hover:text-mc-text hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => void onResend()}
+              disabled={resending}
+            >
+              {resending ? "Sending a new code…" : "Resend verification code"}
+            </button>
+
+            <button
+              type="button"
+              className="min-h-11 cursor-pointer text-[16px] text-mc-eyebrow hover:text-mc-text hover:underline"
+              onClick={() => {
+                setPendingEmail(null);
+                setCode("");
+                setFormError(null);
+                setVerificationNotice(null);
+              }}
+            >
+              Use a different email
+            </button>
+          </div>
+        ) : (
+        <>
         {/* Tabs. role=tablist so the relationship is announced, with a Framer
             layout animation on the active indicator. */}
         <div role="tablist" aria-label="Authentication mode" className="relative flex">
@@ -220,7 +410,7 @@ export function LoginScreen() {
         </div>
 
         <form
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={(event) => void handleSubmit(onSubmit)(event)}
           className="flex flex-col gap-[calc(var(--mc-unit)*0.5)]"
           noValidate
         >
@@ -232,6 +422,19 @@ export function LoginScreen() {
             error={errors.email?.message}
             {...register("email")}
           />
+
+          {mode === "signup" ? (
+            <BlockInput
+              label="Username / character name"
+              autoComplete="username"
+              placeholder="Ridge_07"
+              spellCheck={false}
+              maxLength={16}
+              hint="Unique, 3–16 letters, numbers, or underscores."
+              error={errors.username?.message}
+              {...register("username")}
+            />
+          ) : null}
 
           <PasswordField
             label="Password"
@@ -297,25 +500,34 @@ export function LoginScreen() {
           <span className="h-[2px] flex-1 bg-mc-border" />
         </div>
 
-        <div className="grid grid-cols-3 gap-[var(--mc-unit)]">
+        <div className="grid grid-cols-1 gap-[var(--mc-unit)]">
           {PROVIDERS.map((p) => (
             <BlockButton
               key={p.id}
               variant="ghost"
               size="lg"
+              block
               onClick={() => onProvider(p.id)}
               loading={pendingProvider === p.id}
               aria-label={`Continue with ${p.label}`}
               title={`Continue with ${p.label}`}
             >
               {p.glyph}
+              <span>Continue with {p.label}</span>
             </BlockButton>
           ))}
         </div>
 
-          <p className="text-center text-[14px] text-mc-text-dim">
-            Prototype: accounts are stored in this browser only.
-          </p>
+          {/* Only true of the local data layer. With the API backend the
+              account lives in the backend's database, so the disclaimer would
+              be actively wrong. */}
+          {isApiBackendEnabled() ? null : (
+            <p className="text-center text-[14px] text-mc-text-dim">
+              Prototype: accounts are stored in this browser only.
+            </p>
+          )}
+        </>
+        )}
         </div>
       </BlockPanel>
     </div>

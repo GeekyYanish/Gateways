@@ -9,12 +9,10 @@
  * is out of scope for v1 (contract §6) and delegates straight through to
  * `LocalRepository`, unchanged.
  *
- * Known gap (contract §1): Console's `Participant` needs gender, date of
- * birth, category, T-shirt size, dietary preference, and emergency contact —
- * none of which the current onboarding/character-creation flow collects. They
- * are sent as `null` below until the registration form is extended. Until
- * then, records created here will show as incomplete in the Console's Intake
- * and Money modules.
+ * Participant details are collected by the website's registration form and
+ * persisted through the profile adapter before the backend registration call.
+ * Character institution fields remain on the character adapter and are joined
+ * at the registration boundary.
  */
 
 import type {
@@ -33,6 +31,7 @@ import type {
   RegistrationStatus,
   TshirtSize,
 } from "../types";
+import { DataError } from "../types";
 import { createLocalRepository } from "../local/local-repository";
 import { api } from "./api-client";
 
@@ -116,6 +115,7 @@ function httpRegistrations(
   profiles: ProfileRepository,
   characters: CharacterRepository,
   reference: ReferenceRepository,
+  paymentReceipts: Repository["paymentReceipts"],
 ): RegistrationRepository {
   return {
     ...base,
@@ -124,8 +124,16 @@ function httpRegistrations(
      * fields live on `Profile`, while college/department/year live on
      * `Character`. That split is a Gateways detail the backend does not share —
      * it takes one flat participant — so this is where the two are rejoined.
-     */
+    */
     register: async (eventId: string, userId: string, teamId?: string) => {
+      const receipt = await paymentReceipts.getByUser(userId);
+      if (receipt?.status !== "verified") {
+        throw new DataError(
+          "PAYMENT_NOT_VERIFIED",
+          "Verify the one-time Gateways entry fee before registering for an event.",
+        );
+      }
+
       const [profile, character] = await Promise.all([
         profiles.get(userId),
         characters.getByUser(userId),
@@ -202,6 +210,7 @@ export function createHttpRepository(): Repository {
       profiles,
       base.characters,
       base.reference,
+      base.paymentReceipts,
     ),
   };
 }

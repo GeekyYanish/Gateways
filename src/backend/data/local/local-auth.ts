@@ -1,4 +1,4 @@
-import { DataError, type Profile, type Role, type Session } from "../types";
+import { DataError, type Character, type Profile, type Role, type Session } from "../types";
 import { read, readList, subscribe, write, type Collection } from "./store";
 import type { AuthRepository, Unsubscribe } from "../repository";
 
@@ -28,7 +28,7 @@ interface StoredCredential {
   /** hex SHA-256 of `${salt}:${password}` */
   hash: string;
   salt: string;
-  provider: "password" | "google" | "discord" | "microsoft";
+  provider: "password" | "google";
   createdAt: string;
 }
 
@@ -85,7 +85,27 @@ function rolesFor(userId: string): Role[] {
 }
 
 export class LocalAuth implements AuthRepository {
-  async signUp(email: string, password: string): Promise<Session> {
+  /**
+   * No email round-trip locally, so signup still returns a live session and
+   * this is never reached. It exists because the interface carries the real
+   * backend's two-step flow (`signUp` → OTP → `verifyEmail`); throwing is more
+   * honest than pretending to verify a code that was never sent.
+   */
+  async verifyEmail(): Promise<Session> {
+    throw new DataError(
+      "VALIDATION_FAILED",
+      "The local data layer signs you in at signup; there is no code to verify.",
+    );
+  }
+
+  async resendVerification(): Promise<void> {
+    throw new DataError(
+      "VALIDATION_FAILED",
+      "The local data layer has no email delivery step.",
+    );
+  }
+
+  async signUp(email: string, password: string, username: string): Promise<Session> {
     const normalised = normaliseEmail(email);
     if (!normalised.includes("@")) {
       throw new DataError("VALIDATION_FAILED", "Enter a valid email address.");
@@ -93,10 +113,20 @@ export class LocalAuth implements AuthRepository {
     if (password.length < 6) {
       throw new DataError("VALIDATION_FAILED", "Password must be at least 6 characters.");
     }
+    const name = username.trim();
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
+      throw new DataError(
+        "VALIDATION_FAILED",
+        "Username must be 3–16 characters: letters, numbers and underscores only.",
+      );
+    }
 
     const creds = readList<StoredCredential>("credentials");
     if (creds.some((c) => c.email === normalised)) {
       throw new DataError("EMAIL_TAKEN", "An account with that email already exists.");
+    }
+    if (readList<Character>("characters").some((c) => c.playerName.toLowerCase() === name.toLowerCase())) {
+      throw new DataError("PLAYER_NAME_TAKEN", "That username is already taken.");
     }
 
     const userId = `usr-${randomHex(8)}`;
@@ -113,7 +143,8 @@ export class LocalAuth implements AuthRepository {
     });
     write("credentials", creds);
 
-    this.#createProfile(userId, normalised);
+    this.#createProfile(userId, normalised, name);
+    this.#createDefaultCharacter(userId, name);
     this.#grant(userId, "player");
 
     return this.#persistSession(makeSession(userId, normalised, ["player"]));
@@ -141,9 +172,7 @@ export class LocalAuth implements AuthRepository {
    * Mock OAuth. Deterministically derives an account from the provider so
    * repeated "sign in with Google" returns the same user, as real OAuth would.
    */
-  async signInWithProvider(
-    provider: "google" | "discord" | "microsoft",
-  ): Promise<Session> {
+  async signInWithProvider(provider: "google"): Promise<Session> {
     const email = `demo.${provider}@parallax.test`;
     const creds = readList<StoredCredential>("credentials");
     const existing = creds.find((c) => c.email === email);
@@ -167,6 +196,7 @@ export class LocalAuth implements AuthRepository {
     write("credentials", creds);
 
     this.#createProfile(userId, email, `Demo ${provider}`);
+    this.#createDefaultCharacter(userId, `Demo_${provider}`);
     this.#grant(userId, "player");
 
     return this.#persistSession(makeSession(userId, email, ["player"]));
@@ -237,6 +267,32 @@ export class LocalAuth implements AuthRepository {
       updatedAt: now,
     });
     write("profiles", profiles);
+  }
+
+  #createDefaultCharacter(userId: string, playerName: string): void {
+    const characters = readList<Character>("characters");
+    if (characters.some((character) => character.userId === userId)) return;
+    let uniqueName = playerName.trim();
+    if (characters.some((character) => character.playerName.toLowerCase() === uniqueName.toLowerCase())) {
+      uniqueName = `P_${randomHex(7)}`.slice(0, 16);
+    }
+    const now = new Date().toISOString();
+    characters.push({
+      id: `chr-${randomHex(8)}`,
+      userId,
+      playerName: uniqueName,
+      collegeId: null,
+      departmentId: null,
+      yearOfStudy: null,
+      skinId: "prospector",
+      bio: null,
+      totalXp: 0,
+      level: 1,
+      title: "Wanderer",
+      createdAt: now,
+      updatedAt: now,
+    });
+    write("characters", characters);
   }
 
   #persistSession(session: Session): Session {

@@ -6,7 +6,7 @@ import { cn } from "@/frontend/lib/utils";
 
 /**
  * Character skin bust, used in headers, leaderboard rows and toasts.
- * `full` switches to the 128×256 standing render for character creation.
+ * `full` switches to the 128×256 standing render for profile/world art.
  */
 export function PixelAvatar({
   skinId,

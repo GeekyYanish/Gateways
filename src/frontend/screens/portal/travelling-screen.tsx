@@ -40,10 +40,6 @@ export function TravellingScreen() {
       router.replace("/login");
       return;
     }
-    if (status === "needs-character") {
-      router.replace("/create-character");
-      return;
-    }
     if (!session) return;
 
     const startedAt = performance.now();

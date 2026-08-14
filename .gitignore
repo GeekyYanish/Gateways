@@ -50,6 +50,12 @@ yarn-error.log*
 .env*
 !.env.example
 
+# The backend templates in src/backend are intentionally tracked without a dot
+# prefix; these matching local files contain secrets and must stay machine-only.
+src/backend/env
+src/backend/env.preproduction
+src/backend/env.production
+
 # vercel
 .vercel
 

@@ -11,7 +11,12 @@
  * JSON.stringify losslessly, which a Date does not.
  */
 
-export type Role = "player" | "organizer" | "admin";
+export type Role = "player" | "organizer" | "scanner" | "admin";
+
+export interface RoleAssignment {
+  role: Role;
+  eventScopeId: string | null;
+}
 
 export type EventStatus =
   | "draft"
@@ -109,6 +114,9 @@ export interface Profile {
   email: string;
   fullName: string | null;
   phone: string | null;
+  collegeId?: string | null;
+  departmentId?: string | null;
+  yearOfStudy?: number | null;
   gender: Gender | null;
   /** "YYYY-MM-DD". A plain date, not a timestamp — nobody has a birth instant. */
   dateOfBirth: string | null;
@@ -133,6 +141,9 @@ export interface Profile {
 export interface ParticipantDetails {
   fullName: string;
   phone: string;
+  collegeId: string;
+  departmentId: string;
+  yearOfStudy: number;
   gender: Gender;
   dateOfBirth: string;
   category: ParticipantCategory;
@@ -169,6 +180,7 @@ export function isParticipantComplete(
       profile.emergencyPhone?.trim() &&
       profile.dietaryPref &&
       character.collegeId &&
+      character.departmentId &&
       character.yearOfStudy != null,
   );
 }
@@ -204,6 +216,8 @@ export interface Session {
   userId: string;
   email: string;
   roles: Role[];
+  assignments?: RoleAssignment[];
+  mustChangePassword?: boolean;
   /** ISO timestamp; the local implementation expires sessions like a real one. */
   expiresAt: string;
 }
@@ -308,6 +322,13 @@ export interface Registration {
   status: RegistrationStatus;
   registeredAt: string;
   cancelledAt: string | null;
+  code?: string | null;
+  paymentStatus?: string | null;
+  source?: string | null;
+  notes?: string | null;
+  overrideReason?: string | null;
+  confirmedAt?: string | null;
+  waitlistPosition?: number | null;
 }
 
 export interface Team {
@@ -459,6 +480,10 @@ export interface PaymentReceipt {
   reviewedAt: string | null;
   reviewNote: string | null;
   submittedAt: string;
+  amountInr?: number;
+  paymentMethod?: "upi" | "neft" | "gateway" | null;
+  transactionReference?: string | null;
+  fileUrl?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -479,11 +504,14 @@ export type DataErrorCode =
   | "EVENT_FULL"
   | "REGISTRATION_CLOSED"
   | "TEAM_FULL"
+  | "TEAM_LOCKED"
   | "INVALID_JOIN_CODE"
   | "STORAGE_UNAVAILABLE"
   | "VALIDATION_FAILED"
   | "RECEIPT_ALREADY_SUBMITTED"
-  | "PAYMENT_NOT_VERIFIED";
+  | "PAYMENT_NOT_VERIFIED"
+  | "FORBIDDEN"
+  | "MUST_CHANGE_PASSWORD";
 
 export class DataError extends Error {
   readonly code: DataErrorCode;

@@ -58,19 +58,33 @@ export interface Repository {
 export type Unsubscribe = () => void;
 
 export interface AuthRepository {
-  signUp(email: string, password: string): Promise<Session>;
+  /**
+   * Creates the account. Returns a `Session` only when the backend signs the
+   * user straight in; the real backend does NOT — it emails a six-digit OTP and
+   * returns `null`, and the session appears after `verifyEmail()`. Callers must
+   * handle the null case by showing the code entry step.
+   */
+  signUp(email: string, password: string, username: string): Promise<Session | null>;
+  resendVerification(email: string): Promise<void>;
+  /**
+   * Exchanges the emailed OTP for a session. Only meaningful after a `signUp()`
+   * that returned `null`.
+   */
+  verifyEmail(email: string, otp: string): Promise<Session>;
   signIn(email: string, password: string): Promise<Session>;
   /**
    * OAuth. The local implementation shows a mock account chooser; the Auth.js
    * one will redirect. Same signature either way.
    */
-  signInWithProvider(provider: "google" | "discord" | "microsoft"): Promise<Session>;
+  signInWithProvider(provider: "google", returnTo?: string): Promise<Session>;
   signOut(): Promise<void>;
   getSession(): Promise<Session | null>;
   /** Fires on sign-in/out AND on cross-tab changes. Returns an unsubscribe fn. */
   onAuthStateChange(cb: (session: Session | null) => void): Unsubscribe;
   /** Prototype-only helper for exercising organizer/admin views. */
   grantRole(userId: string, role: Role): Promise<void>;
+  changePassword?(currentPassword: string, newPassword: string): Promise<Session>;
+  createConsoleHandoff?(returnTo?: string): Promise<{ url: string; expiresAt: string }>;
 }
 
 export interface ProfileRepository {
@@ -181,7 +195,8 @@ export interface ReferenceRepository {
 }
 
 export interface PaymentReceiptRepository {
-  /** Submit a receipt PDF for a registration. One per registration. */
+  /** Submit the one-time fest-wide participant pass receipt. One per user. */
+  getConfig(): Promise<{ amountInr: number }>;
   submit(input: {
     registrationId: string;
     eventId: string;
@@ -189,6 +204,8 @@ export interface PaymentReceiptRepository {
     fileData: string;
     fileName: string;
     fileSizeBytes: number;
+    paymentMethod?: "upi" | "neft" | "gateway";
+    transactionReference?: string;
   }): Promise<PaymentReceipt>;
   /** Get the receipt for a specific registration, if any. */
   getByRegistration(registrationId: string): Promise<PaymentReceipt | null>;
