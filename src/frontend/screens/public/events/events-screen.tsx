@@ -3,7 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { BackLink, BlockInput, BlockPanel, LoadingBlocks, BlockButton } from "@/frontend/components/mc";
+import {
+  BackLink,
+  BlockButton,
+  BlockInput,
+  BlockPanel,
+  LoadingBlocks,
+} from "@/frontend/components/mc";
+import {
+  GATEWAYS_ENTRY_PAYMENT_ID,
+  PaymentUploadModal,
+} from "@/frontend/components/registration/payment-upload-modal";
 import { BiomeScene } from "@/frontend/components/scene";
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
@@ -20,6 +30,7 @@ export function EventsScreen() {
   const params = useSearchParams();
   const categorySlug = params.get("category") ?? undefined;
   const [search, setSearch] = useState("");
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const { session } = useSession();
   const userId = session?.userId;
 
@@ -33,17 +44,14 @@ export function EventsScreen() {
       }),
     [categorySlug, search],
   );
-  // Seats taken but not yet paid for. Payment is a per-event step now, so this
-  // screen no longer takes money — it only points at the events that owe some,
-  // which is the one thing a student cannot see from a list of every event.
-  const { data: unpaid } = useAsync(async () => {
-    if (!userId) return null;
-    const regs = await repo.registrations.listForUser(userId);
-    const pending = regs.filter((r) => r.status === "pending");
-    if (pending.length === 0) return null;
-    const first = await repo.events.getById(pending[0].eventId);
-    return { count: pending.length, slug: first?.slug ?? null };
-  }, [userId]);
+  const {
+    data: userReceipt,
+    loading: paymentLoading,
+    reload: reloadReceipt,
+  } = useAsync(
+    async () => (userId ? repo.paymentReceipts.getByUser(userId) : null),
+    [userId],
+  );
 
   const activeCategory = categories?.find((c) => c.slug === categorySlug);
   // Category slugs double as scene keys, so filtering to a category shows its
@@ -52,6 +60,16 @@ export function EventsScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-[calc(var(--mc-unit)*1.5)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*1.5)] md:p-[calc(var(--mc-unit)*2)]">
+      {userId ? (
+        <PaymentUploadModal
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          eventId={GATEWAYS_ENTRY_PAYMENT_ID}
+          registrationId={GATEWAYS_ENTRY_PAYMENT_ID}
+          onSuccess={reloadReceipt}
+        />
+      ) : null}
+
       <BackLink
         href={
           categorySlug
@@ -82,22 +100,45 @@ export function EventsScreen() {
         </header>
       </BiomeScene>
 
-      {unpaid?.slug ? (
+      {!paymentLoading && userReceipt?.status !== "verified" ? (
         <BlockPanel
           variant="slot"
           className="flex flex-col items-start justify-between gap-[var(--mc-unit)] border-l-4 border-mc-gold p-[var(--mc-unit)] sm:flex-row sm:items-center"
         >
-          <p className="text-[14px]">
-            {unpaid.count === 1
-              ? "You have 1 seat held awaiting the entry fee."
-              : `You have ${unpaid.count} seats held awaiting the entry fee.`}{" "}
-            One payment confirms all of them.
-          </p>
-          <Link href={`/events/${unpaid.slug}`} className="shrink-0 no-underline">
-            <BlockButton variant="gold" size="sm">
-              Pay entry fee
-            </BlockButton>
-          </Link>
+          <div>
+            <p className="font-pixel text-[11px] uppercase text-mc-gold">
+              One-time Gateways pass
+            </p>
+            <p className="mt-[calc(var(--mc-unit)*0.5)] text-[14px]">
+              {userReceipt?.status === "pending"
+                ? "Your payment receipt is awaiting verification. Registration opens once it is approved."
+                : userReceipt?.status === "rejected"
+                  ? "Your receipt was rejected. Upload a new receipt before registering for events."
+                  : "Make the one-time payment and upload your receipt. You can register after it is verified."}
+            </p>
+          </div>
+          {userId ? (
+            userReceipt?.status === "pending" ? (
+              <span className="shrink-0 font-pixel text-[10px] uppercase text-mc-text-dim">
+                Awaiting verification
+              </span>
+            ) : (
+              <BlockButton
+                variant="gold"
+                size="sm"
+                className="shrink-0"
+                onClick={() => setPaymentModalOpen(true)}
+              >
+                {userReceipt?.status === "rejected" ? "Re-upload receipt" : "Make Payment"}
+              </BlockButton>
+            )
+          ) : (
+            <Link href="/login?next=/events" className="shrink-0 no-underline">
+              <BlockButton variant="gold" size="sm">
+                Make Payment
+              </BlockButton>
+            </Link>
+          )}
         </BlockPanel>
       ) : null}
 

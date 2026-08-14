@@ -25,7 +25,7 @@ const PortalWorld = dynamic(
  * Reached from the homepage's "Start the Journey". This is the threshold: the
  * page whose only job is to make stepping into the realm feel like a decision.
  * "Enter the Portal" fires the wipe into `/entering`, which then branches to
- * login, character creation, or the world.
+ * login or the world.
  *
  * Reads top to bottom exactly as the design does: title, tagline, portal, CTA.
  * The portal sits *below* the wordmark rather than above it, so the eye lands

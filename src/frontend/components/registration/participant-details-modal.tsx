@@ -1,17 +1,18 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BlockButton, BlockInput, BlockModal, BlockPanel, BlockSelect } from "@/frontend/components/mc";
 import { repo } from "@/backend/data";
-import { DataError, type ParticipantDetails, type Profile } from "@/backend/data/types";
+import { DataError, type Character, type ParticipantDetails, type Profile } from "@/backend/data/types";
+import { useAsync } from "@/frontend/hooks/use-async";
 
 /**
  * The participant details every registration needs.
  *
- * These nine fields are not a Gateways invention — they are the shape
+ * These participant fields are not a Gateways invention — they are the shape
  * `POST /v1/registrations` takes (BACKEND-API-CONTRACT.md §5), and the
  * registration console renders them directly in its intake table, drawers and
  * CSV exports. The option VALUES below must therefore stay exactly as they are;
@@ -22,9 +23,9 @@ import { DataError, type ParticipantDetails, type Profile } from "@/backend/data
  * console models one Participant per person, matched on email, and asking for
  * the same nine answers per event invites them to disagree with each other.
  *
- * College, department and year are absent on purpose: character creation
- * already collected them, and this modal's caller checks
- * `isParticipantComplete()`, which covers both halves.
+ * College, department and year live on the participant record as well as the
+ * default character. They are collected here because the character builder is
+ * no longer a separate step.
  */
 
 const CATEGORIES = [
@@ -55,6 +56,9 @@ const phone = (label: string) =>
 const schema = z.object({
   fullName: z.string().trim().min(3, "At least 3 characters."),
   phone: phone("mobile number"),
+  collegeId: z.string().min(1, "Select your college."),
+  departmentId: z.string().min(1, "Select your department."),
+  yearOfStudy: z.string().regex(/^[1-6]$/, "Select your year."),
   gender: z.enum(["male", "female", "other"]),
   // A plain <input type="date"> yields "" when empty and "YYYY-MM-DD" otherwise,
   // which is already the wire format — no parsing, no timezone to get wrong.
@@ -71,12 +75,31 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+function defaultFormValues(profile: Profile | null, character: Character | null): FormValues {
+  return {
+    fullName: profile?.fullName ?? "",
+    phone: profile?.phone ?? "",
+    collegeId: profile?.collegeId ?? character?.collegeId ?? "",
+    departmentId: profile?.departmentId ?? character?.departmentId ?? "",
+    yearOfStudy: String(profile?.yearOfStudy ?? character?.yearOfStudy ?? ""),
+    gender: profile?.gender ?? "male",
+    dateOfBirth: profile?.dateOfBirth ?? "",
+    category: profile?.category ?? "participant",
+    tshirtSize: profile?.tshirtSize ?? "M",
+    dietaryPref: profile?.dietaryPref ?? "veg",
+    emergencyName: profile?.emergencyName ?? "",
+    emergencyPhone: profile?.emergencyPhone ?? "",
+  };
+}
+
 export interface ParticipantDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string;
   /** Existing values to pre-fill from; null on a first registration. */
   profile: Profile | null;
+  /** Default character values are used to pre-fill institution fields. */
+  character: Character | null;
   /** Fired after the details are saved, so the caller can register. */
   onSaved: (details: ParticipantDetails) => void | Promise<void>;
 }
@@ -86,37 +109,48 @@ export function ParticipantDetailsModal({
   onOpenChange,
   userId,
   profile,
+  character,
   onSaved,
 }: ParticipantDetailsModalProps) {
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
+    control,
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      fullName: profile?.fullName ?? "",
-      phone: profile?.phone ?? "",
-      gender: profile?.gender ?? "male",
-      dateOfBirth: profile?.dateOfBirth ?? "",
-      category: profile?.category ?? "participant",
-      tshirtSize: profile?.tshirtSize ?? "M",
-      dietaryPref: profile?.dietaryPref ?? "veg",
-      emergencyName: profile?.emergencyName ?? "",
-      emergencyPhone: profile?.emergencyPhone ?? "",
-    },
+    defaultValues: defaultFormValues(profile, character),
   });
+  useEffect(() => {
+    if (!open) return;
+    reset(defaultFormValues(profile, character));
+  }, [open, profile, character, reset]);
+  const collegeId = useWatch({ control, name: "collegeId" });
+  const { data: colleges } = useAsync(() => repo.reference.colleges(), [open]);
+  const { data: departments } = useAsync(
+    () => repo.reference.departments(collegeId || null),
+    [collegeId, open],
+  );
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await repo.profiles.update(userId, values);
+      await repo.profiles.update(userId, {
+        ...values,
+        yearOfStudy: Number(values.yearOfStudy),
+      });
+      await repo.characters.update(userId, {
+        collegeId: values.collegeId,
+        departmentId: values.departmentId,
+        yearOfStudy: Number(values.yearOfStudy),
+      });
       // Saving and registering are two steps and the caller owns the second, so
       // a failed registration leaves the details saved rather than discarding
       // nine fields the student just typed.
-      await onSaved(values);
+      await onSaved({ ...values, yearOfStudy: Number(values.yearOfStudy) });
       onOpenChange(false);
     } catch (e) {
       setFormError(
@@ -150,6 +184,37 @@ export function ParticipantDetailsModal({
           error={errors.phone?.message}
           {...register("phone")}
         />
+
+        <BlockSelect label="College" error={errors.collegeId?.message} {...register("collegeId")}>
+          <option value="">Select your college…</option>
+          {(colleges ?? []).map((college) => (
+            <option key={college.id} value={college.id}>
+              {college.name}
+            </option>
+          ))}
+        </BlockSelect>
+
+        <BlockSelect
+          label="Department"
+          error={errors.departmentId?.message}
+          {...register("departmentId")}
+        >
+          <option value="">Select your department…</option>
+          {(departments ?? []).map((department) => (
+            <option key={department.id} value={department.id}>
+              {department.name}
+            </option>
+          ))}
+        </BlockSelect>
+
+        <BlockSelect label="Year of study" error={errors.yearOfStudy?.message} {...register("yearOfStudy")}>
+          <option value="">Select your year…</option>
+          {[1, 2, 3, 4, 5, 6].map((year) => (
+            <option key={year} value={year}>
+              {year}{year === 1 ? "st" : year === 2 ? "nd" : year === 3 ? "rd" : "th"} Year
+            </option>
+          ))}
+        </BlockSelect>
 
         <BlockInput
           label="Date of birth"

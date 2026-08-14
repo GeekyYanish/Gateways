@@ -75,7 +75,7 @@ export const ART = {
     artificer: { src: "/art/skins/artificer.png", w: 64, h: 64, kind: "skin", note: "goggles, tools" },
   }),
 
-  /** Full-body standing renders for the character-creation carousel. */
+  /** Full-body standing renders for future profile/world art. */
   skinsFull: spec({
     prospector: { src: "/art/skins/full/prospector.png", w: 128, h: 256, kind: "skin" },
     botanist: { src: "/art/skins/full/botanist.png", w: 128, h: 256, kind: "skin" },

@@ -199,7 +199,7 @@ export function ParallaxSection() {
           Start the Journey
         </BlockButton>
         <p className="text-[16px] text-mc-text-dim">
-          Build your character and explore the realm.
+          Choose your name, register for events, and explore the realm.
         </p>
       </div>
     </HomeSection>

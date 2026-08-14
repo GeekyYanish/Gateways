@@ -47,8 +47,6 @@ function RealmGuard({ children }: { children: React.ReactNode }) {
     if (status === "unauthenticated") {
       // Preserve the intended destination so login can return them here.
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
-    } else if (status === "needs-character") {
-      router.replace("/create-character");
     }
   }, [status, router, pathname]);
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { repo } from "@/backend/data";
 import { DataError, type Profile } from "@/backend/data/types";
 import { clearAll } from "@/backend/data/local/store";
+import { GATEWAYS_ENTRY_PAYMENT_ID } from "@/frontend/components/registration/payment-upload-modal";
 
 /**
  * Dev-only assertion harness for the data layer.
@@ -42,8 +43,25 @@ const PARTICIPANT_DETAILS = {
  * this SWITCHES the active session (signUp signs you in), so callers must
  * restore theirs afterwards.
  */
+/**
+ * `signUp` returns `Session | null` because the real backend emails an OTP and
+ * only issues a session at `verifyEmail`. This suite runs exclusively against
+ * `LocalRepository`, which has no email step and always returns one — so a null
+ * here means the suite is pointed at the wrong implementation, which is worth
+ * failing loudly on rather than papering over with `!`.
+ */
+async function signUpLocal(email: string, password: string, username = "Test_User") {
+  const session = await repo.auth.signUp(email, password, username);
+  if (!session) {
+    throw new Error(
+      "signUp returned null — this suite requires the local repository, not the API-backed one.",
+    );
+  }
+  return session;
+}
+
 async function makeParticipant(n: number, collegeId: string | null): Promise<string> {
-  const s = await repo.auth.signUp(`synthetic${n}@parallax.test`, "hunter2!");
+  const s = await signUpLocal(`synthetic${n}@parallax.test`, "hunter2!", `Synth_${n}`);
   await repo.characters.create(s.userId, {
     playerName: `Synth_${n}`,
     // A real college id, because `isParticipantComplete()` requires one — the
@@ -68,12 +86,12 @@ async function runSuite(): Promise<Result[]> {
   const email = `test${Date.now()}@parallax.test`;
 
   // --- auth ---------------------------------------------------------------
-  const session = await repo.auth.signUp(email, "hunter2!");
+  const session = await signUpLocal(email, "hunter2!");
   check("signUp creates a session", Boolean(session.userId), session.userId);
   check("new user is a player", session.roles.includes("player"), session.roles.join(","));
 
   try {
-    await repo.auth.signUp(email, "different");
+    await signUpLocal(email, "different");
     check("duplicate email rejected", false, "no error thrown");
   } catch (e) {
     check(
@@ -168,10 +186,18 @@ async function runSuite(): Promise<Result[]> {
 
   await repo.profiles.update(userId, PARTICIPANT_DETAILS);
 
-  // Register BEFORE paying: the seat is held immediately, but stays `pending`
-  // until the entry fee clears.
-  const reg = await repo.registrations.register(target.id, userId);
-  check("registration held pending payment", reg.status === "pending", reg.status);
+  // Payment is a hard prerequisite: a complete participant still cannot
+  // create an event registration until the one-time pass is verified.
+  try {
+    await repo.registrations.register(target.id, userId);
+    check("registration blocked before payment verification", false, "no error thrown");
+  } catch (e) {
+    check(
+      "registration blocked before payment verification",
+      e instanceof DataError && e.code === "PAYMENT_NOT_VERIFIED",
+      (e as DataError).code,
+    );
+  }
 
   // Against the LEDGER, not totalXp: registering also unlocks achievements,
   // which pay their own XP. Only registration-sourced grants are in question.
@@ -182,19 +208,10 @@ async function runSuite(): Promise<Result[]> {
 
   check("no registration XP for an unpaid seat", (await regXp(userId)) === 0, `${await regXp(userId)} xp`);
 
-  // Unique (eventId, userId): the same pair returns the existing row rather
-  // than creating a second one, matching the DB constraint.
-  const again = await repo.registrations.register(target.id, userId);
-  check(
-    "re-registering returns the same row",
-    again.id === reg.id,
-    `${again.id} vs ${reg.id}`,
-  );
-
-  // --- payment confirms the seat ------------------------------------------
+  // --- payment unlocks the seat --------------------------------------------
   const receipt = await repo.paymentReceipts.submit({
-    registrationId: reg.id,
-    eventId: target.id,
+    registrationId: GATEWAYS_ENTRY_PAYMENT_ID,
+    eventId: GATEWAYS_ENTRY_PAYMENT_ID,
     userId,
     fileData: "data:application/pdf;base64,JVBERi0x",
     fileName: "receipt.pdf",
@@ -203,8 +220,8 @@ async function runSuite(): Promise<Result[]> {
 
   try {
     await repo.paymentReceipts.submit({
-      registrationId: reg.id,
-      eventId: target.id,
+      registrationId: GATEWAYS_ENTRY_PAYMENT_ID,
+      eventId: GATEWAYS_ENTRY_PAYMENT_ID,
       userId,
       fileData: "data:application/pdf;base64,JVBERi0x",
       fileName: "again.pdf",
@@ -220,16 +237,28 @@ async function runSuite(): Promise<Result[]> {
   }
 
   await repo.paymentReceipts.review(receipt.id, "verified", "admin-test");
-  const settled = await repo.registrations.get(target.id, userId);
+  const verifiedReceipt = await repo.paymentReceipts.getByUser(userId);
   check(
-    "verifying the receipt confirms the seat",
-    settled?.status === "confirmed",
-    `${settled?.status}`,
+    "receipt verification unlocks registration",
+    verifiedReceipt?.status === "verified",
+    `${verifiedReceipt?.status}`,
+  );
+
+  const reg = await repo.registrations.register(target.id, userId);
+  check("registration after payment is confirmed", reg.status === "confirmed", reg.status);
+
+  // Unique (eventId, userId): the same pair returns the existing row rather
+  // than creating a second one, matching the DB constraint.
+  const again = await repo.registrations.register(target.id, userId);
+  check(
+    "re-registering returns the same row",
+    again.id === reg.id,
+    `${again.id} vs ${reg.id}`,
   );
 
   // --- XP idempotency (the critical guarantee) ----------------------------
   check(
-    "confirming the seat awards registration XP exactly once",
+    "registering after verification awards registration XP exactly once",
     (await regXp(userId)) === 10,
     `${await regXp(userId)} xp`,
   );

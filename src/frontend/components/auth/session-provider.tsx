@@ -14,21 +14,20 @@ import type { Character, Session } from "@/backend/data/types";
 /**
  * Session + character context.
  *
- * The whole app is client-side for now because localStorage has no server
- * presence. After the MySQL migration this becomes a server-component read
- * plus a thin client provider, and route protection moves into middleware —
- * see MYSQL-MIGRATION.md.
+ * The website reads the authenticated session and the backend-created default
+ * character through the repository adapters. Character creation is no longer a
+ * separate route: username signup or Google OAuth creates the row automatically.
  *
  * `status` distinguishes three states the UI must render differently:
  *   loading           — do not redirect yet; we do not know if there is a session
  *   unauthenticated   — send to /login
- *   needs-character   — signed in but has not created an adventurer yet
- *   ready             — fully set up
+ *   ready             — signed in and ready for the realm
  */
 export type AuthStatus =
   | "loading"
   | "unauthenticated"
-  | "needs-character"
+  | "needs-password"
+  | "staff"
   | "ready";
 
 interface SessionContextValue {
@@ -49,7 +48,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const load = useCallback(async () => {
     const s = await repo.auth.getSession();
     setSession(s);
-    setCharacter(s ? await repo.characters.getByUser(s.userId) : null);
+    setCharacter(s && !s.mustChangePassword && !s.roles.some((role) => ["admin", "organizer", "scanner"].includes(role))
+      ? await repo.characters.getByUser(s.userId)
+      : null);
     setLoading(false);
   }, []);
 
@@ -79,8 +80,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     ? "loading"
     : !session
       ? "unauthenticated"
-      : !character
-        ? "needs-character"
+      : session.mustChangePassword
+        ? "needs-password"
+        : session.roles.some((role) => ["admin", "organizer", "scanner"].includes(role))
+          ? "staff"
         : "ready";
 
   const value = useMemo(

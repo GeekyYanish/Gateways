@@ -62,7 +62,7 @@ const THEME_BOOT = `try{var p=localStorage.getItem(${JSON.stringify(THEME_STORAG
 export const metadata: Metadata = {
   title: "Parallax — Another World Awaits",
   description:
-    "A Minecraft-inspired college fest portal. Create your adventurer, explore the realm, and register for events.",
+    "A Minecraft-inspired college fest portal. Choose your character name, explore the realm, and register for events.",
 };
 
 export const viewport: Viewport = {
