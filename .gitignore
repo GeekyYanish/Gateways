@@ -76,6 +76,9 @@ poster_page/
 deliverables/
 *.doc
 *.docx
+handover.md
+*.doc
+*.docx
 registration-console/
 BACKEND-API-CONTRACT.md
 poster_page.zip

@@ -611,21 +611,6 @@ class LocalRegistrations implements RegistrationRepository {
 
     const all = readList<Registration>("registrations");
 
-    // An incomplete record cannot be sent to the console as a Participant, so
-    // there is no point opening registration for it. VALIDATION_FAILED rather
-    // than a new code because BACKEND-API-CONTRACT.md §3 requires codes the
-    // console also knows.
-    const profile =
-      readList<Profile>("profiles").find((p) => p.id === userId) ?? null;
-    const character =
-      readList<Character>("characters").find((c) => c.userId === userId) ?? null;
-    if (!isParticipantComplete(profile, character)) {
-      throw new DataError(
-        "VALIDATION_FAILED",
-        "Complete your participant details before registering.",
-      );
-    }
-
     if (event.status !== "published" && event.status !== "ongoing") {
       throw new DataError("REGISTRATION_CLOSED", "Registration is not open for this event.");
     }
@@ -680,14 +665,7 @@ class LocalRegistrations implements RegistrationRepository {
       teamId: teamId ?? null,
       // Over capacity waitlists rather than hard-failing, so the UI can show a
       // useful state instead of an error.
-      //
-      // Payment is already verified before this method is reached. `pending`
-      // therefore means organizer approval only; it never means unpaid.
-      status: full
-        ? "waitlisted"
-        : event.requiresApproval
-          ? "pending"
-          : "confirmed",
+      status: event.entryFeeInr > 0 ? "pending" : full ? "waitlisted" : event.requiresApproval ? "pending" : "confirmed",
       registeredAt: nowIso(),
       cancelledAt: null,
     };
@@ -1108,29 +1086,11 @@ class LocalPaymentReceipts implements PaymentReceiptRepository {
   }): Promise<PaymentReceipt> {
     ready();
     const all = readList<PaymentReceipt>("paymentReceipts");
-
-    // One live receipt per USER, not per registration — the entry fee is a
-    // single flat payment that covers every event, so a second upload while one
-    // is already in flight is a duplicate, not a new payment.
-    //
-    // The UI passes the shared `"gateways-entry"` identity because this is one
-    // fest-wide pass rather than an event payment. The real backend identifies
-    // the receipt by user, so the event/registration fields are informational
-    // only and do not control whether registration is allowed.
-    //
-    // A REJECTED receipt is deliberately not counted: being told to re-upload
-    // and then being refused the upload is a dead end.
-    if (
-      all.some(
-        (r) =>
-          r.userId === input.userId &&
-          (r.status === "pending" || r.status === "verified"),
-      )
-    ) {
-      throw new DataError(
-        "RECEIPT_ALREADY_SUBMITTED",
-        "You have already submitted a receipt for the one-time entry fee.",
-      );
+    if (all.some((r) => r.registrationId === input.registrationId)) {
+      throw new DataError("RECEIPT_ALREADY_SUBMITTED", "A receipt has already been submitted for this registration.");
+    }
+    if (input.registrationId === "gateways-entry" && all.some((r) => r.userId === input.userId && (r.status === "pending" || r.status === "verified"))) {
+      throw new DataError("RECEIPT_ALREADY_SUBMITTED", "You have already submitted a one-time entry fee receipt.");
     }
     const receipt: PaymentReceipt = {
       id: uid("rcpt"),
