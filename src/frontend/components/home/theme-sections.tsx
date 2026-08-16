@@ -57,7 +57,7 @@ export function AboutSection() {
       >
         <Stat label="Years running" value={`${FEST.yearsRunning}+`} />
         <Stat label="Prize pool" value={inr(FEST.money.prizePoolInr)} />
-        <Stat label="Entry" value={inr(FEST.money.registrationFeeInr)} />
+        <Stat label="Entry from" value={inr(FEST.money.registration.earlyBirdInr)} />
         <Stat label="Days" value="2" />
       </div>
     </HomeSection>

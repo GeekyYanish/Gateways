@@ -70,6 +70,7 @@ const CATEGORIES: EventCategory[] = [
   { id: "cat-gaming", slug: "gaming-arena", name: "Gaming Arena", description: "Tournaments and brackets.", worldLocationKey: "gaming-arena", blockColor: "mc-redstone", sortOrder: 5 },
   { id: "cat-culture", slug: "culture-stage", name: "Culture Stage", description: "Music, dance and drama.", worldLocationKey: null, blockColor: "mc-gold", sortOrder: 6 },
   { id: "cat-robotics", slug: "circuit-lab", name: "Circuit Lab", description: "Robotics and hardware.", worldLocationKey: null, blockColor: "mc-stone", sortOrder: 7 },
+  { id: "cat-academic", slug: "academic-stage", name: "Academic Stage", description: "Paper and poster presentations.", worldLocationKey: null, blockColor: "mc-lapis", sortOrder: 8 },
 ];
 
 /** Original rank names — no Mojang terminology (no "Redstone", "Ender", etc.). */
@@ -123,7 +124,54 @@ function makeEvents(): FestEvent[] {
     { id: "evt-game-retro", slug: "retro-block-battle", title: "Retro Block Battle", tagline: "Classic games, modern stakes.", categoryId: "cat-gaming", mode: "solo", capacity: 32, venue: "Gaming Arena", startsAt: iso(1 * DAY + 8 * HOUR), endsAt: iso(1 * DAY + 12 * HOUR), xpReward: 70 },
     { id: "evt-culture-band", slug: "battle-of-bands", title: "Battle of the Bands", tagline: "Live music finals.", categoryId: "cat-culture", mode: "team", minTeamSize: 3, maxTeamSize: 8, capacity: 20, venue: "Open Air Stage", startsAt: iso(4 * DAY + 10 * HOUR), endsAt: iso(4 * DAY + 15 * HOUR), xpReward: 120 },
     { id: "evt-robotics-line", slug: "circuit-line-follower", title: "Line Follower Championship", tagline: "Fastest bot wins.", categoryId: "cat-robotics", mode: "team", minTeamSize: 1, maxTeamSize: 3, capacity: 40, venue: "Robotics Lab", startsAt: iso(5 * DAY + 5 * HOUR), endsAt: iso(5 * DAY + 9 * HOUR), xpReward: 110 },
-    // One completed event so "past events" and certificates have data.
+    // Academic Stage — new for 2026.
+    {
+      id: "evt-paper-pres",
+      slug: "paper-presentation",
+      title: "Paper Presentation",
+      tagline: "Present your research to a panel of experts.",
+      description:
+        "Submit an original research paper on any theme aligned with the Digital Twins subject. " +
+        "Each team delivers a 10-minute presentation followed by a 5-minute Q\u0026A. " +
+        "Judging criteria: novelty, depth of research, quality of presentation, and Q\u0026A performance.",
+      categoryId: "cat-academic",
+      mode: "team",
+      minTeamSize: 1,
+      maxTeamSize: 3,
+      capacity: 40,
+      venue: "Seminar Hall A",
+      startsAt: iso(1 * DAY + 9 * HOUR),
+      endsAt: iso(1 * DAY + 16 * HOUR),
+      xpReward: 130,
+      rules:
+        "Papers must be submitted at least 48 hours before the event. " +
+        "Presentation time limit: 10 minutes. Q\u0026A: 5 minutes. " +
+        "Plagiarism will result in immediate disqualification. Judges\u2019 decisions are final.",
+    },
+    {
+      id: "evt-poster-pres",
+      slug: "poster-presentation",
+      title: "Poster Presentation",
+      tagline: "Visualise your idea and defend it.",
+      description:
+        "Design a poster on any approved topic related to the fest theme and present it to judges " +
+        "and fellow participants during the gallery walk. Teams must be present at their poster " +
+        "for the full judging window. Judging criteria: visual design, clarity of message, and depth of content.",
+      categoryId: "cat-academic",
+      mode: "team",
+      minTeamSize: 1,
+      maxTeamSize: 2,
+      capacity: 50,
+      venue: "Seminar Hall B",
+      startsAt: iso(2 * DAY + 10 * HOUR),
+      endsAt: iso(2 * DAY + 14 * HOUR),
+      xpReward: 100,
+      rules:
+        "Posters must be A1 size (594 × 841 mm) in portrait orientation. " +
+        "Bring a printed copy — digital-only submissions will not be judged. " +
+        "Teams must be present at their poster during the 10:00\u201314:00 judging window.",
+    },
+    // One completed event so \"past events\" and certificates have data.
     { id: "evt-past-workshop", slug: "git-basics-workshop", title: "Git Basics Workshop", tagline: "Version control from zero.", categoryId: "cat-design", mode: "solo", capacity: 60, venue: "CS Lab 1", startsAt: iso(-5 * DAY), endsAt: iso(-5 * DAY + 3 * HOUR), xpReward: 40, status: "completed" },
   ];
 
@@ -228,7 +276,7 @@ function migrateLegacySkins(): void {
  * app start, which is how it is wired (the repository calls it lazily).
  */
 export function seedIfNeeded(): void {
-  const meta = read<{ seededAt?: string; feesSeededV1?: boolean; feesSeededV2?: boolean }>("meta", {});
+  const meta = read<{ seededAt?: string; feesSeededV1?: boolean; feesSeededV2?: boolean; seededV3?: boolean }>("meta", {});
   if (meta.seededAt && readList("events").length > 0) {
     if (!meta.feesSeededV2) {
       const existingEvents = readList<FestEvent>("events");
@@ -238,6 +286,29 @@ export function seedIfNeeded(): void {
       }));
       write("events", updated);
       write("meta", { ...meta, feesSeededV1: true, feesSeededV2: true });
+    }
+    // Inject the two new academic events into existing local stores that were
+    // seeded before they were added, so returning visitors see them immediately.
+    if (!meta.seededV3) {
+      const existingCategories = readList<EventCategory>("categories");
+      if (!existingCategories.some((c) => c.id === "cat-academic")) {
+        write("categories", [
+          ...existingCategories,
+          { id: "cat-academic", slug: "academic-stage", name: "Academic Stage", description: "Paper and poster presentations.", worldLocationKey: null, blockColor: "mc-lapis", sortOrder: 8 },
+        ]);
+      }
+      const existingEvents = readList<FestEvent>("events");
+      const newEvents = makeEvents().filter(
+        (e) => e.id === "evt-paper-pres" || e.id === "evt-poster-pres",
+      );
+      const merged = [
+        ...existingEvents.filter(
+          (e) => e.id !== "evt-paper-pres" && e.id !== "evt-poster-pres",
+        ),
+        ...newEvents,
+      ];
+      write("events", merged);
+      write("meta", { ...meta, feesSeededV1: true, feesSeededV2: true, seededV3: true });
     }
     // Cheap no-op once every character is on a current skin id.
     migrateLegacySkins();
