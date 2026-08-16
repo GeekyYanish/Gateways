@@ -9,7 +9,7 @@
  */
 export function PaymentInstructions({
   uploadStep = "Upload the receipt PDF below, then register once it is verified",
-  amountInr = 250,
+  amountInr = 300,
 }: {
   uploadStep?: React.ReactNode;
   amountInr?: number;
@@ -32,7 +32,10 @@ export function PaymentInstructions({
           </a>
         </li>
         <li>Select &quot;Gateways&quot; from the event list</li>
-        <li>Complete the single fest-wide participant pass payment of ₹{amountInr.toLocaleString("en-IN")}</li>
+        <li>
+          Complete the fest-wide participant pass payment of ₹{amountInr.toLocaleString("en-IN")}{" "}
+          (early bird ₹300 · standard ₹350 · on-spot ₹400 · international ₹1,000)
+        </li>
         <li>Download/print the payment receipt as PDF</li>
         <li>{uploadStep}</li>
       </ol>

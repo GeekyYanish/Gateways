@@ -30,11 +30,14 @@ export function RegisterSection() {
       title="How to Register"
       lead={
         <>
-          One flat fee of{" "}
+          One pass covers every event. Registration fees start at{" "}
           <strong className="text-mc-accent">
-            {inr(FEST.money.registrationFeeInr)}
+            {inr(FEST.money.registration.earlyBirdInr)}
           </strong>{" "}
-          lets you enter as many events as you can fit into two days.
+          for early birds — international participants pay a flat{" "}
+          <strong className="text-mc-accent">
+            {inr(FEST.money.registration.internationalInr)}
+          </strong>.
         </>
       }
     >
@@ -65,13 +68,36 @@ export function RegisterSection() {
             className="flex flex-col gap-[calc(var(--mc-unit)*0.75)]"
           >
             <h3 className="text-[10px] uppercase text-mc-success md:text-[12px]">
-              Entry
+              Entry fees
             </h3>
-            <p className="font-pixel text-[18px] text-mc-accent md:text-[22px]">
-              {inr(FEST.money.registrationFeeInr)}
-            </p>
-            <p className="text-[16px] leading-snug text-mc-text-dim">
-              Per person, covering any number of events.
+            <ul className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
+              <li className="flex items-baseline justify-between gap-2">
+                <span className="text-[15px] text-mc-text-dim">Early bird</span>
+                <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
+                  {inr(FEST.money.registration.earlyBirdInr)}
+                </span>
+              </li>
+              <li className="flex items-baseline justify-between gap-2">
+                <span className="text-[15px] text-mc-text-dim">Standard</span>
+                <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
+                  {inr(FEST.money.registration.standardInr)}
+                </span>
+              </li>
+              <li className="flex items-baseline justify-between gap-2">
+                <span className="text-[15px] text-mc-text-dim">On the spot</span>
+                <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
+                  {inr(FEST.money.registration.onSpotInr)}
+                </span>
+              </li>
+              <li className="flex items-baseline justify-between gap-2">
+                <span className="text-[15px] text-mc-text-dim">International</span>
+                <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
+                  {inr(FEST.money.registration.internationalInr)}
+                </span>
+              </li>
+            </ul>
+            <p className="text-[14px] leading-snug text-mc-text-dim">
+              Per person. One pass covers every event you enter.
             </p>
           </BlockPanel>
 

@@ -41,7 +41,18 @@ export function inr(amount: number): string {
  */
 const HACKATHON_DATE_LABEL = "2 October 2026";
 const PRIZE_POOL_INR = 63_000;
-const REGISTRATION_FEE_INR = 250;
+
+/** Tiered registration fees (domestic/international, time-of-purchase). */
+const REGISTRATION_FEES = {
+  /** Domestic early-bird rate. */
+  earlyBirdInr: 300,
+  /** Domestic standard rate (after early-bird window closes). */
+  standardInr: 350,
+  /** At-the-door rate on the day of the fest. */
+  onSpotInr: 400,
+  /** Flat rate for international participants. */
+  internationalInr: 1_000,
+} as const;
 
 export const FEST = {
   /** Display name of this edition. */
@@ -94,8 +105,11 @@ export const FEST = {
 
   /** All rupee figures. TODO — confirm every one of these for 2026. */
   money: {
-    /** Flat fee covering any number of events, as in 2025. */
-    registrationFeeInr: REGISTRATION_FEE_INR,
+    /**
+     * Tiered registration fees — one pass covers every event a participant enters.
+     * Early-bird window and exact cutoff date are set by the organising team.
+     */
+    registration: REGISTRATION_FEES,
     prizePoolInr: PRIZE_POOL_INR,
     accommodationPerDayInr: 300,
     accommodationNote: "+ GST, per person per day",
@@ -121,7 +135,7 @@ export const FEST = {
    */
   registerSteps: [
     "Sign in and create your character.",
-    `Pay the flat ${inr(REGISTRATION_FEE_INR)} entry fee — it covers every event you enter.`,
+    `Pay the registration fee — ${inr(REGISTRATION_FEES.earlyBirdInr)} early bird, ${inr(REGISTRATION_FEES.standardInr)} standard, or ${inr(REGISTRATION_FEES.onSpotInr)} on the spot. One pass covers every event.`,
     "Upload the payment receipt (PDF) and wait for verification.",
     "Browse the events and open the one you want.",
     "Read its rules, team size and timing, then hit Register.",
