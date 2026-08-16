@@ -46,12 +46,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const s = await repo.auth.getSession();
-    setSession(s);
-    setCharacter(s && !s.mustChangePassword && !s.roles.some((role) => ["admin", "organizer", "scanner"].includes(role))
-      ? await repo.characters.getByUser(s.userId)
-      : null);
-    setLoading(false);
+    try {
+      const s = await repo.auth.getSession();
+      setSession(s);
+      setCharacter(s && !s.mustChangePassword && !s.roles.some((role) => ["admin", "organizer", "scanner"].includes(role))
+        ? await repo.characters.getByUser(s.userId)
+        : null);
+    } catch (error) {
+      // A down or unreachable backend is not the same thing as "signed out",
+      // but the whole app must still render for a visitor browsing public
+      // pages — treat it as signed out rather than leaving every consumer
+      // (RealmGuard included) stuck on `status: "loading"` forever.
+      console.error("Could not load the session; treating as signed out.", error);
+      setSession(null);
+      setCharacter(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

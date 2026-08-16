@@ -35,6 +35,10 @@ export function EventsScreen() {
   const userId = session?.userId;
 
   const { data: categories } = useAsync(() => repo.reference.categories(), []);
+  // Events come from a Google Sheet that staff edit during the fest, so this
+  // polls rather than relying on a page load. The backend caches the sheet for
+  // 5s, so an edit goes live within ~10s worst case without hammering Google's
+  // per-project read quota.
   const { data: events, loading } = useAsync(
     () =>
       repo.events.list({
@@ -43,6 +47,7 @@ export function EventsScreen() {
         status: ["published", "ongoing", "registration_closed", "completed"],
       }),
     [categorySlug, search],
+    { pollMs: 5000 },
   );
   const {
     data: userReceipt,
@@ -72,9 +77,11 @@ export function EventsScreen() {
 
       <BackLink
         href={
-          categorySlug
-            ? `/world?view=map&location=${encodeURIComponent(categorySlug)}`
-            : "/world?view=map"
+          !userId
+            ? "/"
+            : categorySlug
+              ? `/world?view=map&location=${encodeURIComponent(categorySlug)}`
+              : "/world?view=map"
         }
       />
 
@@ -110,11 +117,13 @@ export function EventsScreen() {
               One-time Gateways pass
             </p>
             <p className="mt-[calc(var(--mc-unit)*0.5)] text-[14px]">
-              {userReceipt?.status === "pending"
-                ? "Your payment receipt is awaiting verification. Registration opens once it is approved."
-                : userReceipt?.status === "rejected"
-                  ? "Your receipt was rejected. Upload a new receipt before registering for events."
-                  : "Make the one-time payment and upload your receipt. You can register after it is verified."}
+              {!userId
+                ? "Sign in to make the one-time payment and register for events."
+                : userReceipt?.status === "pending"
+                  ? "Your payment receipt is awaiting verification. Registration opens once it is approved."
+                  : userReceipt?.status === "rejected"
+                    ? "Your receipt was rejected. Upload a new receipt before registering for events."
+                    : "Make the one-time payment and upload your receipt. You can register after it is verified."}
             </p>
           </div>
           {userId ? (
@@ -135,7 +144,7 @@ export function EventsScreen() {
           ) : (
             <Link href="/login?next=/events" className="shrink-0 no-underline">
               <BlockButton variant="gold" size="sm">
-                Make Payment
+                Sign in
               </BlockButton>
             </Link>
           )}

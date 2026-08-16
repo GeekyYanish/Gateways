@@ -40,7 +40,7 @@ export function inr(amount: number): string {
  * quietly stop agreeing — which is what happened here.
  */
 const HACKATHON_DATE_LABEL = "2 October 2026";
-const PRIZE_POOL_INR = 63_000;
+const PRIZE_POOL_INR = 250_000;
 
 /** Tiered registration fees (domestic/international, time-of-purchase). */
 const REGISTRATION_FEES = {
