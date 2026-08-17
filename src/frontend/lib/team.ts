@@ -29,13 +29,13 @@ export interface TeamMember {
 }
 
 export const FACULTY_COORDINATORS: TeamMember[] = [
-  { name: "Dr. Neha Signal", subtitle: "Associate Professor", blurb: "Guiding us through the Upside Down." },
+  { name: "Dr. Neha Singhal", subtitle: "Assistant Professor", blurb: "Guiding us through the Upside Down." },
   { name: "Dr. Shivangi Singh", subtitle: "Assistant Professor", blurb: "Lighting the way for all." },
   { name: "Dr. Nizar Banu", subtitle: "Assistant Professor", blurb: "The mind behind the code." },
 ];
 
 export const CORE_COMMITTEE: TeamMember[] = [
-  { name: "Aimee Joseph", subtitle: "4 MCA B",  blurb: "Stranger things within" },
+  { name: "Aimee Joseph", subtitle: "4 MCA B", blurb: "Stranger things within" },
   { name: "Abhinav Jain", subtitle: "4 MCA B", blurb: "Stranger things within." },
   { name: "Hitesh", subtitle: "4 MSC AIML", blurb: "The code whisperer." },
 ];
@@ -66,7 +66,7 @@ export const COMMITTEE_HEADS: CommitteeHead[] = [
   { name: "R Karan", team: "Hospitality", subtitle: "3 MCA B" },
   { name: "Ekta Singh", team: "Infobahn", subtitle: "3 MCA B" },
   { name: "Neha N", team: "Infobahn", subtitle: "3 MCA A" },
- 
+
   { name: "Joshua V. Praveen", team: "Logistics", subtitle: "3 MSC AIML" },
   { name: "Amogh Sahore", team: "Media", subtitle: "3 MCA A" },
   { name: "Deon Binny", team: "Media", subtitle: "3 MSC AIML" },

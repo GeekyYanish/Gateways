@@ -160,7 +160,7 @@ function SkyCloud({ text, shape }: { text: string; shape: number }) {
       <div className="relative border-b-[length:var(--mc-unit)] border-t-[length:var(--mc-unit)] border-b-mc-cloud-dark border-t-mc-cloud-light bg-mc-cloud px-[calc(var(--mc-unit)*1.25)] py-[calc(var(--mc-unit)*0.75)]">
         {/* text-balance so the lines come out even lengths. Without it the
             greedy line-breaker leaves orphans and splits mid-date
-            ("hackathon begins 2 / october 2026"), which in a 2–3 line block at
+            ("hackathon begins 30 / september 2026"), which in a 2–3 line block at
             this size is the difference between a caption and a ransom note. */}
         <span className="block text-balance text-center font-pixel text-[7px] uppercase leading-[1.9] tracking-[0.06em] text-mc-obsidian md:text-[9px]">
           {text}

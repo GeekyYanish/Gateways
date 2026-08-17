@@ -90,6 +90,12 @@ export function RegisterSection() {
                 </span>
               </li>
               <li className="flex items-baseline justify-between gap-2">
+                <span className="text-[15px] text-mc-text-dim">Christite</span>
+                <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
+                  {inr(FEST.money.registration.christiteInr)}
+                </span>
+              </li>
+              <li className="flex items-baseline justify-between gap-2">
                 <span className="text-[15px] text-mc-text-dim">International</span>
                 <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
                   {inr(FEST.money.registration.internationalInr)}

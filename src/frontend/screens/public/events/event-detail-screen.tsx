@@ -50,10 +50,15 @@ export function EventDetailScreen({
   const [teamBusy, setTeamBusy] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
 
-  const { data: event, loading } = useAsync(() => repo.events.getBySlug(slug), [slug]);
+  const { data: event, loading } = useAsync(
+    () => repo.events.getBySlug(slug),
+    [slug],
+    { pollMs: 5000 },
+  );
   const { data: stats, reload: reloadStats } = useAsync(
     async () => (event ? repo.events.stats(event.id) : null),
     [event?.id],
+    { pollMs: 5000 },
   );
   const { data: registration, reload: reloadReg } = useAsync(
     async () => (event && userId ? repo.registrations.get(event.id, userId) : null),
