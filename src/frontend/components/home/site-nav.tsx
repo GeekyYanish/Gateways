@@ -41,8 +41,7 @@ import { cn } from "@/frontend/lib/utils";
 const ANCHORS = [
   { href: "#theme", label: "Theme" },
   { href: "#register", label: "Register" },
-  { href: "#sponsors", label: "Sponsors" },
-  { href: "#contact", label: "Contact" },
+  // { href: "#sponsors", label: "Sponsors" },
 ] as const;
 
 /**
@@ -53,6 +52,7 @@ const ANCHORS = [
 const PAGE_LINKS = [
   { href: "/about", label: "About" },
   { href: "/gallery", label: "Gallery" },
+  { href: "/contact", label: "Contact" },
 ] as const;
 
 export interface SiteNavProps {

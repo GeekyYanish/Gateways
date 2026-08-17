@@ -71,32 +71,47 @@ export function RegisterSection() {
               Entry fees
             </h3>
             <ul className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
-              <li className="flex items-baseline justify-between gap-2">
-                <span className="text-[15px] text-mc-text-dim">Early bird</span>
+              <li className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[15px] text-mc-text-dim">Early bird</span>
+                  <span className="text-[14px] text-mc-text-dim">(From 17th Aug to 09th Sep, 2026)</span>
+                </div>
                 <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
                   {inr(FEST.money.registration.earlyBirdInr)}
                 </span>
               </li>
-              <li className="flex items-baseline justify-between gap-2">
-                <span className="text-[15px] text-mc-text-dim">Standard</span>
+              <li className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[15px] text-mc-text-dim">Standard</span>
+                  <span className="text-[14px] text-mc-text-dim">(From 09th Sep to 07th Oct, 2026)</span>
+                </div>
                 <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
                   {inr(FEST.money.registration.standardInr)}
                 </span>
               </li>
-              <li className="flex items-baseline justify-between gap-2">
-                <span className="text-[15px] text-mc-text-dim">On the spot</span>
+              <li className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[15px] text-mc-text-dim">On the spot</span>
+                  <span className="text-[14px] text-mc-text-dim">(From 08th Oct to 09th Oct, 2026)</span>
+                </div>
                 <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
                   {inr(FEST.money.registration.onSpotInr)}
                 </span>
               </li>
-              <li className="flex items-baseline justify-between gap-2">
-                <span className="text-[15px] text-mc-text-dim">Christite</span>
+              <li className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[15px] text-mc-text-dim">Christite</span>
+                  <span className="text-[14px] text-mc-text-dim">(From 17th Aug to 09th Oct, 2026)</span>
+                </div>
                 <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
                   {inr(FEST.money.registration.christiteInr)}
                 </span>
               </li>
-              <li className="flex items-baseline justify-between gap-2">
-                <span className="text-[15px] text-mc-text-dim">International</span>
+              <li className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[15px] text-mc-text-dim">International</span>
+                  <span className="text-[14px] text-mc-text-dim">(From 17th Aug to 09th Oct, 2026)</span>
+                </div>
                 <span className="font-pixel text-[16px] text-mc-accent md:text-[18px]">
                   {inr(FEST.money.registration.internationalInr)}
                 </span>
@@ -115,8 +130,9 @@ export function RegisterSection() {
             <h3 className="text-[10px] uppercase text-mc-success md:text-[12px]">
               Accommodation
             </h3>
-            <p className="font-pixel text-[18px] text-mc-accent md:text-[22px]">
-              {inr(FEST.money.accommodationPerDayInr)}
+            <p className="flex items-baseline gap-2 font-pixel text-[18px] text-mc-accent md:text-[22px]">
+              <span>{inr(FEST.money.accommodationPerDayInr)}</span>
+              <span className="text-[10px] text-mc-text-dim leading-snug tracking-normal">+ GST</span>
             </p>
             <p className="text-[16px] leading-snug text-mc-text-dim">
               {FEST.money.accommodationNote}. Allotted first-come, first-served;

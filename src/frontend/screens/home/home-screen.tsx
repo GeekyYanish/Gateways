@@ -11,7 +11,7 @@ import {
 import { ExploreSection } from "@/frontend/components/home/explore-section";
 import { RegisterSection } from "@/frontend/components/home/register-section";
 import { SponsorsSection } from "@/frontend/components/home/sponsors-section";
-import { ContactSection, SiteFooter } from "@/frontend/components/home/site-footer";
+import { SiteFooter } from "@/frontend/components/home/site-footer";
 import { EventsModal } from "@/frontend/components/home/events-modal";
 import { ScheduleModal } from "@/frontend/components/home/schedule-modal";
 
@@ -54,8 +54,8 @@ export function HomeScreen() {
           onOpenSchedule={() => setScheduleOpen(true)}
         />
         <RegisterSection />
-        <SponsorsSection />
-        <ContactSection />
+        {/* <SponsorsSection /> */}
+
       </main>
 
       <SiteFooter />
