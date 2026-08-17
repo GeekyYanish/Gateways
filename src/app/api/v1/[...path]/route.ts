@@ -135,8 +135,12 @@ async function forward(request: Request) {
     method: request.method,
     headers,
     redirect: "manual",
-    // Receipt uploads are the slow case; the backend caps them at 8MB.
-    signal: AbortSignal.timeout(isRead ? 10_000 : 30_000),
+    // The backend's free-tier instance can hibernate on idle; a cold start
+    // takes real time to boot the process and its DB pool. These bounds give
+    // a woken-but-still-warming backend room to finish rather than timing out
+    // mid-boot — Vercel's own function execution limit is far above either.
+    // Receipt uploads are the other slow case; the backend caps them at 8MB.
+    signal: AbortSignal.timeout(isRead ? 15_000 : 45_000),
   };
 
   if (!isRead) {
