@@ -87,6 +87,12 @@ export interface AuthRepository {
   resetPassword?(token: string, newPassword: string): Promise<void>;
   changePassword?(currentPassword: string, newPassword: string): Promise<Session>;
   createConsoleHandoff?(returnTo?: string): Promise<{ url: string; expiresAt: string }>;
+  /**
+   * The reverse: a staff member already signed into the registration console
+   * hands their session back to the website. Consumed by the
+   * `/auth/console-return` page after the console redirects here with a code.
+   */
+  exchangeWebsiteHandoff?(code: string): Promise<{ returnTo: string }>;
 }
 
 export interface ProfileRepository {

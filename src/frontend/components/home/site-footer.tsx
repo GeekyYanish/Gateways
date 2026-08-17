@@ -5,55 +5,11 @@ import { GRASS_GROUND_STYLE } from "@/frontend/lib/assets/textures";
 import { FEST } from "@/frontend/lib/fest";
 import { HomeSection } from "./home-section";
 
-/**
- * Contact block plus the site footer.
- *
- * The phone numbers are real links (`tel:`) rather than plain text — a visitor
- * on a phone reading this page should be one tap from calling, and copying a
- * number off a screen is exactly the friction that loses a registration.
- *
- * The footer used to carry a route list (Events / Schedule / Sponsors /
- * Leaderboard). It no longer does: Events and Schedule open as modals from the
- * nav, and Sponsors is now a section on this very page, so footer links to them
- * were duplicating navigation the visitor had already scrolled past.
- */
-
-export function ContactSection() {
-  return (
-    <HomeSection
-      id="contact"
-      eyebrow="Get in touch"
-      title="Contact"
-      lead="Any question about events, payments or a place to stay — one of these will have the answer."
-    >
-      <ul className="grid gap-[var(--mc-unit)] md:grid-cols-3">
-        {FEST.contacts.map((c) => (
-          <li key={c.name}>
-            <BlockPanel
-              variant="panel"
-              padded="lg"
-              className="flex h-full flex-col gap-[calc(var(--mc-unit)*0.5)]"
-            >
-              <p className="text-[17px] text-mc-text">{c.name}</p>
-              {c.role ? (
-                <p className="font-pixel text-[7px] uppercase tracking-[0.12em] text-mc-text-dim">
-                  {c.role}
-                </p>
-              ) : null}
-              <a
-                href={`tel:${c.phone.replace(/\s+/g, "")}`}
-                className="mt-auto inline-flex min-h-11 items-center font-pixel text-[9px] tracking-[0.1em] text-mc-accent no-underline hover:text-mc-accent-strong md:text-[10px]"
-              >
-                {c.phone}
-              </a>
-            </BlockPanel>
-          </li>
-        ))}
-      </ul>
-    </HomeSection>
-  );
-}
-
+//The site footer.
+//
+//The phone numbers are real links (`tel:`) rather than plain text — a visitor
+//on a phone reading this page should be one tap from calling, and copying a
+//number off a screen is exactly the friction that loses a registration.
 export function SiteFooter() {
   return (
     // Grass-topped dirt, generated in assets/textures.ts. The footer is now

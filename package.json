@@ -4,8 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:preprod": "dotenv -e .env.preproduction.local -- next dev",
     "build": "next build",
+    "build:preprod": "dotenv -e .env.preproduction.local -- next build",
     "start": "next start",
+    "start:preprod": "dotenv -e .env.preproduction.local -- next start",
     "lint": "eslint",
     "db:check": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/db-check.ts"
   },
@@ -43,6 +46,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.185.1",
+    "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",

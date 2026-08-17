@@ -39,11 +39,20 @@ import { cn } from "@/frontend/lib/utils";
  * visitor away mid-pitch to read a logo wall was never worth the navigation.
  */
 const ANCHORS = [
-  { href: "#about", label: "About" },
   { href: "#theme", label: "Theme" },
   { href: "#register", label: "Register" },
-  { href: "#sponsors", label: "Sponsors" },
-  { href: "#contact", label: "Contact" },
+  // { href: "#sponsors", label: "Sponsors" },
+] as const;
+
+/**
+ * Real routes, not in-page anchors. "About" used to scroll to a homepage
+ * section; the team-credits page took over that label and destination, since
+ * "who is running this" is what visitors actually expect from an About link.
+ */
+const PAGE_LINKS = [
+  { href: "/about", label: "About" },
+  { href: "/gallery", label: "Gallery" },
+  { href: "/contact", label: "Contact" },
 ] as const;
 
 export interface SiteNavProps {
@@ -127,6 +136,9 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
           <NavLink label="Events" onClick={onOpenEvents} />
           <NavLink label="Schedule" onClick={onOpenSchedule} />
           {ANCHORS.slice(2).map((a) => (
+            <NavLink key={a.href} href={a.href} label={a.label} />
+          ))}
+          {PAGE_LINKS.map((a) => (
             <NavLink key={a.href} href={a.href} label={a.label} />
           ))}
         </nav>
@@ -215,6 +227,9 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
             Schedule
           </BlockButton>
           {ANCHORS.slice(2).map((a) => (
+            <MenuLink key={a.href} href={a.href} label={a.label} onNavigate={() => setMenuOpen(false)} />
+          ))}
+          {PAGE_LINKS.map((a) => (
             <MenuLink key={a.href} href={a.href} label={a.label} onNavigate={() => setMenuOpen(false)} />
           ))}
           <a

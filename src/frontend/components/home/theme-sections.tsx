@@ -87,7 +87,7 @@ export function DigitalTwinsSection() {
   return (
     <HomeSection
       id="theme"
-      eyebrow="This year's subject"
+      eyebrow="This year's Theme"
       title="Digital Twins"
     >
       {/* The night workshop is the dark theme's; `circuit-lab-day` is the same

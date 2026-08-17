@@ -130,13 +130,26 @@ async function forward(request: Request) {
   headers.set("x-forwarded-host", incoming.host);
   headers.set("x-forwarded-proto", incoming.protocol.replace(":", ""));
 
-  const isRead = request.method === "GET" || request.method === "HEAD";
+  /**
+   * The OAuth callback is a GET by HTTP method, but not by workload: it
+   * exchanges the code with Google, fetches userinfo, runs a DB
+   * find-or-create transaction, and sends the verification email — all in
+   * one request. Bucketing it as a "read" starved it to the 15s budget below
+   * and produced a 504 even on a warm backend. Method alone is the wrong
+   * signal for this one route; it needs the same room as a mutation.
+   */
+  const isOAuthCallback = target.pathname.startsWith("/api/v1/auth/callback/");
+  const isRead = (request.method === "GET" || request.method === "HEAD") && !isOAuthCallback;
   const init: RequestInit = {
     method: request.method,
     headers,
     redirect: "manual",
-    // Receipt uploads are the slow case; the backend caps them at 8MB.
-    signal: AbortSignal.timeout(isRead ? 10_000 : 30_000),
+    // The backend's free-tier instance can hibernate on idle; a cold start
+    // takes real time to boot the process and its DB pool. These bounds give
+    // a woken-but-still-warming backend room to finish rather than timing out
+    // mid-boot — Vercel's own function execution limit is far above either.
+    // Receipt uploads are the other slow case; the backend caps them at 8MB.
+    signal: AbortSignal.timeout(isRead ? 15_000 : 45_000),
   };
 
   if (!isRead) {

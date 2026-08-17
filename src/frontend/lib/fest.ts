@@ -17,6 +17,7 @@
 export interface FestContact {
   name: string;
   phone: string;
+  email: string;
   role?: string;
 }
 
@@ -39,17 +40,19 @@ export function inr(amount: number): string {
  * before, and a date change is exactly the moment two copies of the same fact
  * quietly stop agreeing — which is what happened here.
  */
-const HACKATHON_DATE_LABEL = "2 October 2026";
-const PRIZE_POOL_INR = 63_000;
+const HACKATHON_DATE_LABEL = "30 September 2026";
+const PRIZE_POOL_INR = 250_000;
 
 /** Tiered registration fees (domestic/international, time-of-purchase). */
 const REGISTRATION_FEES = {
   /** Domestic early-bird rate. */
-  earlyBirdInr: 300,
+  earlyBirdInr: 200,
   /** Domestic standard rate (after early-bird window closes). */
-  standardInr: 350,
+  standardInr: 250,
   /** At-the-door rate on the day of the fest. */
-  onSpotInr: 400,
+  onSpotInr: 300,
+  /** On campus rate for Christites. */
+  christiteInr: 200,
   /** Flat rate for international participants. */
   internationalInr: 1_000,
 } as const;
@@ -101,6 +104,7 @@ export const FEST = {
     university: "CHRIST (Deemed to be University)",
     universityUrl: "https://christuniversity.in",
     city: "Bangalore",
+    address: "Dharmaram College Post, Hosur Rd, Bengaluru, Karnataka 560029",
   },
 
   /** All rupee figures. TODO — confirm every one of these for 2026. */
@@ -112,7 +116,7 @@ export const FEST = {
     registration: REGISTRATION_FEES,
     prizePoolInr: PRIZE_POOL_INR,
     accommodationPerDayInr: 300,
-    accommodationNote: "+ GST, per person per day",
+    accommodationNote: "Per person per day",
   },
 
   links: {
@@ -145,9 +149,9 @@ export const FEST = {
 
   /** TODO — replace with the 2026 organising team. */
   contacts: [
-    { name: "TODO — Convenor", phone: "TODO", role: "General queries" },
-    { name: "TODO — Registrations", phone: "TODO", role: "Registration & payments" },
-    { name: "TODO — Hospitality", phone: "TODO", role: "Accommodation" },
+    { name: "Reno Riji Matthew", phone: "+91 9945135960", email: "renoreji.matthew@mca.christuniversity.in", role: "General convenor" },
+    { name: "Abhinav Jain", phone: "+91 9214544078", email: "abhinav.jain@mca.christuniversity.in", role: "Registration & payments" },
+    { name: "Slaven Dereck Pais", phone: "+91 9844373547", email: "slavenderick.pais@mca.christuniversity.in", role: "Hospitality" },
   ] as FestContact[],
 
   /** TODO — point these at the fest's own handles once they exist. */

@@ -10,7 +10,22 @@ import { BlockButton, BlockCheckbox, BlockInput, BlockPanel } from "@/frontend/c
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { repo, isApiBackendEnabled } from "@/backend/data";
 import { DataError } from "@/backend/data/types";
+import { ApiError } from "@/frontend/lib/api-client";
 import { cn } from "@/frontend/lib/utils";
+
+/**
+ * `BACKEND_UNAVAILABLE` isn't in `ApiError.toDataError()`'s known-code list
+ * (see api-client.ts), so it surfaces here as a raw `ApiError` rather than a
+ * `DataError` — this is the one place that matters: a cold backend timing out
+ * mid-signin should read as "try again in a moment," not a generic failure.
+ */
+function describeAuthError(e: unknown): string {
+  if (e instanceof DataError) return e.message;
+  if (e instanceof ApiError && e.retryable) {
+    return "The server is waking up. Please try again in a few seconds.";
+  }
+  return "Something went wrong. Please try again.";
+}
 
 /**
  * SCREEN 3 — Login / Sign up.
@@ -125,6 +140,34 @@ export function LoginScreen() {
       ? "Google sign-in is almost complete. Enter the code we sent to your email."
       : null,
   );
+  const [serverWarming, setServerWarming] = useState(false);
+
+  /**
+   * Wake the backend as soon as this screen mounts, not when the form is
+   * submitted. The backend's free-tier instance can hibernate on idle, and a
+   * cold start takes long enough that submitting immediately can time out —
+   * pinging here pays that cost while the user is still typing instead of
+   * during their actual sign-in request. The "waking up" note only appears
+   * if this is still pending after a beat, so a warm backend shows nothing.
+   */
+  useEffect(() => {
+    if (!isApiBackendEnabled()) return;
+    let cancelled = false;
+    const showNoticeTimer = setTimeout(() => {
+      if (!cancelled) setServerWarming(true);
+    }, 800);
+    fetch("/api/warmup")
+      .catch(() => {})
+      .finally(() => {
+        cancelled = true;
+        clearTimeout(showNoticeTimer);
+        setServerWarming(false);
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(showNoticeTimer);
+    };
+  }, []);
 
   const {
     register,
@@ -204,9 +247,7 @@ export function LoginScreen() {
       await refresh();
       await routeAuthenticatedUser();
     } catch (e) {
-      setFormError(
-        e instanceof DataError ? e.message : "Something went wrong. Please try again.",
-      );
+      setFormError(describeAuthError(e));
     }
   }
 
@@ -476,6 +517,15 @@ export function LoginScreen() {
             >
               {formError}
             </BlockPanel>
+          ) : null}
+
+          {/* Only appears if the warm-up ping is still pending after a beat —
+              a warm backend never shows this. aria-live so it doesn't read as
+              a silent hang for screen-reader users either. */}
+          {serverWarming ? (
+            <p role="status" aria-live="polite" className="text-center text-[14px] text-mc-text-dim">
+              Waking up the server — this can take a few seconds…
+            </p>
           ) : null}
 
           <BlockButton

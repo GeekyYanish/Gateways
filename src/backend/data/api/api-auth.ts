@@ -221,6 +221,21 @@ export class ApiAuth implements AuthRepository {
       throw error instanceof ApiError ? error.toDataError() : error;
     }
   }
+
+  async exchangeWebsiteHandoff(code: string): Promise<{ returnTo: string }> {
+    try {
+      const data = await apiFetch<{ returnTo: string }>("/auth/website-handoff/exchange", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const session = await this.getSession();
+      this.emit(session);
+      return { returnTo: data.returnTo };
+    } catch (error) {
+      throw error instanceof ApiError ? error.toDataError() : error;
+    }
+  }
 }
 
 /** Present backend errors as the `DataError` codes screens already catch on. */
