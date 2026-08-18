@@ -26,15 +26,15 @@ import { cn } from "@/frontend/lib/utils";
  */
 
 const NAV = [
-  { href: "/dashboard", label: "Inventory", icon: "▦" },
+  // Profile leads: it is where participant details are filled in, and that is
+  // the one thing here a participant MUST do before they can register.
+  { href: "/dashboard/profile", label: "Profile", icon: "◉" },
   { href: "/dashboard/events", label: "My Events", icon: "▤" },
-  { href: "/dashboard/achievements", label: "Achievements", icon: "★" },
   // The in-shell schedule, NOT the public /schedule route — that one lives
   // outside the (realm) group, so it would drop the sidebar on the way there.
   { href: "/dashboard/schedule", label: "Schedule", icon: "◷" },
   { href: "/dashboard/team", label: "Team", icon: "◍" },
   { href: "/dashboard/notifications", label: "Notifications", icon: "◈" },
-  { href: "/dashboard/profile", label: "Profile", icon: "◉" },
   { href: "/dashboard/settings", label: "Settings", icon: "⚙" },
 ] as const;
 
@@ -51,7 +51,6 @@ const NAV = [
 const TABS = [
   { href: "/world", label: "Home", icon: "⌂" },
   { href: "/events", label: "Events", icon: "▤" },
-  { href: "/dashboard", label: "Inventory", icon: "▦" },
   { href: "/dashboard/profile", label: "Profile", icon: "◉" },
 ] as const;
 

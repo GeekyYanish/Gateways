@@ -44,9 +44,19 @@ export function ScheduleList({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex flex-col gap-[calc(var(--mc-unit)*1.5)]", className)}>
-      {[...byDay.entries()].map(([day, daySlots]) => (
+      {[...byDay.entries()].map(([day, daySlots]) => {
+        return (
         <section key={day}>
-          <h3 className="font-pixel text-[11px] uppercase text-mc-eyebrow">{day}</h3>
+          {/* "Venue" is a COLUMN LABEL, not a value — it heads the right-hand
+              column the rows below fill in. Printing the shared placeholder up
+              here instead would have to be undone the moment a single event
+              gets a real room. */}
+          <div className="flex flex-wrap items-baseline justify-between gap-x-[var(--mc-unit)] gap-y-[2px]">
+            <h3 className="font-pixel text-[11px] uppercase text-mc-eyebrow">{day}</h3>
+            <span className="font-pixel text-[9px] uppercase tracking-[0.1em] text-mc-text-dim">
+              Venue
+            </span>
+          </div>
           <ol className="mt-[var(--mc-unit)] flex flex-col gap-[calc(var(--mc-unit)*0.5)]">
             {daySlots.map((s) => {
               const event = events?.find((e) => e.id === s.eventId);
@@ -80,16 +90,22 @@ export function ScheduleList({ className }: { className?: string }) {
                         </span>
                       )}
                     </span>
-                    {s.venue ? (
-                      <span className="text-[14px] text-mc-text-dim">{s.venue}</span>
-                    ) : null}
+                    {/* Each event's own venue, under the column label above.
+                        The seed still carries "To be announced" for every
+                        event; set a real one there and it appears here with no
+                        further change. Until then it renders as a dash, so
+                        thirteen rows do not all repeat the same placeholder. */}
+                    <span className="text-[14px] text-mc-text-dim">
+                      {s.venue && s.venue !== "To be announced" ? s.venue : "—"}
+                    </span>
                   </BlockPanel>
                 </li>
               );
             })}
           </ol>
         </section>
-      ))}
+        );
+      })}
     </div>
   );
 }

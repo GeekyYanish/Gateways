@@ -4,9 +4,10 @@ import { COURTYARD, planPct, roomByKey, type RectM } from "./floor-plan";
 /**
  * World map hotspots (mockup SCREEN 6).
  *
- * These are the rooms of our building, dressed in the realm's names — the
- * layout is real, the naming is not. Classroom C is the Hackathon Mine, the
- * staff room is the Wardens' Hall, the courtyard is the Village Square.
+ * These are the rooms of our building. The five event rooms are LABELLED with
+ * the event they host, so the map and the list name what is actually on; the
+ * room's realm name survives in the blurb. Utility locations keep their realm
+ * names (Wardens' Hall, Village Square) — they host no event.
  *
  * `x`/`y` are PERCENTAGES, never pixels, and they are **derived from
  * `floor-plan.ts`** rather than hand-typed. They are only a fallback: the map
@@ -59,48 +60,48 @@ function atRect(r: RectM): { x: number; y: number } {
 export const WORLD_LOCATIONS: readonly WorldLocation[] = [
   {
     key: "hackathon-mine",
-    label: "Hackathon Mine",
+    label: "24° Shift",
     ...at("hackathon-mine"),
     href: "/events/24-shift",
     item: "pickaxe",
     eventSlug: "24-shift",
-    blurb: "24° Shift — the 24-hour hackathon. Dig deep into code and ship by morning.",
+    blurb: "The 24-hour hackathon, in the Hackathon Mine. Dig deep into code and ship by morning.",
   },
   {
     key: "photography-forest",
-    label: "Photography Forest",
+    label: "Pixel Quest",
     ...at("photography-forest"),
     href: "/events/pixel-quest",
     item: "camera",
     eventSlug: "pixel-quest",
-    blurb: "Pixel Quest — the photography contest. Capture the realm.",
+    blurb: "The photography contest, out in the Photography Forest. Capture the realm.",
   },
   {
     key: "design-workshop",
-    label: "Design Workshop",
+    label: "Pixel Paradox",
     ...at("design-workshop"),
     href: "/events/pixel-paradox",
     item: "craftingTable",
     eventSlug: "pixel-paradox",
-    blurb: "Pixel Paradox — the UI/UX event. Craft interfaces at the workbench.",
+    blurb: "The UI/UX event, at the Design Workshop bench.",
   },
   {
     key: "quiz-library",
-    label: "Quiz Library",
+    label: "Deviation",
     ...at("quiz-library"),
     href: "/events/deviation",
     item: "book",
     eventSlug: "deviation",
-    blurb: "Deviation — the IT quiz. Test your knowledge across the realm.",
+    blurb: "The IT quiz, held in the Quiz Library. Test your knowledge across the realm.",
   },
   {
     key: "gaming-arena",
-    label: "Gaming Arena",
+    label: "Gaming",
     ...at("gaming-arena"),
     href: "/events/gaming",
     item: "sword",
     eventSlug: "gaming",
-    blurb: "Gaming — tournaments, brackets and bragging rights.",
+    blurb: "Tournaments and brackets in the Gaming Arena.",
   },
   {
     key: "sponsors-pavilion",
