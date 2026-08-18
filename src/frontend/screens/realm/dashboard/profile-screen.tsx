@@ -1,17 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { BlockButton, BlockPanel, LoadingBlocks, PixelAvatar, XpBar } from "@/frontend/components/mc";
+import { BlockButton, BlockInput, BlockPanel, LoadingBlocks, PixelAvatar, XpBar } from "@/frontend/components/mc";
 import { ParticipantDetailsModal } from "@/frontend/components/registration/participant-details-modal";
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
 import { repo, xpProgress } from "@/backend/data";
+import { DataError } from "@/backend/data/types";
 import { isParticipantComplete } from "@/backend/data/types";
 
 export function ProfileScreen() {
-  const { session, character } = useSession();
+  const { session, character, refresh } = useSession();
   const userId = session?.userId;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [nameBusy, setNameBusy] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const { data: levels } = useAsync(() => repo.reference.levels(), []);
   const { data: colleges } = useAsync(() => repo.reference.colleges(), []);
@@ -39,6 +44,46 @@ export function ProfileScreen() {
   const { data: ledger } = useAsync(async () => (userId ? repo.xp.ledger(userId) : []), [userId]);
   const { data: attendance } = useAsync(async () => (userId ? repo.attendance.listForUser(userId) : []), [userId]);
 
+  /**
+   * Rename. The availability check is a courtesy — it makes the common
+   * collision a clear message instead of a thrown error — but it is NOT the
+   * guarantee. `updateCharacter` re-checks inside the writing transaction,
+   * because anything checked here can be taken between this call and the save.
+   */
+  async function onSaveUsername() {
+    if (!userId) return;
+    const next = nameDraft.trim();
+    if (next.length < 3 || next.length > 24) {
+      setNameError("Between 3 and 24 characters.");
+      return;
+    }
+    if (!/^[A-Za-z0-9_-]+$/.test(next)) {
+      setNameError("Letters, numbers, hyphen and underscore only.");
+      return;
+    }
+    if (next === character?.playerName) {
+      setEditingName(false);
+      return;
+    }
+    setNameBusy(true);
+    setNameError(null);
+    try {
+      if (await repo.characters.isPlayerNameTaken(next, userId)) {
+        setNameError("That username is already taken.");
+        return;
+      }
+      await repo.characters.update(userId, { playerName: next });
+      await refresh();
+      setEditingName(false);
+    } catch (e) {
+      setNameError(
+        e instanceof DataError ? e.message : "Could not change the username.",
+      );
+    } finally {
+      setNameBusy(false);
+    }
+  }
+
   /*
     Only the reference levels are required to render anything, and only because
     the XP bar needs them.
@@ -65,6 +110,70 @@ export function ProfileScreen() {
   return (
     <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
       <h1 className="text-mc-accent text-base md:text-lg">PROFILE</h1>
+
+      {/*
+        Username, kept separate from the participant details below: it is the
+        account's public identity, not fest paperwork, and it is the one field
+        here with a uniqueness rule attached.
+
+        Signup derives it from the name plus the user id, which produces things
+        like "YanishRai_019ffc9b…" — legible to a database and to nobody else.
+      */}
+      {character ? (
+        <BlockPanel variant="panel" padded="lg" className="flex flex-col gap-[var(--mc-unit)]">
+          <h2 className="font-pixel text-[10px] uppercase tracking-[0.1em] text-mc-success">
+            Username
+          </h2>
+          {editingName ? (
+            <>
+              <BlockInput
+                label="New username"
+                value={nameDraft}
+                maxLength={24}
+                autoFocus
+                error={nameError ?? undefined}
+                onChange={(e) => setNameDraft(e.target.value)}
+                hint="3–24 characters. Letters, numbers, hyphen and underscore."
+              />
+              <div className="flex flex-wrap gap-[var(--mc-unit)]">
+                <BlockButton variant="emerald" size="sm" loading={nameBusy} onClick={onSaveUsername}>
+                  Save username
+                </BlockButton>
+                <BlockButton
+                  variant="stone"
+                  size="sm"
+                  onClick={() => {
+                    setEditingName(false);
+                    setNameError(null);
+                  }}
+                >
+                  Cancel
+                </BlockButton>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="break-all text-[17px] text-mc-text">{character.playerName}</p>
+              <div>
+                <BlockButton
+                  variant="gold"
+                  size="sm"
+                  onClick={() => {
+                    setNameDraft(character.playerName);
+                    setNameError(null);
+                    setEditingName(true);
+                  }}
+                >
+                  Change username
+                </BlockButton>
+              </div>
+              <p className="text-[15px] text-mc-text-dim">
+                This is the name teammates and the leaderboard see.
+              </p>
+            </>
+          )}
+        </BlockPanel>
+      ) : null}
 
       {userId ? (
         <ParticipantDetailsModal
