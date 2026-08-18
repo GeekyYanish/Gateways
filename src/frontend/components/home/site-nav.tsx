@@ -144,21 +144,12 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-[calc(var(--mc-unit)*0.75)] md:gap-[calc(var(--mc-unit)*1.25)] min-[1320px]:justify-self-end">
-          {/* Visible at every width, including mobile — a visitor who needs the
-              light theme needs it on a phone too, and burying it in the menu
-              modal would be the one control they have to go looking for. */}
-          <ThemeToggle />
-
-          <div className="min-[1320px]:hidden">
-            <BlockButton
-              variant="ghost"
-              size="icon"
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
-            >
-              <Menu aria-hidden size={20} strokeWidth={2.5} />
-            </BlockButton>
-          </div>
+          {/* Below 1320px this leaves the bar so the university mark can take
+              the slot. It is never absent from both places at once: the menu
+              modal carries an "Appearance" row that is itself hidden above
+              1320px. Someone who needs the light theme on a phone still has it,
+              one tap further in. */}
+          <ThemeToggle className="hidden min-[1320px]:inline-flex" />
 
           {/* Separates the outbound university link from the in-page nav it now
               sits beside. Only meaningful once the nav is visible. */}
@@ -172,24 +163,60 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
             and lettering. The path still comes from the manifest, so the
             no-hardcoded-paths rule holds. Height-constrained with width auto so
             the 1795×608 source scales without distortion.
+
+            `university-mark` is what the light theme hooks to darken these. The
+            source art is white-on-transparent, drawn for the dark nav; on the
+            light theme's pale sky it is all but gone. See globals.css.
+
+            The accessible name sits on the <a>, not on either <img>: only one
+            of the two renders at any width, so a name carried by `alt` would
+            disappear at whichever breakpoint hid that copy.
           */}
           <a
             href={FEST.host.universityUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden min-h-11 shrink-0 items-center sm:flex"
+            aria-label={`${FEST.host.university} — opens in a new tab`}
+            className="flex min-h-11 shrink-0 items-center"
           >
+            {/* Below sm, the seal alone — the same collapse the Gateways lockup
+                makes. That one is two elements, so its wordmark span simply
+                hides; this is a SINGLE png with the lettering baked in and
+                there is no seal-only file. So crop it: a square box with
+                overflow-hidden, and the image at w-auto/max-w-none overflows to
+                its natural 2.95:1, leaving only the leftmost square — the seal
+                — visible. No second asset to keep in sync, and it stays correct
+                if the wordmark is ever re-exported at a different width. */}
+            <span aria-hidden className="block h-8 w-8 shrink-0 overflow-hidden sm:hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={ART.brand.christUniversity.src}
+                alt=""
+                className="university-mark h-full w-auto max-w-none object-left opacity-90"
+              />
+            </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={ART.brand.christUniversity.src}
-              alt={`${FEST.host.university} — opens in a new tab`}
-              // `university-mark` is what the light theme hooks to invert this.
-              // The source art is white-on-transparent, drawn for the dark nav;
-              // on the light theme's pale sky it is all but gone. See globals.css.
-              className="university-mark h-8 w-auto opacity-90 transition-opacity hover:opacity-100 md:h-10 min-[1320px]:h-12"
+              alt=""
+              aria-hidden
+              className="university-mark hidden h-8 w-auto opacity-90 transition-opacity hover:opacity-100 sm:block md:h-10 min-[1320px]:h-12"
             />
           </a>
 
+          {/* Last in the row. The hamburger belongs at the trailing edge on
+              mobile, which is also where it was before the mark took the
+              toggle's slot. */}
+          <div className="min-[1320px]:hidden">
+            <BlockButton
+              variant="ghost"
+              size="icon"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu aria-hidden size={20} strokeWidth={2.5} />
+            </BlockButton>
+          </div>
         </div>
       </div>
 
@@ -203,29 +230,40 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
         description="Site navigation"
       >
         <nav aria-label="Mobile" className="flex flex-col gap-[var(--mc-unit)]">
+          {/* First, and visibly set apart, because it is the one row here that
+              is not a destination — someone who opened the menu to change the
+              theme should not have to read past six links to reach it.
+
+              Labelled "Appearance", not "Theme": the nav already has a "Theme"
+              link and there it means this year's SUBJECT (Digital Twins), not
+              the colour scheme. Two rows sharing a word while doing unrelated
+              things is worse than a slightly formal label.
+
+              Hidden above 1320px, where the toggle is back out in the bar. */}
+          <div className="flex items-center justify-between gap-[var(--mc-unit)] bg-mc-slot px-[calc(var(--mc-unit)*1.5)] py-[var(--mc-unit)] bevel-inset min-[1320px]:hidden">
+            <span className="font-pixel text-[10px] uppercase tracking-[0.1em] text-mc-text-dim">
+              Appearance
+            </span>
+            <ThemeToggle />
+          </div>
+
           {ANCHORS.slice(0, 2).map((a) => (
             <MenuLink key={a.href} href={a.href} label={a.label} onNavigate={() => setMenuOpen(false)} />
           ))}
-          <BlockButton
-            variant="stone"
-            block
-            onClick={() => {
-              setMenuOpen(false);
-              onOpenEvents();
-            }}
-          >
-            Events
-          </BlockButton>
-          <BlockButton
-            variant="stone"
-            block
-            onClick={() => {
-              setMenuOpen(false);
-              onOpenSchedule();
-            }}
-          >
-            Schedule
-          </BlockButton>
+          {/* MenuLink, not <BlockButton variant="stone">. Two raised grey slabs
+              among six inset dark rows read as the only real controls in the
+              menu — exactly the miscue the desktop nav already corrected (see
+              the note above its own Events/Schedule pair). */}
+          <MenuLink
+            label="Events"
+            onNavigate={() => setMenuOpen(false)}
+            onClick={onOpenEvents}
+          />
+          <MenuLink
+            label="Schedule"
+            onNavigate={() => setMenuOpen(false)}
+            onClick={onOpenSchedule}
+          />
           {ANCHORS.slice(2).map((a) => (
             <MenuLink key={a.href} href={a.href} label={a.label} onNavigate={() => setMenuOpen(false)} />
           ))}
@@ -279,21 +317,46 @@ function NavLink({
   );
 }
 
+/**
+ * One row of the mobile menu. Anchor when it navigates, button when it opens a
+ * modal — identical styling either way, mirroring how NavLink already handles
+ * the same split on desktop. An <a href="#"> that opens a dialog lies to
+ * assistive tech, so the modal triggers get a real <button>.
+ *
+ * `onNavigate` closes the menu and runs first, so the modal opens onto a closed
+ * menu rather than stacking on top of it.
+ */
 function MenuLink({
   href,
   label,
   onNavigate,
+  onClick,
 }: {
-  href: string;
+  href?: string;
   label: string;
   onNavigate: () => void;
+  onClick?: () => void;
 }) {
+  const className =
+    "block w-full bg-mc-slot px-[calc(var(--mc-unit)*1.5)] py-[calc(var(--mc-unit)*1.25)] text-center font-pixel text-[11px] uppercase tracking-[0.1em] text-mc-text no-underline bevel-inset";
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          onNavigate();
+          onClick();
+        }}
+        className={cn(className, "cursor-pointer border-0")}
+      >
+        {label}
+      </button>
+    );
+  }
+
   return (
-    <a
-      href={href}
-      onClick={onNavigate}
-      className="block bg-mc-slot px-[calc(var(--mc-unit)*1.5)] py-[calc(var(--mc-unit)*1.25)] text-center font-pixel text-[11px] uppercase tracking-[0.1em] text-mc-text no-underline bevel-inset"
-    >
+    <a href={href} onClick={onNavigate} className={className}>
       {label}
     </a>
   );

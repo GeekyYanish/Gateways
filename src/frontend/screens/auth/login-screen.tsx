@@ -247,6 +247,19 @@ export function LoginScreen() {
       await refresh();
       await routeAuthenticatedUser();
     } catch (e) {
+      if (
+        mode === "login" &&
+        e instanceof DataError &&
+        e.code === "VALIDATION_FAILED" &&
+        /verify your email/i.test(e.message)
+      ) {
+        setPendingEmail(values.email);
+        setCode("");
+        setVerificationNotice(
+          "Your email still needs verification. Enter the code we sent, or request a new one.",
+        );
+        return;
+      }
       setFormError(describeAuthError(e));
     }
   }

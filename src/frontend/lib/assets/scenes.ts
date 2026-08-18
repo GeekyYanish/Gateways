@@ -117,17 +117,20 @@ function layer(
  */
 const LANDFORM = { w: 1280, h: 1080 } as const;
 
-function scenePath(sceneKey: string, layerKey: string): string {
-  return `/art/scenes/${sceneKey}/${layerKey}.png`;
-}
-
-/** Fill in each layer's src from its scene + layer key. */
+/**
+ * Finalise a scene definition.
+ *
+ * A source is intentionally kept empty until a real file is supplied. The
+ * generated painters/placeholders are first-class artwork, so inventing a
+ * conventional URL here only makes every page issue a guaranteed 404 before
+ * rendering the artwork it already has.
+ */
 function buildScene(s: Omit<Scene, "layers"> & { layers: SceneLayer[] }): Scene {
   return {
     ...s,
     layers: s.layers.map((l) => ({
       ...l,
-      src: l.src || scenePath(s.key, l.key),
+      src: l.src,
       note: l.note ?? `${s.key}/${l.layer}`,
     })),
   };

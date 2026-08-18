@@ -17,10 +17,10 @@ import { cn } from "@/frontend/lib/utils";
  *
  * Art resolution has two modes, and the probe runs in opposite directions:
  *
- * - **Placeholder layers** (no `paint`): show `layer.src` optimistically and
- *   fall back to a generated silhouette on error. The silhouette is a stand-in
- *   that says "art pending", so it should appear only once the file is known
- *   to be missing.
+ * - **Placeholder layers** (no `paint`): show an explicitly supplied
+ *   `layer.src` optimistically and fall back to a generated silhouette on
+ *   error. Layers without a source render the silhouette immediately, avoiding
+ *   a guaranteed 404 for art that has not been delivered yet.
  * - **Painted layers** (`paint` set): show the generated art *first* and swap
  *   to `layer.src` only once the probe confirms a real file loaded. Painted art
  *   is the intended render, not a fallback — probing first would flash an empty
@@ -66,6 +66,8 @@ export function ParallaxLayer({
   // Probe the real asset. `onload` matters as much as `onerror` here: it is
   // what lets a delivered PNG take over from generated art.
   useEffect(() => {
+    if (!layer.src) return;
+
     let cancelled = false;
     const probe = new Image();
     probe.onload = () => {
@@ -107,7 +109,7 @@ export function ParallaxLayer({
     url = layer.src;
   } else if (painted) {
     url = painted;
-  } else if (status === "missing") {
+  } else if (!layer.src || status === "missing") {
     url = sceneLayerPlaceholder({
       key: `${sceneKey}-${layer.key}`,
       layer: layer.layer,

@@ -1,5 +1,5 @@
 import { SessionProvider } from "@/frontend/components/auth/session-provider";
-import { BackLink } from "@/frontend/components/mc";
+import { BackLink } from "@/frontend/components/mc/back-link";
 import { AnimatedBackground } from "@/frontend/components/scene";
 
 /**
@@ -13,14 +13,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <AnimatedBackground
         scene="realm-gate"
         intensity={0.5}
-        className="flex flex-1 flex-col p-[var(--mc-unit)] sm:p-[calc(var(--mc-unit)*2)]"
+        className="flex flex-1 flex-col items-center justify-center p-[calc(var(--mc-unit)*2)]"
       >
-        <div className="relative z-20 mx-auto flex w-full max-w-6xl flex-1 flex-col">
-          <BackLink href="/" label="Home" className="shrink-0 self-start" />
-          <div className="flex flex-1 items-center justify-center py-[calc(var(--mc-unit)*1.5)] sm:py-[calc(var(--mc-unit)*2)]">
-            {children}
-          </div>
-        </div>
+        <BackLink
+          href="/"
+          label="Home"
+          className="absolute left-[calc(var(--mc-unit)*2)] top-[calc(var(--mc-unit)*2)] z-20"
+        />
+        {children}
       </AnimatedBackground>
     </SessionProvider>
   );
