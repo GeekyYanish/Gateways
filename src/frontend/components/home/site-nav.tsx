@@ -151,8 +151,8 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
               one tap further in. */}
           <ThemeToggle className="hidden min-[1320px]:inline-flex" />
 
-          {/* Separates the outbound university link from the in-page nav it now
-              sits beside. Only meaningful once the nav is visible. */}
+          {/* Separates the toggle from the outbound university mark. Only
+              meaningful at full width, where both are in the bar. */}
           <span aria-hidden className="hidden h-[20px] w-px bg-mc-border md:h-[26px] min-[1320px]:block" />
 
           {/*
