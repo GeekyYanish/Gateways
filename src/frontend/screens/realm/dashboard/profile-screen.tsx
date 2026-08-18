@@ -39,18 +39,28 @@ export function ProfileScreen() {
   const { data: ledger } = useAsync(async () => (userId ? repo.xp.ledger(userId) : []), [userId]);
   const { data: attendance } = useAsync(async () => (userId ? repo.attendance.listForUser(userId) : []), [userId]);
 
-  if (!character || !levels) {
+  /*
+    Only the reference levels are required to render anything, and only because
+    the XP bar needs them.
+
+    This used to also gate on `character`, which hung the whole page on
+    "Loading profile" forever for anyone without one — character creation was
+    removed from signup, so a null character is now a NORMAL state, not a
+    transient one. The participant details below do not need a character at all,
+    and they are the part of this page you actually have to reach.
+  */
+  if (!levels) {
     return <BlockPanel variant="slot"><LoadingBlocks label="Loading profile" /></BlockPanel>;
   }
 
-  const progress = xpProgress(character.totalXp, levels);
+  const progress = character ? xpProgress(character.totalXp, levels) : null;
   const detailsComplete = isParticipantComplete(profile ?? null, character);
   // Resolved against the PROFILE's ids, not the character's — the panel below
   // reports what registration will actually send.
   const detailCollege = colleges?.find((c) => c.id === profile?.collegeId);
   const detailDepartment = departments?.find((d) => d.id === profile?.departmentId);
-  const college = colleges?.find((c) => c.id === character.collegeId);
-  const department = departments?.find((d) => d.id === character.departmentId);
+  const college = colleges?.find((c) => c.id === character?.collegeId);
+  const department = departments?.find((d) => d.id === character?.departmentId);
 
   return (
     <div className="flex flex-col gap-[calc(var(--mc-unit)*1.5)]">
@@ -121,30 +131,36 @@ export function ProfileScreen() {
         </p>
       </BlockPanel>
 
-      <BlockPanel variant="panel" padded="lg" className="flex flex-wrap items-center gap-[calc(var(--mc-unit)*2)]">
-        <PixelAvatar skinId={character.skinId} size={96} full />
-        <div className="w-full min-w-0 flex-1 sm:min-w-[220px]">
-          <p className="font-pixel text-[14px] text-mc-success">{character.playerName}</p>
-          <p className="mt-[calc(var(--mc-unit)*0.5)] text-[16px] text-mc-text-dim">
-            {college?.name ?? "—"}
-            {department ? ` · ${department.name}` : ""}
-            {character.yearOfStudy ? ` · Year ${character.yearOfStudy}` : ""}
-          </p>
-          <XpBar
-            className="mt-[var(--mc-unit)]"
-            current={progress.current}
-            required={progress.required}
-            level={progress.level}
-            title={progress.title}
-          />
-        </div>
-      </BlockPanel>
+      {/* Everything below needs a character. Rendered only when there is one,
+          rather than blocking the page — see the note on the guard above. */}
+      {character && progress ? (
+        <>
+          <BlockPanel variant="panel" padded="lg" className="flex flex-wrap items-center gap-[calc(var(--mc-unit)*2)]">
+            <PixelAvatar skinId={character.skinId} size={96} full />
+            <div className="w-full min-w-0 flex-1 sm:min-w-[220px]">
+              <p className="font-pixel text-[14px] text-mc-success">{character.playerName}</p>
+              <p className="mt-[calc(var(--mc-unit)*0.5)] text-[16px] text-mc-text-dim">
+                {college?.name ?? "—"}
+                {department ? ` · ${department.name}` : ""}
+                {character.yearOfStudy ? ` · Year ${character.yearOfStudy}` : ""}
+              </p>
+              <XpBar
+                className="mt-[var(--mc-unit)]"
+                current={progress.current}
+                required={progress.required}
+                level={progress.level}
+                title={progress.title}
+              />
+            </div>
+          </BlockPanel>
 
-      <div className="grid gap-[var(--mc-unit)] sm:grid-cols-3">
-        <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
-        <Stat label="Total XP" value={String(character.totalXp)} />
-        <Stat label="Events attended" value={String(attendance?.length ?? 0)} />
-      </div>
+          <div className="grid gap-[var(--mc-unit)] sm:grid-cols-3">
+            <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
+            <Stat label="Total XP" value={String(character.totalXp)} />
+            <Stat label="Events attended" value={String(attendance?.length ?? 0)} />
+          </div>
+        </>
+      ) : null}
 
       <section>
         <h2 className="font-pixel text-[11px] uppercase text-mc-text-dim">XP history</h2>

@@ -37,23 +37,34 @@ function obsidianFace(base: string, vein: string, grid: number): string {
   ].join(", ");
 }
 
+/**
+ * Cut-stone fill for the pillars, cornice and steps.
+ *
+ * Same two-line mortar trick as `obsidianFace` — a dark groove with a lit lip
+ * under it — so each cell reads as a block with thickness rather than a ruled
+ * grid. Lighter and warmer than the obsidian, which is what separates the
+ * masonry of the gateway from the black frame the portal is cut into.
+ */
+function brickFace(base: string, cellW = 16.66, cellH = 14, lip = 0.09): string {
+  return [
+    `repeating-linear-gradient(90deg, rgb(0 0 0 / 0.34) 0 2px, rgb(255 255 255 / ${lip}) 2px 4px, transparent 4px ${cellW}%)`,
+    `repeating-linear-gradient(180deg, rgb(0 0 0 / 0.38) 0 2px, rgb(255 255 255 / ${lip}) 2px 4px, transparent 4px ${cellH}%)`,
+    base,
+  ].join(", ");
+}
+
+/** Pillar and lintel stone, lit from the front. */
+const STONE = brickFace("linear-gradient(180deg, #9b958b 0%, #858076 55%, #726d64 100%)");
+/** The same stone in shadow — capitals, bases, and the step risers. */
+const STONE_DARK = brickFace("linear-gradient(180deg, #6d6860 0%, #55514a 100%)", 16.66, 34);
+/** Dark slate for the overhanging cornice above the lintel. */
+const SLATE = brickFace("linear-gradient(180deg, #4b4b57 0%, #35353f 100%)", 12.5, 40);
+
 /** Front plane — the one the viewer reads as "the frame". */
 const FACE_FRONT = obsidianFace(
   "linear-gradient(160deg, #141033 0%, #0a0c24 55%, #06081a 100%)",
   "rgb(104 38 158 / 0.5)",
   0.06,
-);
-/** Top plane, tilted toward the sky, so it is the lightest of the three. */
-const FACE_TOP = obsidianFace(
-  "linear-gradient(180deg, #1d1845 0%, #100e2c 100%)",
-  "rgb(120 48 176 / 0.45)",
-  0.09,
-);
-/** Right plane, turned away from the light — darkest, and it sells the depth. */
-const FACE_RIGHT = obsidianFace(
-  "linear-gradient(180deg, #0a0820 0%, #050612 100%)",
-  "rgb(70 24 108 / 0.4)",
-  0.03,
 );
 
 /**
@@ -257,40 +268,67 @@ export function PortalFrame({
           </div>
         ) : (
           <>
-            {/* --- Extruded obsidian frame ---------------------------------
-                One box carries all three planes. The front occupies the left
-                90% / bottom 93%; the remaining sliver along the top and right
-                is the extrusion, which is what gives the portal its weight. */}
-            <div className="relative aspect-[340/400] w-full">
-              <div
-                className="absolute inset-0"
-                style={{ clipPath: "polygon(0% 7%, 90% 7%, 100% 0%, 10% 0%)", background: FACE_TOP }}
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  clipPath: "polygon(90% 7%, 100% 0%, 100% 93%, 90% 100%)",
-                  background: FACE_RIGHT,
-                }}
-              />
+            {/*
+              --- The gateway, drawn FRONT-ON ---------------------------------
 
-              {/* Front plane, and everything cut into it. */}
-              <div
-                className="absolute bottom-0 left-0 right-[10%] top-[7%]"
-                style={{ background: FACE_FRONT }}
-              >
-                {/* Violet light washing out of the aperture across the frame. */}
+              This used to be an extruded box: a front plane plus a top and a
+              right plane cut with `clip-path`, which read as a monolith seen
+              from off to one side. Everything else on this screen — wordmark,
+              tagline, CTA — is dead centre and face-on, so the one object the
+              eye lands on was the only thing turned away.
+
+              It is now a symmetrical gateway seen straight on: an overhanging
+              cornice, two pillars, and the obsidian frame between them with the
+              aperture cut into it. No plane is foreshortened, so no edge has to
+              be antialiased and the pixel read survives.
+            */}
+            <div className="relative w-full">
+              {/* Cornice: three courses, each overhanging the one below, which
+                  is what gives the roofline its weight from the front. */}
+              <div className="relative z-20 flex flex-col items-center">
                 <div
-                  className="pointer-events-none absolute inset-0 mix-blend-screen"
-                  style={{
-                    background:
-                      "radial-gradient(ellipse at 52% 56%, rgba(196,97,226,0.5) 0%, rgba(123,55,213,0.18) 38%, transparent 66%)",
-                  }}
+                  className="h-[calc(var(--mc-unit)*1.25)] w-[118%] bevel"
+                  style={{ background: SLATE, ["--bevel-light" as string]: "#5d5d6b", ["--bevel-dark" as string]: "#26262e" }}
                 />
-
-                <div className="portal-swirl absolute bottom-[3%] left-[27%] top-[21%] w-[46%] overflow-hidden opacity-90">
-                  {aperture}
+                <div
+                  className="h-[calc(var(--mc-unit)*1)] w-[108%] bevel"
+                  style={{ background: SLATE, ["--bevel-light" as string]: "#55555f", ["--bevel-dark" as string]: "#222229" }}
+                />
+                <div
+                  className="relative h-[calc(var(--mc-unit)*1.75)] w-[99%] bevel"
+                  style={{ background: STONE, ["--bevel-light" as string]: "#b0aaa0", ["--bevel-dark" as string]: "#5d584f" }}
+                >
+                  {/* Moss creeping along the lintel, as in the reference. */}
+                  <span className="absolute left-[12%] top-0 h-[38%] w-[7%] bg-[#5f8f3c] opacity-80" />
+                  <span className="absolute right-[18%] top-0 h-[30%] w-[5%] bg-[#6d9c45] opacity-70" />
                 </div>
+              </div>
+
+              {/* Body: pillar · obsidian frame · pillar */}
+              <div className="relative flex w-full items-stretch">
+                <Pillar side="left" />
+
+                <div
+                  className="relative aspect-[10/13] flex-1"
+                  style={{ background: FACE_FRONT }}
+                >
+                  {/* Violet light washing out of the aperture across the frame. */}
+                  <div
+                    className="pointer-events-none absolute inset-0 mix-blend-screen"
+                    style={{
+                      background:
+                        "radial-gradient(ellipse at 50% 52%, rgba(196,97,226,0.55) 0%, rgba(123,55,213,0.2) 40%, transparent 68%)",
+                    }}
+                  />
+
+                  {/* Centred, and taller than it is wide, so the opening reads
+                      as a doorway rather than a window. */}
+                  <div className="portal-swirl absolute inset-x-[13%] bottom-[7%] top-[9%] overflow-hidden opacity-90">
+                    {aperture}
+                  </div>
+                </div>
+
+                <Pillar side="right" />
               </div>
 
               {/* Rising motes, over the aperture's horizontal span. */}
@@ -300,29 +338,86 @@ export function PortalFrame({
                     key={i}
                     className="portal-particle absolute block h-[6px] w-[6px] bg-mc-portal-light opacity-0"
                     style={{
-                      left: `${28 + ((i * 37) % 38)}%`,
-                      bottom: `${8 + ((i * 23) % 40)}%`,
+                      left: `${32 + ((i * 37) % 34)}%`,
+                      bottom: `${10 + ((i * 23) % 38)}%`,
                     }}
                   />
                 ))}
               </div>
             </div>
 
-            {/* --- Stone plinth and steps ----------------------------------
-                Steps narrow as they come forward, so the structure reads as
-                standing on ground rather than floating. The plinth overlaps
-                the frame's bottom edge, which hides the seam. */}
-            <div className="relative z-10 -mt-[2%] w-full">
-              <div className="relative h-[calc(var(--mc-unit)*1.75)] w-full bevel bg-mc-path [--bevel-dark:var(--color-mc-path-dark)] [--bevel-light:var(--color-mc-path-light)]">
-                {/* Spill from the aperture landing on the top of the plinth. */}
-                <div className="absolute inset-x-[26%] top-0 h-1/3 bg-mc-portal-light opacity-30 mix-blend-screen" />
+            {/* --- Steps ---------------------------------------------------
+                Three courses widening downward, mirroring the cornice above so
+                the whole gateway reads as symmetrical top to bottom. */}
+            {/* `items-center`, NOT `mx-auto`. These courses are deliberately
+                WIDER than their parent, and `margin: auto` resolves to 0 once a
+                box exceeds its containing block — so the steps pinned to the
+                left and overhung to the right only. Flex centring handles
+                overflow symmetrically, which is why the cornice above was
+                already even. */}
+            <div className="relative z-10 -mt-[1px] flex w-full flex-col items-center">
+              <div
+                className="relative h-[calc(var(--mc-unit)*1.25)] w-full bevel"
+                style={{ background: STONE, ["--bevel-light" as string]: "#b0aaa0", ["--bevel-dark" as string]: "#5d584f" }}
+              >
+                {/* Spill from the aperture landing on the top step. */}
+                <div className="absolute inset-x-[30%] top-0 h-1/2 bg-mc-portal-light opacity-30 mix-blend-screen" />
               </div>
-              <div className="mx-auto h-[calc(var(--mc-unit)*1.25)] w-[64%] bevel bg-mc-path-dark [--bevel-dark:#4e483f] [--bevel-light:var(--color-mc-path)]" />
-              <div className="mx-auto h-[calc(var(--mc-unit)*1.25)] w-[46%] bevel bg-mc-path-dark [--bevel-dark:#3f3a33] [--bevel-light:var(--color-mc-path)]" />
+              <div
+                className="h-[calc(var(--mc-unit)*1.15)] w-[112%] bevel"
+                style={{ background: STONE_DARK, ["--bevel-light" as string]: "#8b857b", ["--bevel-dark" as string]: "#45413a" }}
+              />
+              <div
+                className="h-[calc(var(--mc-unit)*1.15)] w-[124%] bevel"
+                style={{ background: STONE_DARK, ["--bevel-light" as string]: "#7d786f", ["--bevel-dark" as string]: "#3a362f" }}
+              />
             </div>
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * One flanking pillar: a capital and a base that overhang the shaft, plus a
+ * little moss. Mirrored left/right so the pair lights from the same side.
+ */
+function Pillar({ side }: { side: "left" | "right" }) {
+  return (
+    <div
+      className="relative w-[19%] shrink-0"
+      style={{ background: STONE }}
+    >
+      {/* Capital and base, wider than the shaft so the column has a foot and a
+          head rather than reading as a plain slab. */}
+      <div
+        className={cn(
+          "absolute top-0 h-[7%] bevel",
+          side === "left" ? "left-[-8%] right-0" : "left-0 right-[-8%]",
+        )}
+        style={{ background: STONE_DARK, ["--bevel-light" as string]: "#8b857b", ["--bevel-dark" as string]: "#45413a" }}
+      />
+      <div
+        className={cn(
+          "absolute bottom-0 h-[7%] bevel",
+          side === "left" ? "left-[-8%] right-0" : "left-0 right-[-8%]",
+        )}
+        style={{ background: STONE_DARK, ["--bevel-light" as string]: "#8b857b", ["--bevel-dark" as string]: "#45413a" }}
+      />
+      {/* Moss, mirrored so the two pillars are not identical. */}
+      <span
+        className={cn(
+          "absolute bottom-[12%] h-[9%] w-[34%] bg-[#5f8f3c] opacity-75",
+          side === "left" ? "left-0" : "right-0",
+        )}
+      />
+      <span
+        className={cn(
+          "absolute h-[6%] w-[22%] bg-[#6d9c45] opacity-60",
+          side === "left" ? "left-[42%] top-[34%]" : "right-[42%] top-[46%]",
+        )}
+      />
     </div>
   );
 }

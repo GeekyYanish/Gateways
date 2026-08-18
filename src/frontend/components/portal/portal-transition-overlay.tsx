@@ -122,9 +122,19 @@ export function PortalTransitionProvider({ children }: { children: React.ReactNo
         aria-hidden
         className="fixed inset-0 z-[100] pointer-events-none"
         style={{
-          // Radial purple wipe, brightest at the centre like a portal opening.
+          /*
+            A DARK wipe, not a purple one.
+
+            It used to be a bright violet radial — the idea was a portal opening
+            — but this covers the screen for the better part of a second on
+            every transition, and the eye reads a full-viewport flash of
+            saturated light as a fault rather than as choreography. The zoom
+            itself already carries the portal; the cover only has to hide the
+            route swap behind it, and it does that just as well in near-black
+            while being far easier to look at.
+          */
           background:
-            "radial-gradient(circle at 50% 50%, #c964ff 0%, #a02ce0 28%, #3d1259 62%, #0b0710 100%)",
+            "radial-gradient(circle at 50% 50%, #1a1430 0%, #100c1f 45%, #06040d 100%)",
           // Hidden initially so it never blocks the first paint; GSAP's autoAlpha
           // manages visibility from here.
           visibility: "hidden",
