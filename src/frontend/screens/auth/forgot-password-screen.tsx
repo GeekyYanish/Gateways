@@ -54,6 +54,29 @@ export function ForgotPasswordScreen() {
               The link is valid for a limited time and can be used once.
             </p>
           </header>
+          {/*
+            Shown to EVERYONE, unconditionally, and that is the point.
+
+            Password reset only fires for accounts that have a password:
+            `requestPasswordReset` requires a `passwordHash`, so a Google-only
+            account is skipped and no mail is ever sent. The response stays
+            deliberately generic to avoid revealing whether an address is
+            registered — which leaves a Google user waiting on an email that
+            cannot arrive. Saying it here costs nothing, because it is the same
+            sentence for every visitor and so leaks nothing about any account.
+          */}
+          <BlockPanel variant="slot" padded="sm" className="text-[16px] text-mc-text-dim">
+            Signed up with Google? Use{" "}
+            <button
+              type="button"
+              className="cursor-pointer text-mc-eyebrow underline hover:text-mc-text"
+              onClick={() => router.replace("/login")}
+            >
+              Sign in with Google
+            </button>{" "}
+            instead — password reset only works for accounts that have a
+            password.
+          </BlockPanel>
           <BlockButton block size="lg" variant="portal" onClick={() => router.replace("/login")}>
             Return to login
           </BlockButton>
@@ -84,6 +107,29 @@ export function ForgotPasswordScreen() {
               Send reset link
             </BlockButton>
           </form>
+          {/*
+            Shown to EVERYONE, unconditionally, and that is the point.
+
+            Password reset only fires for accounts that have a password:
+            `requestPasswordReset` requires a `passwordHash`, so a Google-only
+            account is skipped and no mail is ever sent. The response stays
+            deliberately generic to avoid revealing whether an address is
+            registered — which leaves a Google user waiting on an email that
+            cannot arrive. Saying it here costs nothing, because it is the same
+            sentence for every visitor and so leaks nothing about any account.
+          */}
+          <BlockPanel variant="slot" padded="sm" className="text-[16px] text-mc-text-dim">
+            Signed up with Google? Use{" "}
+            <button
+              type="button"
+              className="cursor-pointer text-mc-eyebrow underline hover:text-mc-text"
+              onClick={() => router.replace("/login")}
+            >
+              Sign in with Google
+            </button>{" "}
+            instead — password reset only works for accounts that have a
+            password.
+          </BlockPanel>
           <button type="button" className="min-h-11 cursor-pointer text-[16px] text-mc-eyebrow hover:text-mc-text hover:underline" onClick={() => router.replace("/login")}>
             Back to login
           </button>

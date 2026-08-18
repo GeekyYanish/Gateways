@@ -6,6 +6,7 @@ import { PaymentInstructions } from "@/frontend/components/registration/payment-
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
 import { repo } from "@/backend/data";
+import { openRegistrationTiers } from "@/frontend/lib/fest";
 import { DataError } from "@/backend/data/types";
 import { cn } from "@/frontend/lib/utils";
 
@@ -33,6 +34,14 @@ export function PaymentUploadModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "neft" | "gateway">("upi");
   const [transactionReference, setTransactionReference] = useState("");
+  /*
+    Only the rates valid today. Computed once per mount rather than per render:
+    `new Date()` in a render body would make the option list a moving target,
+    and the window is a calendar day — it will not shift mid-upload.
+  */
+  const [tiers] = useState(() => openRegistrationTiers());
+  const [tierId, setTierId] = useState(() => openRegistrationTiers()[0]?.id ?? "standard");
+  const selectedTier = tiers.find((tier) => tier.id === tierId) ?? tiers[0];
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: paymentConfig } = useAsync(() => repo.paymentReceipts.getConfig(), []);
 
@@ -110,6 +119,9 @@ export function PaymentUploadModal({
         fileSizeBytes: file.size,
         paymentMethod,
         transactionReference: transactionReference.trim(),
+        // What the participant says they paid. The verifier checks it against
+        // the receipt, so this is a claim to be reviewed, not a trusted figure.
+        amountInr: selectedTier?.amountInr,
       });
 
       showToast({
@@ -161,6 +173,24 @@ export function PaymentUploadModal({
         />
 
         <div className="grid gap-[var(--mc-unit)] sm:grid-cols-2">
+          {/* Only tiers whose window covers today, so an early-bird rate cannot
+              be claimed in October. */}
+          <BlockSelect
+            label="Rate you paid"
+            value={tierId}
+            onChange={(event) => setTierId(event.target.value as typeof tierId)}
+            hint={
+              selectedTier
+                ? `₹${selectedTier.amountInr}${selectedTier.note ? ` · ${selectedTier.note}` : ""}`
+                : undefined
+            }
+          >
+            {tiers.map((tier) => (
+              <option key={tier.id} value={tier.id}>
+                {tier.label} — ₹{tier.amountInr}
+              </option>
+            ))}
+          </BlockSelect>
           <BlockSelect
             label="Payment method"
             value={paymentMethod}

@@ -18,6 +18,7 @@ import { BiomeScene } from "@/frontend/components/scene";
 import { useSession } from "@/frontend/components/auth/session-provider";
 import { useAsync } from "@/frontend/hooks/use-async";
 import { repo } from "@/backend/data";
+import { locationByKey } from "@/frontend/lib/world/world-locations";
 import { cn } from "@/frontend/lib/utils";
 
 /**
@@ -35,6 +36,19 @@ export function EventsScreen() {
   const userId = session?.userId;
 
   const { data: categories } = useAsync(() => repo.reference.categories(), []);
+  /**
+   * Every event, ignoring the current category filter, purely to work out which
+   * category chips are worth showing.
+   *
+   * The catalogue still carries the seven world-map categories, which the 3D
+   * map keys its locations off, but no 2026 event is filed under them. Showing
+   * a chip per category would have put seven dead ends next to the two real
+   * tracks, so a category only earns a chip once something is in it.
+   */
+  const { data: allEvents } = useAsync(
+    () => repo.events.list({ status: ["published", "ongoing", "registration_closed", "completed"] }),
+    [],
+  );
   // Events come from a Google Sheet that staff edit during the fest, so this
   // polls rather than relying on a page load. The backend caches the sheet for
   // 5s, so an edit goes live within ~10s worst case without hammering Google's
@@ -59,6 +73,7 @@ export function EventsScreen() {
   );
 
   const activeCategory = categories?.find((c) => c.slug === categorySlug);
+  const populatedCategoryIds = new Set((allEvents ?? []).map((e) => e.categoryId));
   // Category slugs double as scene keys, so filtering to a category shows its
   // biome illustration as the header banner.
   const bannerScene = activeCategory?.slug ?? "portal-approach";
@@ -79,7 +94,11 @@ export function EventsScreen() {
         href={
           !userId
             ? "/"
-            : categorySlug
+            : // Only deep-link to a marker that exists. The filter slugs are
+              // now `technical` / `non-technical`, which are not map keys —
+              // passing one would have asked the map to focus a location it has
+              // never heard of.
+              categorySlug && locationByKey(categorySlug)
               ? `/world?view=map&location=${encodeURIComponent(categorySlug)}`
               : "/world?view=map"
         }
@@ -160,14 +179,16 @@ export function EventsScreen() {
 
       <nav aria-label="Categories" className="flex flex-wrap gap-[calc(var(--mc-unit)*0.5)]">
         <CategoryChip href="/events" label="All" active={!categorySlug} />
-        {(categories ?? []).map((c) => (
-          <CategoryChip
-            key={c.id}
-            href={`/events?category=${c.slug}`}
-            label={c.name}
-            active={c.slug === categorySlug}
-          />
-        ))}
+        {(categories ?? [])
+          .filter((c) => populatedCategoryIds.has(c.id))
+          .map((c) => (
+            <CategoryChip
+              key={c.id}
+              href={`/events?category=${c.slug}`}
+              label={c.name}
+              active={c.slug === categorySlug}
+            />
+          ))}
       </nav>
 
       {loading ? (

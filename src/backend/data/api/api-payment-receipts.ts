@@ -91,6 +91,7 @@ export class ApiPaymentReceipts implements PaymentReceiptRepository {
     fileSizeBytes: number;
     paymentMethod?: "upi" | "neft" | "gateway";
     transactionReference?: string;
+    amountInr?: number;
   }): Promise<PaymentReceipt> {
     try {
       const data = await apiFetch<{ receipt: ApiReceipt } | ApiReceipt>(
@@ -104,6 +105,7 @@ export class ApiPaymentReceipts implements PaymentReceiptRepository {
             fileData: input.fileData,
             paymentMethod: input.paymentMethod,
             transactionReference: input.transactionReference,
+            amountInr: input.amountInr,
           }),
         },
       );

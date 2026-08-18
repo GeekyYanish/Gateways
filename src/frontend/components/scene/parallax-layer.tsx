@@ -91,8 +91,13 @@ export function ParallaxLayer({
     const node = el.current;
     if (!node || !handleRef) return;
 
-    const xTo = gsap.quickTo(node, "x", { duration: 0.5, ease: "power2.out" });
-    const yTo = gsap.quickTo(node, "y", { duration: 0.5, ease: "power2.out" });
+    // force3D pins the layer to a GPU transform for good. GSAP's default
+    // ("auto") adds translateZ only for the duration of a tween and strips it
+    // on completion, so every pointer move re-promoted and then de-promoted the
+    // layer — a repaint of the whole oversized, `pixelated`, blend-mode stack
+    // on each settle. Under a fast mouse those repaints tear visibly.
+    const xTo = gsap.quickTo(node, "x", { duration: 0.5, ease: "power2.out", force3D: true });
+    const yTo = gsap.quickTo(node, "y", { duration: 0.5, ease: "power2.out", force3D: true });
 
     handleRef({
       applyOffset: (x, y) => {
@@ -151,6 +156,12 @@ export function ParallaxLayer({
         backgroundSize: layer.fit ?? (layer.tile ? "auto 100%" : "cover"),
         // Pixel art must not be smoothed when scaled to cover the viewport.
         imageRendering: "pixelated",
+        // Own compositor layer, so pointer parallax is a GPU transform rather
+        // than a repaint. Without it, moving the mouse repaints every layer —
+        // each one oversized, pixelated and sometimes blended — and the text
+        // above them composites against a backdrop that is still painting,
+        // which shows up as ghosted, doubled glyphs.
+        willChange: "transform",
       }}
     />
   );
