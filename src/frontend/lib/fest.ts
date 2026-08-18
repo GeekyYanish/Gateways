@@ -105,6 +105,37 @@ export const FEST = {
     universityUrl: "https://christuniversity.in",
     city: "Bangalore",
     address: "Dharmaram College Post, Hosur Rd, Bengaluru, Karnataka 560029",
+
+    /**
+     * How to reach the campus, rendered under Location on /contact.
+     *
+     * Distances are approximate road distances, not straight-line — quoted as
+     * the university publishes them. Bus numbers are BMTC routes; they are
+     * strings, not numbers, because several carry letters ("168D", "KBS 3A")
+     * and the numeric-looking ones must not be reformatted or sorted.
+     */
+    reach: {
+      nearest: [
+        { label: "Airport", place: "Kempegowda Intl. Airport", distance: "40 km" },
+        { label: "Railway Station", place: "KSR Bengaluru City Jn.", distance: "10 km" },
+        { label: "Bus Terminus", place: "Kempegowda Bus Stand (Majestic)", distance: "10 km" },
+        { label: "Metro Station", place: "R V Road (Green Line)", distance: "5.6 km" },
+      ],
+      /** The stop is not named after the campus on every board — hence the ask. */
+      busStopNote: "Ask for Christ University / Dairy Circle Bus Stop",
+      busRoutes: [
+        {
+          from: "From Majestic / KSR Bengaluru",
+          routes: [
+            "365", "353", "168D", "170", "171A", "171B", "171C", "171D",
+            "165", "340", "342", "356", "360B", "KBS 3A", "KBS 3C",
+          ],
+        },
+        { from: "From Airport", routes: ["KIA-5", "KIA-7", "KIA-14"] },
+      ],
+      cabNote:
+        "Cab and auto rickshaw services can be availed via Ola, Uber, Rapido, and NammaYatri apps.",
+    },
   },
 
   /** All rupee figures. TODO — confirm every one of these for 2026. */
