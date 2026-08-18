@@ -6,9 +6,8 @@ import {
   useContext,
   useEffect,
   useRef,
-  useState,
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { gsap, useGSAP } from "@/frontend/lib/animation/gsap-init";
 import { useReducedMotion } from "@/frontend/lib/animation/use-reduced-motion";
 import { consumeTransition, markCovering } from "@/frontend/lib/animation/transition-store";
@@ -40,36 +39,46 @@ export function PortalTransitionProvider({ children }: { children: React.ReactNo
   const router = useRouter();
   const overlay = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
-  // Start opaque when arriving mid-transition, so there is no flash of the new
-  // route before the reveal. Read during the first render, not in an effect.
-  const [arriving] = useState(() => consumeTransition());
+  const pathname = usePathname();
   const navigating = useRef(false);
 
   // Reveal on arrival.
+  //
+  // Keyed on `pathname`, NOT on mount alone. Within a single route group the
+  // App Router keeps this provider mounted across a navigation, so a
+  // mount-only read never fires again: the overlay faded to opaque to cover
+  // the push and then stayed opaque forever. That is what made /portal →
+  // /entering a flat purple screen — the portal zoom and the "Entering the
+  // realm…" progress bar were playing the whole time, behind the wipe.
+  //
+  // `consumeTransition` is read-and-clear, so it also stops a stale flag from
+  // being inherited by a later plain navigation.
+  //
+  // Reading here rather than during render is safe: useGSAP runs in a layout
+  // effect, which commits before the browser paints, so the overlay is already
+  // opaque on the first painted frame and the destination never flashes.
   useGSAP(
     () => {
       const el = overlay.current;
       if (!el) return;
 
-      if (!arriving) {
-        gsap.set(el, { autoAlpha: 0 });
-        return;
-      }
+      const arriving = consumeTransition();
 
-      if (reduced) {
+      if (!arriving || reduced) {
         gsap.set(el, { autoAlpha: 0 });
         return;
       }
 
       gsap.set(el, { autoAlpha: 1 });
-      gsap.to(el, {
+      // pointer-events are restored by autoAlpha reaching 0 (visibility hidden).
+      const tween = gsap.to(el, {
         autoAlpha: 0,
         duration: 0.5,
         ease: "power2.inOut",
-        // pointer-events are restored by autoAlpha reaching 0 (visibility hidden).
       });
+      return () => tween.kill();
     },
-    { dependencies: [arriving, reduced] },
+    { dependencies: [pathname, reduced] },
   );
 
   const navigateWithPortal = useCallback(

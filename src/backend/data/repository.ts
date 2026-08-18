@@ -214,6 +214,12 @@ export interface PaymentReceiptRepository {
     fileSizeBytes: number;
     paymentMethod?: "upi" | "neft" | "gateway";
     transactionReference?: string;
+    /**
+     * The rate the participant says they paid, from the tiers open on the day
+     * (`openRegistrationTiers`). A claim for the verifier to check against the
+     * receipt — never treat it as a confirmed amount.
+     */
+    amountInr?: number;
   }): Promise<PaymentReceipt>;
   /** Get the receipt for a specific registration, if any. */
   getByRegistration(registrationId: string): Promise<PaymentReceipt | null>;

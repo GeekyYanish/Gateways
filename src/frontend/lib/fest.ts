@@ -44,6 +44,59 @@ const HACKATHON_DATE_LABEL = "30 September 2026";
 const PRIZE_POOL_INR = 250_000;
 
 /** Tiered registration fees (domestic/international, time-of-purchase). */
+/**
+ * The rates a participant can claim to have paid, each with the window it is
+ * valid in.
+ *
+ * The dates used to live as hardcoded text in the fees table on the homepage,
+ * where nothing could read them. They matter now: the payment upload only
+ * offers the tiers that are actually open on the day, so a participant cannot
+ * claim an early-bird rate in October.
+ *
+ * `opensOn`/`closesOn` are inclusive IST calendar dates. Comparison is
+ * date-only on purpose — a tier that "closes on the 9th" is good all of the 9th.
+ */
+export interface RegistrationTier {
+  id: "early_bird" | "standard" | "on_spot" | "christite" | "international";
+  label: string;
+  amountInr: number;
+  opensOn: string;
+  closesOn: string;
+  /** Who the tier is for, when that is not obvious from the label. */
+  note?: string;
+}
+
+const REGISTRATION_TIERS: RegistrationTier[] = [
+  { id: "early_bird", label: "Early bird", amountInr: 200, opensOn: "2026-08-17", closesOn: "2026-09-09" },
+  { id: "standard", label: "Standard", amountInr: 250, opensOn: "2026-09-09", closesOn: "2026-10-07" },
+  { id: "on_spot", label: "On the spot", amountInr: 300, opensOn: "2026-10-08", closesOn: "2026-10-09" },
+  { id: "christite", label: "Christite", amountInr: 200, opensOn: "2026-08-17", closesOn: "2026-10-09", note: "CHRIST students" },
+  { id: "international", label: "International", amountInr: 1_000, opensOn: "2026-08-17", closesOn: "2026-10-09", note: "International participants" },
+];
+
+/** IST calendar date as `YYYY-MM-DD`, so windows are compared in fest time. */
+function istDate(at: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}
+
+/**
+ * Tiers open on a given day. Returns every tier if the fest has not opened yet
+ * or has closed — an empty picker would leave someone who genuinely paid with
+ * no way to say what they paid, which is worse than showing a stale option.
+ */
+export function openRegistrationTiers(at: Date = new Date()): RegistrationTier[] {
+  const today = istDate(at);
+  const open = REGISTRATION_TIERS.filter(
+    (tier) => tier.opensOn <= today && today <= tier.closesOn,
+  );
+  return open.length ? open : REGISTRATION_TIERS;
+}
+
 const REGISTRATION_FEES = {
   /** Domestic early-bird rate. */
   earlyBirdInr: 200,
@@ -145,6 +198,8 @@ export const FEST = {
      * Early-bird window and exact cutoff date are set by the organising team.
      */
     registration: REGISTRATION_FEES,
+    /** Same rates as `registration`, with the window each one is valid in. */
+    tiers: REGISTRATION_TIERS,
     prizePoolInr: PRIZE_POOL_INR,
     accommodationPerDayInr: 300,
     accommodationNote: "Per person per day",
@@ -169,7 +224,7 @@ export const FEST = {
    * in `event-detail-screen.tsx`.
    */
   registerSteps: [
-    "Sign in and create your character.",
+    "Sign in to your account.",
     `Pay the registration fee — ${inr(REGISTRATION_FEES.earlyBirdInr)} early bird, ${inr(REGISTRATION_FEES.standardInr)} standard, or ${inr(REGISTRATION_FEES.onSpotInr)} on the spot. One pass covers every event.`,
     "Upload the payment receipt (PDF) and wait for verification.",
     "Browse the events and open the one you want.",

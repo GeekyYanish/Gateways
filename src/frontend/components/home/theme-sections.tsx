@@ -7,10 +7,9 @@ import { ART } from "@/frontend/lib/assets/manifest";
 import { usePortalTransition } from "@/frontend/components/portal/portal-transition-overlay";
 import { FEST, inr } from "@/frontend/lib/fest";
 import { HomeSection } from "./home-section";
-import { TwinCompare } from "./twin-compare";
 
 /**
- * Sections 4–6: who we are, what the theme is, and why it is called Parallax.
+ * Sections 4–5: who we are and what the theme is, then the portal CTA.
  *
  * All body copy is VT323 (the document default), never Press Start 2P. The
  * Digital Twins paragraph is 60-odd words; in a pixel display face it would be
@@ -149,48 +148,26 @@ export function DigitalTwinsSection() {
   );
 }
 
-export function ParallaxSection() {
+/**
+ * The portal CTA, standing on its own.
+ *
+ * It used to close the "Why we called it Parallax" section, which has been
+ * removed along with the Digital Twin comparison tool. The button deliberately
+ * outlived it: this is the homepage's ONLY route to /portal, so dropping it
+ * with its former section would have left the front door with no way in.
+ *
+ * It goes to `/portal` — the gate — rather than straight to `/entering`.
+ * `/entering` is a transition that immediately redirects, so jumping there from
+ * a marketing page would flash past and dump the visitor on a login form with
+ * no sense of having gone anywhere. The gate is the beat in between: the
+ * portal, and a deliberate second press to step through it.
+ */
+export function StartJourneySection() {
   const { navigateWithPortal } = usePortalTransition();
 
   return (
-    <HomeSection
-      eyebrow="Why we called it"
-      title="Parallax"
-      lead={
-        <>
-          &ldquo;Parallax&rdquo; is the physics behind our metaphor. An object
-          appears to shift when observed from two viewpoints.
-        </>
-      }
-    >
-      <TwinCompare />
-
-      {/* Sits directly on the PAGE, unlike the portal-pale lines elsewhere in
-          this file which sit on art or on a black scrim — so it reads its
-          violet from the semantic token rather than the material one. */}
-      <p className="mt-[calc(var(--mc-unit)*3)] text-center font-pixel text-[10px] uppercase leading-loose tracking-[0.14em] text-mc-eyebrow md:text-[13px]">
-        One reality.
-        <br />
-        Two vantage points.
-        <br />
-        <span className="text-mc-accent">Better decisions.</span>
-      </p>
-
-      {/*
-        The portal CTA lives HERE, not in the hero.
-        This is the first point on the page where "start the journey" means
-        something concrete: the visitor has just been shown one object seen from
-        two viewpoints, so stepping through to see the fest from the inside is
-        the obvious next move. Above this line it would be an ask before an
-        explanation.
-
-        It goes to `/portal` — the gate — rather than straight to `/entering`.
-        `/entering` is a transition that immediately redirects, so jumping there
-        from a marketing page would flash past and dump the visitor on a login
-        form with no sense of having gone anywhere. The gate is the beat in
-        between: the portal, and a deliberate second press to step through it.
-      */}
-      <div className="mt-[calc(var(--mc-unit)*3)] flex flex-col items-center gap-[var(--mc-unit)]">
+    <HomeSection>
+      <div className="flex flex-col items-center gap-[var(--mc-unit)]">
         <BlockButton
           size="xl"
           variant="portal"

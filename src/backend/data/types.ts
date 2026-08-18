@@ -346,6 +346,11 @@ export interface TeamMember {
   userId: string;
   role: TeamMemberRole;
   joinedAt: string;
+  /**
+   * From the joined profile. Optional because the join is a LEFT one — a member
+   * without a profile row still belongs on the roster, just without a name.
+   */
+  fullName?: string | null;
 }
 
 export interface Attendance {
