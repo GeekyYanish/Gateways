@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { repo } from "@/backend/data";
+import { clearWelcomed } from "@/frontend/lib/welcome-store";
 import type { Character, Session } from "@/backend/data/types";
 
 /**
@@ -85,6 +86,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     await repo.auth.signOut();
     setSession(null);
     setCharacter(null);
+    // So the next sign-in is greeted again, rather than only after the tab is
+    // closed — sessionStorage would otherwise outlive the session it names.
+    clearWelcomed();
   }, []);
 
   const status: AuthStatus = loading

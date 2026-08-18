@@ -41,6 +41,7 @@ import { getVillage } from "@/frontend/lib/voxel/village";
 import type { PlayerPose } from "@/frontend/components/voxel/player-controller";
 import { showToast } from "@/frontend/components/mc";
 import { cn } from "@/frontend/lib/utils";
+import { hasBeenWelcomed, markWelcomed } from "@/frontend/lib/welcome-store";
 
 type View = "3d" | "map" | "list";
 
@@ -370,10 +371,17 @@ export function WorldScreen({
     setView(next);
   };
 
-  // Welcome toast, once per mount.
+  // Welcome toast, once per sign-in — not once per mount.
+  //
+  // `welcomed` is a ref, so it reset every time this screen remounted and the
+  // greeting fired again on each return to /world. The ref still guards against
+  // a double-invoke within one mount; the store is what carries the fact across
+  // navigations, and sign-out clears it so logging back in greets you properly.
   useEffect(() => {
     if (welcomed.current || !character) return;
+    if (hasBeenWelcomed(character.userId)) return;
     welcomed.current = true;
+    markWelcomed(character.userId);
     showToast({
       title: `Welcome, ${character.playerName}!`,
       body: "Your adventure begins now. Pick a location to explore.",
