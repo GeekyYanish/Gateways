@@ -183,7 +183,19 @@ export function LoginScreen() {
       router.replace(`/change-password?next=${encodeURIComponent(requestedDestination)}`);
       return;
     }
-    if (live.roles.some((role) => ["admin", "organizer", "scanner"].includes(role))) {
+    /*
+      Staff go to the console by DEFAULT — not unconditionally.
+
+      An explicit `?next=` is a deliberate request for a participant page (the
+      realm guard sets it when it bounces someone to sign in). Overriding it
+      meant a staff account could never open its own dashboard from the login
+      form: every attempt was rewritten to a console handoff.
+    */
+    const explicitNext = params.get("next");
+    if (
+      !explicitNext &&
+      live.roles.some((role) => ["admin", "organizer", "scanner"].includes(role))
+    ) {
       if (consoleRedirecting.current) return;
       consoleRedirecting.current = true;
       if (repo.auth.createConsoleHandoff) {

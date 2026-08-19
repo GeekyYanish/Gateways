@@ -6,7 +6,7 @@ import { HeroSection } from "@/frontend/components/home/hero-section";
 import {
   AboutSection,
   DigitalTwinsSection,
-  ParallaxSection,
+  StartJourneySection,
 } from "@/frontend/components/home/theme-sections";
 import { ExploreSection } from "@/frontend/components/home/explore-section";
 import { RegisterSection } from "@/frontend/components/home/register-section";
@@ -21,9 +21,9 @@ import { ScheduleModal } from "@/frontend/components/home/schedule-modal";
  *
  * The front door reads as one continuous descent: the panning overworld hero,
  * then what the fest is, then what the theme means, then what is on, then how
- * to take part. The portal CTA sits at the end of the Parallax section rather
- * than up here — it is the one irreversible action on the page, and everything
- * above it is what helps someone decide to press it.
+ * to take part. The portal CTA sits below the theme sections rather than up
+ * here — it is the one irreversible action on the page, and everything above it
+ * is what helps someone decide to press it.
  *
  * The two modals are owned here rather than inside their trigger components,
  * because both the nav and the Explore section open the same two dialogs. One
@@ -49,7 +49,7 @@ export function HomeScreen() {
         <HeroSection />
         <AboutSection />
         <DigitalTwinsSection />
-        <ParallaxSection />
+        <StartJourneySection />
         <ExploreSection
           onOpenEvents={() => setEventsOpen(true)}
           onOpenSchedule={() => setScheduleOpen(true)}

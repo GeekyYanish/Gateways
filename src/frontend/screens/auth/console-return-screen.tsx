@@ -16,6 +16,7 @@ import { DataError } from "@/backend/data/types";
 export function ConsoleReturnScreen() {
   const router = useRouter();
   const params = useSearchParams();
+  const code = params.get("code");
   const { refresh } = useSession();
   const [error, setError] = useState<string | null>(null);
   const ran = useRef(false);
@@ -24,11 +25,7 @@ export function ConsoleReturnScreen() {
     if (ran.current) return;
     ran.current = true;
 
-    const code = params.get("code");
-    if (!code) {
-      setError("This sign-in link is missing its code.");
-      return;
-    }
+    if (!code) return;
 
     (async () => {
       try {
@@ -46,10 +43,12 @@ export function ConsoleReturnScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (error) {
+  const displayError = code ? error : "This sign-in link is missing its code.";
+
+  if (displayError) {
     return (
       <BlockPanel variant="card" padded="lg" className="mx-auto max-w-md text-center">
-        <p className="text-mc-danger">{error}</p>
+        <p className="text-mc-danger">{displayError}</p>
         <BlockButton
           variant="portal"
           size="lg"

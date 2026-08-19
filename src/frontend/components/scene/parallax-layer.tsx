@@ -17,10 +17,10 @@ import { cn } from "@/frontend/lib/utils";
  *
  * Art resolution has two modes, and the probe runs in opposite directions:
  *
- * - **Placeholder layers** (no `paint`): show `layer.src` optimistically and
- *   fall back to a generated silhouette on error. The silhouette is a stand-in
- *   that says "art pending", so it should appear only once the file is known
- *   to be missing.
+ * - **Placeholder layers** (no `paint`): show an explicitly supplied
+ *   `layer.src` optimistically and fall back to a generated silhouette on
+ *   error. Layers without a source render the silhouette immediately, avoiding
+ *   a guaranteed 404 for art that has not been delivered yet.
  * - **Painted layers** (`paint` set): show the generated art *first* and swap
  *   to `layer.src` only once the probe confirms a real file loaded. Painted art
  *   is the intended render, not a fallback — probing first would flash an empty
@@ -66,6 +66,8 @@ export function ParallaxLayer({
   // Probe the real asset. `onload` matters as much as `onerror` here: it is
   // what lets a delivered PNG take over from generated art.
   useEffect(() => {
+    if (!layer.src) return;
+
     let cancelled = false;
     const probe = new Image();
     probe.onload = () => {
@@ -89,8 +91,13 @@ export function ParallaxLayer({
     const node = el.current;
     if (!node || !handleRef) return;
 
-    const xTo = gsap.quickTo(node, "x", { duration: 0.5, ease: "power2.out" });
-    const yTo = gsap.quickTo(node, "y", { duration: 0.5, ease: "power2.out" });
+    // force3D pins the layer to a GPU transform for good. GSAP's default
+    // ("auto") adds translateZ only for the duration of a tween and strips it
+    // on completion, so every pointer move re-promoted and then de-promoted the
+    // layer — a repaint of the whole oversized, `pixelated`, blend-mode stack
+    // on each settle. Under a fast mouse those repaints tear visibly.
+    const xTo = gsap.quickTo(node, "x", { duration: 0.5, ease: "power2.out", force3D: true });
+    const yTo = gsap.quickTo(node, "y", { duration: 0.5, ease: "power2.out", force3D: true });
 
     handleRef({
       applyOffset: (x, y) => {
@@ -107,7 +114,7 @@ export function ParallaxLayer({
     url = layer.src;
   } else if (painted) {
     url = painted;
-  } else if (status === "missing") {
+  } else if (!layer.src || status === "missing") {
     url = sceneLayerPlaceholder({
       key: `${sceneKey}-${layer.key}`,
       layer: layer.layer,
@@ -149,6 +156,12 @@ export function ParallaxLayer({
         backgroundSize: layer.fit ?? (layer.tile ? "auto 100%" : "cover"),
         // Pixel art must not be smoothed when scaled to cover the viewport.
         imageRendering: "pixelated",
+        // Own compositor layer, so pointer parallax is a GPU transform rather
+        // than a repaint. Without it, moving the mouse repaints every layer —
+        // each one oversized, pixelated and sometimes blended — and the text
+        // above them composites against a backdrop that is still painting,
+        // which shows up as ghosted, doubled glyphs.
+        willChange: "transform",
       }}
     />
   );
