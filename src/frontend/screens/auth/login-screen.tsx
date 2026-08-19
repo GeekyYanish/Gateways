@@ -121,25 +121,20 @@ export function LoginScreen() {
   const params = useSearchParams();
   const { status, refresh } = useSession();
   const consoleRedirecting = useRef(false);
-  const initialVerificationEmail =
-    params.get("google") === "verify" ? params.get("email") : null;
   const [mode, setMode] = useState<Mode>(params.get("mode") === "signup" ? "signup" : "login");
   const [formError, setFormError] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   /**
    * Set once signup has created the account but not yet a session. Its presence
    * IS the "awaiting code" state — a separate boolean could disagree with it,
-   * and the email is needed to verify anyway.
+   * and the email is needed to verify anyway. Google sign-in never sets this —
+   * Google already verifies the email, so that path gets a session directly.
    */
-  const [pendingEmail, setPendingEmail] = useState<string | null>(initialVerificationEmail);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
-  const [verificationNotice, setVerificationNotice] = useState<string | null>(
-    initialVerificationEmail
-      ? "Google sign-in is almost complete. Enter the code we sent to your email."
-      : null,
-  );
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
   const [serverWarming, setServerWarming] = useState(false);
 
   /**
@@ -226,11 +221,10 @@ export function LoginScreen() {
         /**
          * Signup may or may not sign you in, and the caller cannot assume.
          *
-         * The API-backed repository returns `null` here: the backend creates
-         * the account, emails a six-digit code, and only issues a session at
-         * `verifyEmail`. The local repository has no mail step and returns a
-         * live session. Branching on the return value keeps both working
-         * without the screen needing to know which one it is talking to.
+         * Email verification is currently disabled on the backend, so the
+         * API-backed repository returns a live session and we fall straight
+         * through to routing. If it is switched back on, the same call returns
+         * `null` and we show the code step instead. Branch on the value.
          */
         const session = await repo.auth.signUp(
           values.email,
@@ -240,13 +234,27 @@ export function LoginScreen() {
         if (!session) {
           setPendingEmail(values.email);
           setCode("");
-          setVerificationNotice("We sent a new verification code to your email.");
+          // Deliberately not "we sent you a code": with SMTP unprovisioned that
+          // claim was often false, and it sent people hunting an inbox for mail
+          // that was never dispatched. Say what is actually known.
+          setVerificationNotice(
+            "Enter the verification code for your account. Use Resend if you do not have one.",
+          );
           return;
         }
       }
       await refresh();
       await routeAuthenticatedUser();
     } catch (e) {
+      // Not a failure: the password was correct, the address just is not
+      // verified, and the backend has already reissued a code. Route to the
+      // code step instead of showing a red error the user cannot act on.
+      if (e instanceof DataError && e.code === "EMAIL_NOT_VERIFIED") {
+        setPendingEmail(values.email);
+        setCode("");
+        setVerificationNotice(e.message);
+        return;
+      }
       setFormError(describeAuthError(e));
     }
   }

@@ -26,14 +26,6 @@ interface ApiRoleAssignment {
   eventScopeId: string | null;
 }
 
-/**
- * `expiresAt` is a local restatement of the backend's 7-day cookie lifetime, not
- * a value it sends. Nothing should make an authorisation decision from it; the
- * server rejecting an expired cookie is the only thing that actually ends a
- * session.
- */
-const SESSION_DAYS = 7;
-
 function mapRole(role: string): Role {
   if (role === "ADMIN") return "admin";
   if (role === "ORGANIZER") return "organizer";
@@ -41,7 +33,11 @@ function mapRole(role: string): Role {
   return "player";
 }
 
-function toSession(user: ApiUser, assignments: ApiRoleAssignment[] = []): Session {
+function toSession(
+  user: ApiUser,
+  assignments: ApiRoleAssignment[] = [],
+  expiresAt?: string,
+): Session {
   const roles = assignments.length
     ? assignments.map((assignment) => mapRole(assignment.role))
     : ["player" as const];
@@ -54,9 +50,12 @@ function toSession(user: ApiUser, assignments: ApiRoleAssignment[] = []): Sessio
       eventScopeId: assignment.eventScopeId,
     })),
     mustChangePassword: Boolean(user.mustChangePassword),
-    expiresAt: new Date(
-      Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000,
-    ).toISOString(),
+    // From GET /auth/session — the DB row's real expiry, not a guess. Nothing
+    // should make an authorisation decision from it either way; the server
+    // rejecting an expired cookie is what actually ends a session. Falls back
+    // to "now" only if the backend omits it, so a stale value is never shown
+    // as live.
+    expiresAt: expiresAt ?? new Date().toISOString(),
   };
 }
 
@@ -68,23 +67,41 @@ export class ApiAuth implements AuthRepository {
   }
 
   /**
-   * Signup does NOT sign you in.
+   * Signup signs you in.
    *
-   * The backend creates the account, emails a six-digit OTP, and returns
-   * `{ requiresVerification: true, email }`. A session only exists after
-   * `verifyEmail()`. Returning `null` rather than throwing keeps the caller in
-   * control of showing the code entry step.
+   * Email verification is disabled on the backend (REQUIRE_EMAIL_VERIFICATION),
+   * so the account is created already-verified and the session cookie arrives
+   * with this response — `status: "ACTIVE"`.
+   *
+   * `null` is still a possible return: if verification is switched back on, the
+   * backend answers VERIFICATION_SENT / VERIFICATION_PENDING with no session,
+   * and the caller shows the OTP step. Read `status`, never assume.
    */
   async signUp(email: string, password: string, username: string): Promise<Session | null> {
-    await apiFetch<{ message: string }>(
-      "/auth/signup",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password, username: username.trim() }),
-      },
-    ).catch(rethrow);
-    return null;
+    const data = await apiFetch<{
+      status: "ACTIVE" | "VERIFICATION_SENT" | "VERIFICATION_PENDING";
+      message: string;
+      user?: ApiUser;
+    }>("/auth/signup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, password, username: username.trim() }),
+    }).catch(rethrow);
+
+    if (data.status !== "ACTIVE") return null;
+
+    const session = await this.getSession();
+    if (!session) {
+      // The cookie was set but the follow-up read failed. Do NOT synthesise a
+      // session here: the old fallback invented `roles: ["player"]`, which
+      // silently demoted staff and skipped forced password changes.
+      throw new DataError(
+        "NOT_AUTHENTICATED",
+        "Your account was created but the session could not be loaded. Please sign in.",
+      );
+    }
+    this.emit(session);
+    return session;
   }
 
   /** Completes signup: exchanges the emailed OTP for a session cookie. */
@@ -94,7 +111,16 @@ export class ApiAuth implements AuthRepository {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, otp }),
     }).catch(rethrow);
-    const session = await this.getSession() ?? toSession(data.user);
+    // No `?? toSession(data.user)` fallback: that path fabricated
+    // `roles: ["player"]` and `mustChangePassword: false` from a response body
+    // that carries neither, quietly demoting staff whenever this read hiccupped.
+    const session = await this.getSession();
+    if (!session) {
+      throw new DataError(
+        "NOT_AUTHENTICATED",
+        "Signed in, but the session could not be loaded. Please try again.",
+      );
+    }
     this.emit(session);
     return session;
   }
@@ -124,12 +150,24 @@ export class ApiAuth implements AuthRepository {
   }
 
   async signIn(email: string, password: string): Promise<Session> {
+    // EMAIL_NOT_VERIFIED is not a failure: the backend has just reissued a code.
+    // It propagates to the screen, which switches to the OTP step. Only
+    // reachable if REQUIRE_EMAIL_VERIFICATION is turned back on.
     const data = await apiFetch<{ user: ApiUser }>("/auth/signin", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, password }),
     }).catch(rethrow);
-    const session = await this.getSession() ?? toSession(data.user);
+    // No `?? toSession(data.user)` fallback: that path fabricated
+    // `roles: ["player"]` and `mustChangePassword: false` from a response body
+    // that carries neither, quietly demoting staff whenever this read hiccupped.
+    const session = await this.getSession();
+    if (!session) {
+      throw new DataError(
+        "NOT_AUTHENTICATED",
+        "Signed in, but the session could not be loaded. Please try again.",
+      );
+    }
     this.emit(session);
     return session;
   }
@@ -161,8 +199,12 @@ export class ApiAuth implements AuthRepository {
 
   async getSession(): Promise<Session | null> {
     try {
-      const data = await apiFetch<{ user: ApiUser; roles?: ApiRoleAssignment[] }>("/auth/session");
-      return data.user ? toSession(data.user, data.roles ?? []) : null;
+      const data = await apiFetch<{
+        user: ApiUser;
+        roles?: ApiRoleAssignment[];
+        expiresAt?: string;
+      }>("/auth/session");
+      return data.user ? toSession(data.user, data.roles ?? [], data.expiresAt) : null;
     } catch (error) {
       // Signed out is the normal case, not a failure.
       if (error instanceof ApiError && error.statusCode === 401) return null;

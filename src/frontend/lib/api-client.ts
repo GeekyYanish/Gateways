@@ -66,6 +66,8 @@ const KNOWN_CODES = new Set<string>([
   "PAYMENT_NOT_VERIFIED",
   "FORBIDDEN",
   "MUST_CHANGE_PASSWORD",
+  "EMAIL_NOT_VERIFIED",
+  "OAUTH_ACCOUNT",
 ]);
 
 const CSRF_COOKIE = "csrf_token";

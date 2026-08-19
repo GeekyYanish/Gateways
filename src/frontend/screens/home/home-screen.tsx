@@ -10,6 +10,7 @@ import {
 } from "@/frontend/components/home/theme-sections";
 import { ExploreSection } from "@/frontend/components/home/explore-section";
 import { RegisterSection } from "@/frontend/components/home/register-section";
+import { ContactSection } from "@/frontend/components/home/contact-section";
 import { SponsorsSection } from "@/frontend/components/home/sponsors-section";
 import { SiteFooter } from "@/frontend/components/home/site-footer";
 import { EventsModal } from "@/frontend/components/home/events-modal";
@@ -55,7 +56,7 @@ export function HomeScreen() {
         />
         <RegisterSection />
         {/* <SponsorsSection /> */}
-
+        <ContactSection />
       </main>
 
       <SiteFooter />

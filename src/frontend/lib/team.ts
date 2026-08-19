@@ -31,7 +31,7 @@ export interface TeamMember {
 export const FACULTY_COORDINATORS: TeamMember[] = [
   { name: "Dr. Neha Singhal", subtitle: "Assistant Professor", blurb: "Guiding us through the Upside Down." },
   { name: "Dr. Shivangi Singh", subtitle: "Assistant Professor", blurb: "Lighting the way for all." },
-  { name: "Dr. Nizar Banu", subtitle: "Assistant Professor", blurb: "The mind behind the code." },
+  { name: "Dr. Nizar Banu", subtitle: "Associate Professor", blurb: "The mind behind the code." },
 ];
 
 export const CORE_COMMITTEE: TeamMember[] = [

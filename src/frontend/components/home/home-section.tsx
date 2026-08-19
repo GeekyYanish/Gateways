@@ -56,7 +56,7 @@ export function HomeSection({
       // without it the heading lands underneath the bar.
       // `relative` is the positioning context <DecorLayer> anchors to.
       className={cn(
-        "relative mx-auto w-full max-w-6xl scroll-mt-[calc(var(--mc-unit)*8)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*4)] md:px-[calc(var(--mc-unit)*1.5)]",
+        "relative mx-auto w-full max-w-6xl scroll-mt-[calc(var(--mc-unit)*8)] px-[calc(var(--mc-unit)*2)] py-[calc(var(--mc-unit)*6)] md:px-[calc(var(--mc-unit)*1.5)] md:py-[calc(var(--mc-unit)*4)]",
         className,
       )}
       initial={{ opacity: 0, y: 24 }}

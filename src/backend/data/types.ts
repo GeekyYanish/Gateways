@@ -511,7 +511,12 @@ export type DataErrorCode =
   | "RECEIPT_ALREADY_SUBMITTED"
   | "PAYMENT_NOT_VERIFIED"
   | "FORBIDDEN"
-  | "MUST_CHANGE_PASSWORD";
+  | "MUST_CHANGE_PASSWORD"
+  // Correct password, unverified address. The backend has already reissued a
+  // code; the UI shows the OTP step rather than an error.
+  | "EMAIL_NOT_VERIFIED"
+  // Address belongs to a Google identity — there is no password to use.
+  | "OAUTH_ACCOUNT";
 
 export class DataError extends Error {
   readonly code: DataErrorCode;

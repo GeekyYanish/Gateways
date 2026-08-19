@@ -177,7 +177,7 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
             href={FEST.host.universityUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden min-h-11 shrink-0 items-center sm:flex"
+            className="flex min-h-11 shrink-0 items-center"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
