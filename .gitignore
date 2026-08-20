@@ -53,6 +53,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env.example
 
 # The backend templates in src/backend are intentionally tracked without a dot
 # prefix; these matching local files contain secrets and must stay machine-only.
