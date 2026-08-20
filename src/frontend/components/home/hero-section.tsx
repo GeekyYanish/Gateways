@@ -8,6 +8,8 @@ import { FEST } from "@/frontend/lib/fest";
 import { Countdown } from "./countdown";
 import { SkyAnnouncements } from "./sky-announcements";
 import { ScrollCue } from "./scroll-cue";
+import { usePortalTransition } from "@/frontend/components/portal/portal-transition-overlay";
+import { BlockButton } from "@/frontend/components/mc/block-button";
 
 const TITLE = "PARALLAX";
 
@@ -42,6 +44,7 @@ const TITLE = "PARALLAX";
  */
 export function HeroSection() {
   const root = useRef<HTMLDivElement>(null);
+  const { navigateWithPortal } = usePortalTransition();
 
   // Apply a saved in-app motion preference before anything animates.
   useEffect(() => {
@@ -68,6 +71,7 @@ export function HeroSection() {
           )
           .to(".landing-tagline", { opacity: 1, y: 0, duration: 0.5 }, "-=0.2")
           .to(".landing-countdown", { opacity: 1, y: 0, duration: 0.5 }, "-=0.25")
+          .to(".landing-portal-btn", { opacity: 1, y: 0, duration: 0.5 }, "-=0.25")
           .to(".landing-scroll-cue", { opacity: 1, duration: 0.4 }, "-=0.1");
 
         return () => tl.kill();
@@ -143,6 +147,22 @@ export function HeroSection() {
             {FEST.dateLabel}
           </p>
           <Countdown targetIso={FEST.datesIso.start} />
+        </div>
+
+        <div
+          className="landing-portal-btn gsap-hidden mt-[calc(var(--mc-unit)*4)] flex flex-col items-center gap-[var(--mc-unit)]"
+          style={{ transform: "translateY(12px)" }}
+        >
+          <BlockButton
+            size="xl"
+            variant="portal"
+            onClick={() => navigateWithPortal("/portal")}
+          >
+            Start the Journey
+          </BlockButton>
+          {/* <p className="pixel-shadow text-center text-[15px] text-white/80 max-w-[40ch]">
+            Choose your name, register for events, and explore the realm.
+          </p> */}
         </div>
 
         {/* Tells the visitor there is more below the fold. Decorative only —
