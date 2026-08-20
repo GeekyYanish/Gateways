@@ -26,6 +26,11 @@
 .DS_Store
 Thumbs.db
 *.pem
+*.key
+*.cert
+*.crt
+*.sqlite
+*.sql
 
 # Large source-only 3D exports. Optimized runtime models live in public/art/.
 /assets/festive_world_-_minecraft.glb
@@ -48,9 +53,6 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-!.env.example
-!.env.preproduction.example
-!.env.production.example
 
 # The backend templates in src/backend are intentionally tracked without a dot
 # prefix; these matching local files contain secrets and must stay machine-only.
@@ -92,5 +94,4 @@ poster_page.zip
 
 # Documents
 *.md
-!README.md
 *.pdf
