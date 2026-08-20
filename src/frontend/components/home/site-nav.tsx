@@ -32,28 +32,7 @@ import { cn } from "@/frontend/lib/utils";
  * university's is an outbound credit and should not be mistaken for it.
  */
 
-/**
- * The first two render before the Events/Schedule modal triggers, the rest
- * after — see the split in the nav below. Sponsors is an in-page anchor rather
- * than a link to /sponsors: the roll now lives on this page, and sending a
- * visitor away mid-pitch to read a logo wall was never worth the navigation.
- */
-const ANCHORS = [
-  { href: "#theme", label: "Theme" },
-  { href: "#register", label: "Register" },
-  // { href: "#sponsors", label: "Sponsors" },
-] as const;
-
-/**
- * Real routes, not in-page anchors. "About" used to scroll to a homepage
- * section; the team-credits page took over that label and destination, since
- * "who is running this" is what visitors actually expect from an About link.
- */
-const PAGE_LINKS = [
-  { href: "/about", label: "About" },
-  { href: "/gallery", label: "Gallery" },
-  { href: "/contact", label: "Contact" },
-] as const;
+// Nav links are now hardcoded in the render methods.
 
 export interface SiteNavProps {
   onOpenEvents: () => void;
@@ -112,35 +91,22 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
             aria-hidden
             className="theme-only-light h-10 w-auto shrink-0 md:h-12"
           />
-          {/* accent-STRONG, not accent. The bar sits on open sky in the light
-              theme, and the mid amber that worked on a near-white page is the
-              one accent that lands closest to the sky's own lightness — it goes
-              soft exactly where the wordmark most needs to hold. The deeper
-              bronze is the dark end of the same gold the crest beside it is
-              drawn in, so the lockup still reads as one mark. */}
-          <span className="whitespace-nowrap font-pixel text-[9px] uppercase tracking-[0.1em] text-mc-accent-strong max-[359px]:hidden md:text-[12px] md:tracking-[0.14em]">
-            {FEST.shortEdition}
-          </span>
+
         </a>
 
         {/* Desktop nav. Hidden rather than unmounted on mobile so there is only
             one source of truth for the link list. */}
         <nav aria-label="Main" className="hidden items-center justify-center gap-[calc(var(--mc-unit)*0.5)] min-[1320px]:flex">
-          {ANCHORS.slice(0, 2).map((a) => (
-            <NavLink key={a.href} href={a.href} label={a.label} />
-          ))}
+          <NavLink href="/" label="Home" />
           {/* Plain text, not <BlockButton>. These open modals rather than
               navigating, but a bevelled panel around two of seven nav items
               made them read as the only real controls up here — the raised
               chrome was carrying meaning it did not have. */}
           <NavLink label="Events" onClick={onOpenEvents} />
           <NavLink label="Schedule" onClick={onOpenSchedule} />
-          {ANCHORS.slice(2).map((a) => (
-            <NavLink key={a.href} href={a.href} label={a.label} />
-          ))}
-          {PAGE_LINKS.map((a) => (
-            <NavLink key={a.href} href={a.href} label={a.label} />
-          ))}
+          <NavLink href="/gallery" label="Gallery" />
+          <NavLink href="/about" label="About" />
+          <NavLink href="/contact" label="Contact" />
         </nav>
 
         <div className="flex shrink-0 items-center gap-[calc(var(--mc-unit)*0.75)] md:gap-[calc(var(--mc-unit)*1.25)] min-[1320px]:justify-self-end">
@@ -247,9 +213,7 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
             <ThemeToggle />
           </div>
 
-          {ANCHORS.slice(0, 2).map((a) => (
-            <MenuLink key={a.href} href={a.href} label={a.label} onNavigate={() => setMenuOpen(false)} />
-          ))}
+          <MenuLink href="/" label="Home" onNavigate={() => setMenuOpen(false)} />
           {/* MenuLink, not <BlockButton variant="stone">. Two raised grey slabs
               among six inset dark rows read as the only real controls in the
               menu — exactly the miscue the desktop nav already corrected (see
@@ -264,12 +228,9 @@ export function SiteNav({ onOpenEvents, onOpenSchedule }: SiteNavProps) {
             onNavigate={() => setMenuOpen(false)}
             onClick={onOpenSchedule}
           />
-          {ANCHORS.slice(2).map((a) => (
-            <MenuLink key={a.href} href={a.href} label={a.label} onNavigate={() => setMenuOpen(false)} />
-          ))}
-          {PAGE_LINKS.map((a) => (
-            <MenuLink key={a.href} href={a.href} label={a.label} onNavigate={() => setMenuOpen(false)} />
-          ))}
+          <MenuLink href="/gallery" label="Gallery" onNavigate={() => setMenuOpen(false)} />
+          <MenuLink href="/about" label="About" onNavigate={() => setMenuOpen(false)} />
+          <MenuLink href="/contact" label="Contact" onNavigate={() => setMenuOpen(false)} />
           <a
             href={FEST.host.universityUrl}
             target="_blank"

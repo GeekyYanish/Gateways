@@ -235,9 +235,9 @@ export const FEST = {
 
   /** TODO — replace with the 2026 organising team. */
   contacts: [
-    { name: "Reno Riji Matthew", phone: "+91 9945135960", email: "renoreji.matthew@mca.christuniversity.in", role: "Registration & Payments" },
-    { name: "Abhinav Jain", phone: "+91 9214544078", email: "abhinav.jain@mca.christuniversity.in", role: "General Convenor" },
-    { name: "Slaven Dereck Pais", phone: "+91 9844373547", email: "slavenderick.pais@mca.christuniversity.in", role: "Hospitality" },
+    { name: "Reno Riji Matthew", phone: "+91 9945135960", role: "Registration & Payments" },
+    { name: "Abhinav Jain", phone: "+91 9214544078", role: "General Convenor" },
+    { name: "Slaven Dereck Pais", phone: "+91 9844373547", role: "Hospitality" },
     { name: "Gateways Queries", phone: "", email: "gateways@christuniversity.in", role: "General Enquiries" },
   ] as FestContact[],
 
