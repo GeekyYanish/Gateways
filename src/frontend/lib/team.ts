@@ -28,16 +28,33 @@ export interface TeamMember {
   blurb?: string;
 }
 
+export const ADVISORY_COMMITTEE: TeamMember[] = [
+  { name: "Dr. Fr. Jossy P George", subtitle: "Director CS, Statistics & DS" },
+  { name: "Dr. Deepthi Das", subtitle: "Associate Dean" },
+  { name: "Dr. Rupali Sunil Wagh", subtitle: "Head of Department" },
+  { name: "Dr. Gobi Ramasamy", subtitle: "Associate HOD" },
+  { name: "Dr. Cynthia T", subtitle: "PG Program Coordinator" },
+];
+
 export const FACULTY_COORDINATORS: TeamMember[] = [
-  { name: "Dr. Neha Singhal", subtitle: "Assistant Professor", blurb: "Guiding us through the Upside Down." },
-  { name: "Dr. Shivangi Singh", subtitle: "Assistant Professor", blurb: "Lighting the way for all." },
-  { name: "Dr. Nizar Banu", subtitle: "Associate Professor", blurb: "The mind behind the code." },
+  { name: "Dr. Neha Singhal", subtitle: "Assistant Professor" },
+  { name: "Dr. Shivangi Singh", subtitle: "Assistant Professor" },
+  { name: "Dr. Nizar Banu P K", subtitle: "Associate Professor" },
 ];
 
 export const CORE_COMMITTEE: TeamMember[] = [
-  { name: "Aimee Joseph", subtitle: "4 MCA B", blurb: "Stranger things within" },
-  { name: "Abhinav Jain", subtitle: "4 MCA B", blurb: "Stranger things within." },
-  { name: "Hitesh", subtitle: "4 MSC AIML", blurb: "The code whisperer." },
+  { name: "Smitha M", subtitle: "4 MSC AIML (2548556)" },
+  { name: "Shambhavi Sinha", subtitle: "4 MCA A (2547151)" },
+  { name: "Aimee Susan Joseph", subtitle: "4 MCA B (2547204)" },
+  { name: "Hitesh Kumar", subtitle: "4 MSC AIML (2548525)" },
+  { name: "Joshua Joby", subtitle: "4 MCA A (2547125)" },
+  { name: "Abhinav Jain", subtitle: "4 MCA B (2547203)" },
+  { name: "Joseph Alicia Elias", subtitle: "1 MSC AIML (2648525)" },
+  { name: "Anooja Sreenivasan", subtitle: "1 MCA A (2647114)" },
+  { name: "Haniya Zehra Mody", subtitle: "1 MCA B (2647225)" },
+  { name: "Ronith Tharun Joshi", subtitle: "1 MSC AIML (2648545)" },
+  { name: "Iwin Jose", subtitle: "1 MCA A (2647126)" },
+  { name: "Shiva A Karthik", subtitle: "1 MCA B (2647247)" },
 ];
 
 export interface CommitteeHead extends TeamMember {

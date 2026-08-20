@@ -13,11 +13,15 @@ import { BlockToaster } from "@/frontend/components/mc";
  * visitors get the personalised touches (their own row highlighted on the
  * leaderboard, a register button instead of a prompt).
  */
+import { SiteShell } from "@/frontend/components/layout/site-shell";
+
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <MotionConfig reducedMotion="user">
-        {children}
+        <SiteShell>
+          {children}
+        </SiteShell>
         <BlockToaster />
       </MotionConfig>
     </SessionProvider>

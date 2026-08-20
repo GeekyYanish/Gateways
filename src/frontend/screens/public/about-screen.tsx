@@ -5,6 +5,7 @@ import {
   skinFor,
   FACULTY_COORDINATORS,
   CORE_COMMITTEE,
+  ADVISORY_COMMITTEE,
   COMMITTEE_HEADS,
   WEBSITE_DEVELOPERS,
   type TeamMember,
@@ -29,6 +30,7 @@ export function AboutScreen() {
         </p>
       </header>
 
+      <TeamSection title="Advisory Committee" members={ADVISORY_COMMITTEE} />
       <TeamSection title="Faculty Coordinators" members={FACULTY_COORDINATORS} />
       <TeamSection title="Core Committee" members={CORE_COMMITTEE} />
       <CommitteeHeadsSection />
@@ -91,8 +93,8 @@ function MemberCard({ member, compact = false }: { member: TeamMember; compact?:
     >
       <PixelAvatar skinId={skinFor(member.name)} size={compact ? 32 : 48} alt="" />
       <div className="min-w-0">
-        <p className="truncate font-pixel text-[10px] text-mc-success">{member.name}</p>
-        <p className="mt-[2px] truncate text-[14px] text-mc-text-dim">{member.subtitle}</p>
+        <p className="font-pixel text-[10px] text-mc-success">{member.name}</p>
+        <p className="mt-[2px] text-[14px] text-mc-text-dim">{member.subtitle}</p>
         {member.blurb ? (
           <p className="mt-[calc(var(--mc-unit)*0.25)] text-[14px] text-mc-text">{member.blurb}</p>
         ) : null}

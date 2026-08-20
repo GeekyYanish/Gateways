@@ -42,7 +42,7 @@ export function RegisterSection() {
       }
     >
       <div className="grid gap-[calc(var(--mc-unit)*1.5)] lg:grid-cols-[1.6fr_1fr]">
-        <BlockPanel variant="gold" padded="lg" title="The recipe">
+        <BlockPanel variant="gold" padded="lg" title="The recipe" className="h-max">
           <ol className="flex flex-col gap-[var(--mc-unit)] p-[calc(var(--mc-unit)*1.5)]">
             {FEST.registerSteps.map((step, i) => (
               <li
@@ -140,9 +140,12 @@ export function RegisterSection() {
             </p>
           </BlockPanel>
 
-          {/* The cva classes on an anchor, not a <BlockButton> inside one —
-              an <a> wrapping a <button> is invalid HTML and swallows the
-              anchor's keyboard activation. */}
+        </div>
+
+        {/* The cva classes on an anchor, not a <BlockButton> inside one —
+            an <a> wrapping a <button> is invalid HTML and swallows the
+            anchor's keyboard activation. */}
+        <div className="flex w-full flex-col gap-[calc(var(--mc-unit)*1.5)] sm:flex-row lg:col-span-2">
           <a
             href={FEST.links.register}
             {...(isExternal
@@ -150,7 +153,7 @@ export function RegisterSection() {
               : {})}
             className={cn(
               blockButton({ variant: "gold", size: "lg", block: true }),
-              "no-underline",
+              "no-underline flex-1",
             )}
           >
             Browse events and register
@@ -162,8 +165,8 @@ export function RegisterSection() {
               ? { target: "_blank", rel: "noopener noreferrer" }
               : {})}
             className={cn(
-              "inline-flex min-h-11 items-center justify-center text-center font-pixel text-[9px] uppercase tracking-[0.12em] no-underline transition-colors",
-              "text-mc-text-dim hover:text-mc-accent",
+              blockButton({ variant: "ghost", size: "lg", block: true }),
+              "no-underline flex-1 text-mc-text-dim hover:text-mc-accent",
             )}
           >
             Read the brochure ↗
