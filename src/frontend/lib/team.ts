@@ -26,20 +26,39 @@ export interface TeamMember {
   subtitle: string;
   /** Short tagline. Not every group has one. */
   blurb?: string;
+  /**
+   * Public path to a real photograph, e.g. `/art/team/faculty/neha-singhal.jpg`.
+   *
+   * Set on the faculty groups ahead of the files themselves: the card falls
+   * back to the pixel avatar when the image is missing or fails to load, so a
+   * path that is not filled in yet costs nothing and the photo appears the
+   * moment someone drops the file at that path.
+   *
+   * Naming rule, should more people need one: the name lowercased, honorifics
+   * dropped, punctuation removed, spaces hyphenated. Square crop, 256px or
+   * larger — the card renders at 48px and centre-crops with `object-cover`.
+   */
+  image?: string;
 }
 
+/**
+ * Where faculty photographs live. One constant rather than the prefix repeated
+ * on eight entries, so the folder can be renamed in a single edit.
+ */
+const FACULTY_PHOTOS = "/art/team/faculty";
+
 export const ADVISORY_COMMITTEE: TeamMember[] = [
-  { name: "Dr. Fr. Jossy P George", subtitle: "Director CS, Statistics & DS" },
-  { name: "Dr. Deepthi Das", subtitle: "Associate Dean" },
-  { name: "Dr. Rupali Sunil Wagh", subtitle: "Head of Department" },
-  { name: "Dr. Gobi Ramasamy", subtitle: "Associate HOD" },
-  { name: "Dr. Cynthia T", subtitle: "PG Program Coordinator" },
+  { name: "Dr. Fr. Jossy P George", subtitle: "Director CS, Statistics & DS", image: `${FACULTY_PHOTOS}/jossy-p-george.jpg` },
+  { name: "Dr. Deepthi Das", subtitle: "Associate Dean", image: `${FACULTY_PHOTOS}/deepthi-das.jpg` },
+  { name: "Dr. Rupali Sunil Wagh", subtitle: "Head of Department", image: `${FACULTY_PHOTOS}/rupali-sunil-wagh.jpg` },
+  { name: "Dr. Gobi Ramasamy", subtitle: "Associate HOD", image: `${FACULTY_PHOTOS}/gobi-ramasamy.jpg` },
+  { name: "Dr. Cynthia T", subtitle: "PG Program Coordinator", image: `${FACULTY_PHOTOS}/cynthia-t.jpg` },
 ];
 
 export const FACULTY_COORDINATORS: TeamMember[] = [
-  { name: "Dr. Neha Singhal", subtitle: "Assistant Professor" },
-  { name: "Dr. Shivangi Singh", subtitle: "Assistant Professor" },
-  { name: "Dr. Nizar Banu P K", subtitle: "Associate Professor" },
+  { name: "Dr. Neha Singhal", subtitle: "Assistant Professor", image: `${FACULTY_PHOTOS}/neha-singhal.jpg` },
+  { name: "Dr. Shivangi Singh", subtitle: "Assistant Professor", image: `${FACULTY_PHOTOS}/shivangi-singh.jpg` },
+  { name: "Dr. Nizar Banu P K", subtitle: "Associate Professor", image: `${FACULTY_PHOTOS}/nizar-banu-p-k.jpg` },
 ];
 
 export const CORE_COMMITTEE: TeamMember[] = [
@@ -89,12 +108,21 @@ export const COMMITTEE_HEADS: CommitteeHead[] = [
   { name: "Deon Binny", team: "Media", subtitle: "3 MSC AIML" },
 ];
 
-export const WEBSITE_DEVELOPERS: TeamMember[] = [
+/**
+ * The people who build and run the website and application.
+ *
+ * `subtitle` is the class here, not the role — "Technical (Website /
+ * Application)" is what the section itself says, so repeating it on all seven
+ * cards would be noise. The two members with no class on record carry the role
+ * instead; the field is documented as taking either.
+ */
+export const TECHNICAL_COMMITTEE: TeamMember[] = [
   { name: "Yanish Rai", subtitle: "4 MCA A", blurb: "Crafting portals to new worlds." },
   { name: "Kartik Dewnani", subtitle: "4 MCA A", blurb: "Animating the Upside Down." },
   { name: "Darshan Heble", subtitle: "4 MCA A", blurb: "Code, coffee, and curiosity." },
-  { name: "Anand", subtitle: "1 MCA A", blurb: "Code, coffee, and curiosity." },
-  { name: "Gokul", subtitle: "1 MCA B", blurb: "Code, coffee, and curiosity." },
-
+  { name: "Vishal B G", subtitle: "Website / Application" },
+  { name: "Gerard Nicholas Paul M", subtitle: "Website / Application" },
+  { name: "S Anand", subtitle: "1 MCA A", blurb: "Code, coffee, and curiosity." },
+  { name: "Gokul T A", subtitle: "1 MCA B", blurb: "Code, coffee, and curiosity." },
 ];
 

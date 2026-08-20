@@ -1,20 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { BackLink, BlockPanel, PixelAvatar } from "@/frontend/components/mc";
+import { cn } from "@/frontend/lib/utils";
 import {
   skinFor,
   FACULTY_COORDINATORS,
   CORE_COMMITTEE,
   ADVISORY_COMMITTEE,
   COMMITTEE_HEADS,
-  WEBSITE_DEVELOPERS,
+  TECHNICAL_COMMITTEE,
   type TeamMember,
   type CommitteeHead,
 } from "@/frontend/lib/team";
 
 /**
  * The people behind the fest — faculty coordinators, the core committee,
- * committee heads, and the website team. A standalone page rather than a
+ * committee heads, and the technical committee. A standalone page rather than a
  * homepage section: this is the credits list you link directly, not
  * something a first-time visitor needs mid-pitch.
  */
@@ -34,7 +36,7 @@ export function AboutScreen() {
       <TeamSection title="Faculty Coordinators" members={FACULTY_COORDINATORS} />
       <TeamSection title="Core Committee" members={CORE_COMMITTEE} />
       <CommitteeHeadsSection />
-      <TeamSection title="Website Developers" members={WEBSITE_DEVELOPERS} />
+      <TeamSection title="Technical Committee" members={TECHNICAL_COMMITTEE} />
     </div>
   );
 }
@@ -91,7 +93,7 @@ function MemberCard({ member, compact = false }: { member: TeamMember; compact?:
       padded={compact ? "sm" : "md"}
       className="flex h-full items-center gap-[var(--mc-unit)]"
     >
-      <PixelAvatar skinId={skinFor(member.name)} size={compact ? 32 : 48} alt="" />
+      <MemberPortrait member={member} size={compact ? 32 : 48} />
       <div className="min-w-0">
         <p className="font-pixel text-[10px] text-mc-success">{member.name}</p>
         <p className="mt-[2px] text-[14px] text-mc-text-dim">{member.subtitle}</p>
@@ -100,5 +102,53 @@ function MemberCard({ member, compact = false }: { member: TeamMember; compact?:
         ) : null}
       </div>
     </BlockPanel>
+  );
+}
+
+/**
+ * A member's face: their photograph where one exists, and the deterministic
+ * pixel avatar everywhere else.
+ *
+ * The fallback is on `onError`, not on the absence of a path, and that is the
+ * point — faculty entries in `team.ts` carry their photo path BEFORE the file
+ * is added, so a missing photo degrades to the avatar the roster already used
+ * instead of a broken frame, and dropping the file in is the only step needed
+ * to make it appear.
+ *
+ * A plain <img> rather than next/image for that same reason: the optimizer
+ * answers a source it cannot fetch with a 500, while <img> fires `onError`,
+ * which is what this fallback listens for. The frame is a fixed square that
+ * never exceeds 48px, so there is no meaningful optimization being given up.
+ */
+function MemberPortrait({ member, size }: { member: TeamMember; size: number }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!member.image || failed) {
+    return <PixelAvatar skinId={skinFor(member.name)} size={size} alt="" />;
+  }
+
+  return (
+    <span
+      className={cn(
+        "inline-grid shrink-0 place-items-center overflow-hidden",
+        "bg-mc-slot bevel-inset",
+      )}
+      style={{ width: size, height: size }}
+    >
+      {/* A plain <img> is deliberate — see the component doc comment. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={member.image}
+        alt={member.name}
+        width={size}
+        height={size}
+        onError={() => setFailed(true)}
+        // object-top, not the default centre: the faculty photographs are 2:3
+        // portraits and the frame is a square, so a centred crop takes the
+        // middle third and slices the top of the head off. Anchoring to the top
+        // keeps the face in frame, which is the whole point of the portrait.
+        className="h-full w-full object-cover object-top"
+      />
+    </span>
   );
 }
