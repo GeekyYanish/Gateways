@@ -40,7 +40,7 @@ let instance: Repository | null = null;
  *                          the shape survives until someone builds it.
  *   3. `LocalRepository` — fully local. Dev and /dev/data-test rely on this.
  *
- * The API implementation is chosen on `NEXT_PUBLIC_USE_API_BACKEND` rather than
+ * The API implementation is chosen on `USE_API_BACKEND` rather than
  * the proxy's own `REGISTRATION_API_URL`: that one is a server-side variable
  * (deliberately, so the backend's address never reaches the browser), and this
  * decision has to be made in client components too.
@@ -63,7 +63,7 @@ export function getRepo(): Repository {
  * prefix reads as a React hook and is linted as one.
  */
 export function isApiBackendEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_USE_API_BACKEND === "true";
+  return process.env.USE_API_BACKEND === "true";
 }
 
 /** Convenience accessor. Prefer this in client components. */

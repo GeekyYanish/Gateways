@@ -89,3 +89,8 @@ poster_page.zip
 # A stray src/backend/env holding AUTH_SECRET and DB_PASSWORD once slipped
 # through precisely this way — .gitignore only covered dotted names.
 **/env
+
+# Documents
+*.md
+!README.md
+*.pdf
