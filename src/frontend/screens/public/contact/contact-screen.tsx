@@ -59,7 +59,7 @@ export function ContactScreen() {
               <h2 className="text-[16px] uppercase text-mc-accent md:text-[24px]">
                 Location
               </h2>
-              <BlockPanel variant="panel" padded="lg" className="w-full max-w-2xl text-left">
+              {/* <BlockPanel variant="panel" padded="lg" className="w-full max-w-2xl text-left">
                 <p className="text-[16px] leading-relaxed text-mc-text text-center">
                   <strong>{FEST.host.university}</strong>
                   <br />
@@ -76,85 +76,88 @@ export function ContactScreen() {
                     View on Google Maps
                   </a>
                 </div>
-              </BlockPanel>
+              </BlockPanel> */}
 
               {/*
-                How to reach, sitting under the map link rather than beside it:
-                you look up the address first and the directions second, and on
-                a phone a side-by-side would put the bus routes off-screen.
-
-                Same max-w-2xl as the panel above so the two align into one
-                column. The university name is deliberately NOT repeated as a
-                heading here — the panel two elements up already names it, and
-                the address is what a visitor is cross-referencing against.
+                How to reach and map, side-by-side in one panel.
               */}
-              <BlockPanel
-                variant="panel"
-                padded="lg"
-                className="mt-[var(--mc-unit)] w-full max-w-2xl text-left"
-              >
-                <h3 className="font-pixel text-[10px] uppercase tracking-[0.12em] text-mc-accent md:text-[12px]">
-                  How to Reach
-                </h3>
+              <BlockPanel variant="panel" padded="none" className="mt-[calc(var(--mc-unit)*3)] w-full overflow-hidden">
+                <div className="grid w-full lg:grid-cols-2">
+                  {/* LEFT SIDE: "How to Reach" Content */}
+                  <div className="flex w-full h-full flex-col text-left p-[calc(var(--mc-unit)*2.5)]">
+                    <h3 className="font-pixel text-[12px] md:text-[14px] text-mc-accent">
+                      How to Reach
+                    </h3>
 
-                <h4 className="mt-[calc(var(--mc-unit)*2)] font-pixel text-[9px] uppercase tracking-[0.1em] text-mc-success md:text-[10px]">
-                  Nearest
-                </h4>
-                <ul className="mt-[var(--mc-unit)] flex flex-col gap-[calc(var(--mc-unit)*0.5)]">
-                  {FEST.host.reach.nearest.map((n) => (
-                    <li
-                      key={n.label}
-                      className="flex items-start gap-[calc(var(--mc-unit)*0.75)] text-[16px] leading-snug text-mc-text"
-                    >
-                      <Check
-                        aria-hidden
-                        size={16}
-                        strokeWidth={3}
-                        className="mt-[4px] shrink-0 text-mc-success"
-                      />
-                      <span>
-                        {n.label}: {n.place}{" "}
-                        {/* nowrap so "[40 km]" cannot break between the
-                            number and its unit on a narrow screen. */}
-                        <span className="whitespace-nowrap text-mc-text-dim">
-                          [{n.distance}]
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                    <h4 className="mt-[calc(var(--mc-unit)*3)] font-pixel text-[10px] md:text-[12px] uppercase tracking-wider text-mc-success">
+                      Nearest
+                    </h4>
+                    <ul className="mt-[var(--mc-unit)] flex flex-col gap-[calc(var(--mc-unit)*0.75)]">
+                      {FEST.host.reach.nearest.map((n) => (
+                        <li
+                          key={n.label}
+                          className="flex items-start gap-[var(--mc-unit)] text-[15px] leading-snug text-mc-text"
+                        >
+                          <Check
+                            aria-hidden
+                            size={16}
+                            strokeWidth={3}
+                            className="mt-[2px] shrink-0 text-mc-success"
+                          />
+                          <span>
+                            {n.label}: {n.place}{" "}
+                            <span className="whitespace-nowrap text-mc-text-dim">
+                              [{n.distance}]
+                            </span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
 
-                <h4 className="mt-[calc(var(--mc-unit)*2)] font-pixel text-[9px] uppercase tracking-[0.1em] text-mc-success md:text-[10px]">
-                  Bus Routes
-                </h4>
-                <p className="mt-[calc(var(--mc-unit)*0.75)] text-[15px] leading-snug text-mc-text-dim">
-                  {FEST.host.reach.busStopNote}
-                </p>
-                <div className="mt-[var(--mc-unit)] grid gap-[var(--mc-unit)] sm:grid-cols-2">
-                  {FEST.host.reach.busRoutes.map((group) => (
-                    <div
-                      key={group.from}
-                      className="bg-mc-slot p-[calc(var(--mc-unit)*1.25)] bevel-inset"
-                    >
-                      <p className="font-pixel text-[8px] uppercase leading-relaxed tracking-[0.1em] text-mc-text md:text-[9px]">
-                        {group.from}
-                      </p>
-                      {/* Joined rather than a list of chips: these are read as
-                          one run of numbers you scan for yours, and fifteen
-                          bevelled pills would out-shout the headings. */}
-                      <p className="mt-[calc(var(--mc-unit)*0.75)] text-[15px] leading-relaxed text-mc-text-dim">
-                        {group.routes.join(", ")}
-                      </p>
+                    <h4 className="mt-[calc(var(--mc-unit)*3)] font-pixel text-[10px] md:text-[12px] uppercase tracking-wider text-mc-success">
+                      Bus Routes
+                    </h4>
+                    <p className="mt-[calc(var(--mc-unit)*0.75)] text-[15px] text-mc-text-dim">
+                      {FEST.host.reach.busStopNote}
+                    </p>
+                    <div className="mt-[calc(var(--mc-unit)*1.25)] grid gap-[var(--mc-unit)] sm:grid-cols-2">
+                      {FEST.host.reach.busRoutes.map((group) => (
+                        <div
+                          key={group.from}
+                          className="bg-mc-slot p-[calc(var(--mc-unit)*1.5)] bevel-inset"
+                        >
+                          <p className="font-pixel text-[9px] uppercase text-mc-text">
+                            {group.from}
+                          </p>
+                          <p className="mt-[calc(var(--mc-unit)*0.75)] text-[14px] text-mc-text-dim leading-relaxed">
+                            {group.routes.join(", ")}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                <h4 className="mt-[calc(var(--mc-unit)*2)] font-pixel text-[9px] uppercase tracking-[0.1em] text-mc-success md:text-[10px]">
-                  Cab / Auto Rickshaw Services
-                </h4>
-                <p className="mt-[calc(var(--mc-unit)*0.75)] text-[15px] leading-snug text-mc-text-dim">
-                  {FEST.host.reach.cabNote}
-                </p>
+                    <h4 className="mt-[calc(var(--mc-unit)*3)] font-pixel text-[10px] md:text-[12px] uppercase tracking-wider text-mc-success">
+                      Cab / Auto Rickshaw Services
+                    </h4>
+                    <p className="mt-[calc(var(--mc-unit)*0.75)] text-[15px] text-mc-text-dim">
+                      {FEST.host.reach.cabNote}
+                    </p>
+                  </div>
+
+                  {/* RIGHT SIDE: Map Embed */}
+                  <div className="flex w-full items-stretch justify-center p-[calc(var(--mc-unit)*2.5)] lg:pl-0 lg:py-[calc(var(--mc-unit)*5)]">
+                    <iframe
+                      title="Google Maps Location"
+                      src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15554.4!2d77.6059112!3d12.9344479!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae15b277a93807%3A0x88518f37b39dabd0!2sChrist%20University!5e0!3m2!1sen!2sin!4v1710000000000!5m2!1sen!2sin"
+                      width="100%"
+                      height="100%"
+                      className="w-full h-full min-h-[350px] border-0 rounded-xl shadow-lg"
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                </div>
               </BlockPanel>
             </div>
           </HomeSection>
